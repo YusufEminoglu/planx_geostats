@@ -14,7 +14,14 @@ from qgis.core import (
     QgsProcessingParameterFileDestination,
 )
 
-from ..dependencies import MODULES, PIP_PACKAGES
+from ..dependencies import (
+    MODULES,
+    PIP_PACKAGES,
+    build_qgis_python_pip_command,
+    find_osgeo_shell,
+    format_command,
+    resolve_qgis_python_executable,
+)
 
 
 class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
@@ -73,26 +80,25 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
             })
 
         missing = [item["package"] for item in statuses if not item["available"]]
+        qgis_python = resolve_qgis_python_executable()
         command = self._install_command()
-        feedback.pushInfo(f"QGIS Python executable: {sys.executable}")
+        osgeo_shell = find_osgeo_shell()
+        feedback.pushInfo(f"QGIS host application executable: {sys.executable}")
+        feedback.pushInfo(f"Python executable selected for pip: {qgis_python or 'not found'}")
         if missing:
             feedback.pushInfo("Missing GeoStats libraries: " + ", ".join(missing))
         else:
             feedback.pushInfo("All checked GeoStats libraries are available.")
 
-        self._write_html(html_path, statuses, missing, command)
+        self._write_html(html_path, statuses, missing, command, qgis_python, osgeo_shell)
         return {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def _install_command(self) -> str:
-        parts = [sys.executable, "-m", "pip", "install", "--upgrade"] + list(PIP_PACKAGES)
-        return " ".join(self._quote(part) for part in parts)
-
-    def _quote(self, value: str) -> str:
-        if not value:
-            return '""'
-        if any(ch.isspace() for ch in value) or any(ch in value for ch in '()&'):
-            return f'"{value}"'
-        return value
+        try:
+            program, args = build_qgis_python_pip_command(list(PIP_PACKAGES))
+        except RuntimeError:
+            return "Open PlanX GeoStats Lab > GeoStats Libraries and use OSGeo Shell mode."
+        return format_command(program, args)
 
     def _package_role(self, package: str) -> str:
         roles = {
@@ -104,7 +110,7 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
         }
         return roles.get(package, "Optional GeoStats support package.")
 
-    def _write_html(self, path, statuses, missing, command):
+    def _write_html(self, path, statuses, missing, command, qgis_python, osgeo_shell):
         rows = []
         for item in statuses:
             state = "Available" if item["available"] else "Missing"
@@ -149,10 +155,13 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 <body>
 <div class="container">
 <h1>GeoStats Library Status</h1>
-<p class="subtitle">Active QGIS Python executable: <strong>{html.escape(sys.executable)}</strong></p>
+<p class="subtitle">QGIS host application executable: <strong>{html.escape(sys.executable)}</strong><br>
+Python executable selected for pip: <strong>{html.escape(qgis_python or 'Not found')}</strong></p>
 <div class="summary">{summary}</div>
-<h2>Recommended install/update command</h2>
-<p>Review this command before running it. It targets the Python environment reported above.</p>
+<h2>How to install the missing libraries</h2>
+<p><strong>Recommended path:</strong> open <strong>PlanX GeoStats Lab &gt; GeoStats Libraries</strong>, review the command preview, then press <strong>Install Missing / Update Libraries</strong>. This runs the command only after your confirmation and streams the install log inside QGIS.</p>
+<p><strong>Manual path:</strong> copy the command below into OSGeo Shell or a terminal that belongs to the same QGIS installation. Do not use the QGIS application executable directly with <code>-m pip</code>; pip must be run by Python.</p>
+<p>Detected OSGeo Shell: <strong>{html.escape(osgeo_shell or 'Not found')}</strong></p>
 <div class="command">{html.escape(command)}</div>
 <h2>Package status</h2>
 <table>

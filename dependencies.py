@@ -36,6 +36,90 @@ MODULES = {
 }
 
 
+def resolve_qgis_python_executable() -> Optional[str]:
+    """Return a Python executable that belongs to the running QGIS install."""
+    executable = sys.executable
+    name = os.path.basename(executable).lower()
+    if name.startswith("python") and name.endswith((".exe", "")):
+        return executable
+
+    candidates = []
+    executable_dir = os.path.dirname(executable)
+    if executable_dir:
+        candidates.extend([
+            os.path.join(executable_dir, "python.exe"),
+            os.path.join(executable_dir, "python3.exe"),
+        ])
+
+    osgeo_root = os.environ.get("OSGEO4W_ROOT")
+    if osgeo_root:
+        candidates.extend([
+            os.path.join(osgeo_root, "bin", "python.exe"),
+            os.path.join(osgeo_root, "bin", "python3.exe"),
+        ])
+
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def find_osgeo_shell() -> Optional[str]:
+    candidates = []
+    osgeo_root = os.environ.get("OSGEO4W_ROOT")
+    if osgeo_root:
+        candidates.append(os.path.join(osgeo_root, "OSGeo4W.bat"))
+
+    executable_dir = os.path.dirname(sys.executable)
+    if executable_dir:
+        install_root = os.path.dirname(executable_dir)
+        candidates.append(os.path.join(install_root, "OSGeo4W.bat"))
+
+    candidates.extend([
+        r"C:\OSGeo4W\OSGeo4W.bat",
+        r"C:\OSGeo4W64\OSGeo4W.bat",
+    ])
+    for candidate in candidates:
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def quote_command_part(value: str) -> str:
+    if not value:
+        return '""'
+    if any(ch.isspace() for ch in value) or any(ch in value for ch in '()&'):
+        return f'"{value}"'
+    return value
+
+
+def format_command(program: str, args: List[str]) -> str:
+    return " ".join(quote_command_part(part) for part in [program] + list(args))
+
+
+def build_qgis_python_pip_command(packages: List[str]) -> Tuple[str, List[str]]:
+    python_executable = resolve_qgis_python_executable()
+    if python_executable is None:
+        raise RuntimeError(
+            "QGIS is running from an application executable, and a Python executable "
+            "could not be found beside it. Use OSGeo Shell mode or run the status "
+            "report to inspect the detected paths."
+        )
+    return python_executable, ["-m", "pip", "install", "--upgrade"] + list(packages)
+
+
+def build_osgeo_shell_pip_command(packages: List[str]) -> Tuple[str, List[str]]:
+    bat = find_osgeo_shell()
+    if bat is None:
+        raise RuntimeError(
+            "OSGeo Shell was selected, but OSGeo4W.bat could not be found. "
+            "Use QGIS Python pip or set OSGEO4W_ROOT."
+        )
+    pip_command = " ".join(["python", "-m", "pip", "install", "--upgrade"] + list(packages))
+    command = f'call "{bat}" && {pip_command}'
+    return "cmd.exe", ["/c", command]
+
+
 class GeoStatsDependencyDialog(QDialog):
     """User-confirmed installer for optional GeoStats Python libraries."""
 
@@ -74,7 +158,10 @@ class GeoStatsDependencyDialog(QDialog):
         self.setWindowTitle("PlanX GeoStats Libraries")
         self.resize(860, 720)
 
-        self.python_label = QLabel(sys.executable)
+        self.host_label = QLabel(sys.executable)
+        self.host_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        self.python_label = QLabel(resolve_qgis_python_executable() or "Not found")
         self.python_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         self.guide_box = QTextEdit()
@@ -113,7 +200,8 @@ class GeoStatsDependencyDialog(QDialog):
         buttons.rejected.connect(self.reject)
 
         form = QFormLayout()
-        form.addRow("QGIS Python", self.python_label)
+        form.addRow("QGIS host application", self.host_label)
+        form.addRow("Python used for pip", self.python_label)
         form.addRow("Install mode", self.mode_combo)
 
         guide_group = QGroupBox("Guide")
@@ -160,6 +248,7 @@ class GeoStatsDependencyDialog(QDialog):
         super().reject()
 
     def refresh_status(self) -> None:
+        self.python_label.setText(resolve_qgis_python_executable() or "Not found")
         lines = []
         missing = []
         for package, module in MODULES.items():
@@ -282,17 +371,9 @@ class GeoStatsDependencyDialog(QDialog):
         packages = self._read_requirements()
         mode = self.mode_combo.currentData()
         if mode == "qgis_python":
-            return sys.executable, ["-m", "pip", "install", "--upgrade", *packages]
+            return build_qgis_python_pip_command(packages)
         if mode == "osgeo_shell":
-            bat = self._find_osgeo_shell()
-            if bat is None:
-                raise RuntimeError(
-                    "OSGeo Shell was selected, but OSGeo4W.bat could not be found. "
-                    "Use QGIS Python pip or set OSGEO4W_ROOT."
-                )
-            pip_command = " ".join(["python", "-m", "pip", "install", "--upgrade", *packages])
-            command = f'call "{bat}" && {pip_command}'
-            return "cmd.exe", ["/c", command]
+            return build_osgeo_shell_pip_command(packages)
         raise RuntimeError("Unknown installation mode.")
 
     def _read_requirements(self) -> List[str]:
@@ -308,30 +389,11 @@ class GeoStatsDependencyDialog(QDialog):
                 packages.append(line)
         return packages or list(PIP_PACKAGES)
 
-    def _find_osgeo_shell(self) -> Optional[str]:
-        candidates = []
-        root = os.environ.get("OSGEO4W_ROOT")
-        if root:
-            candidates.append(os.path.join(root, "OSGeo4W.bat"))
-        candidates.extend([
-            r"C:\OSGeo4W\OSGeo4W.bat",
-            r"C:\OSGeo4W64\OSGeo4W.bat",
-        ])
-        for candidate in candidates:
-            if os.path.exists(candidate):
-                return candidate
-        return None
-
     def _format_command(self, program: str, args: List[str]) -> str:
-        parts = [program, *args]
-        return " ".join(self._quote(part) for part in parts)
+        return format_command(program, args)
 
     def _quote(self, value: str) -> str:
-        if not value:
-            return '""'
-        if any(ch.isspace() for ch in value) or any(ch in value for ch in '()&'):
-            return f'"{value}"'
-        return value
+        return quote_command_part(value)
 
     def _package_role(self, package: str) -> str:
         roles = {

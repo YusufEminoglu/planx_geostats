@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Expanded the GeoStats Libraries helper with detailed English guide text, package role explanations, command preview guidance, install-mode guidance, and restart guidance.
 - Moved the GeoStats Libraries menu action under **PlanX GeoStats Lab > GeoStats Libraries** so it is scoped to the GeoStats plugin rather than the general PlanX menu.
 - Added a GeoStats Libraries toolbar action so the helper remains visible even when QGIS nests plugin menus differently.
+- Corrected dependency command generation so QGIS application executables are not shown as pip runners; the helper and status report now distinguish the QGIS host application from the Python executable used for pip.
+- Expanded the library status report with a clear "How to install" section for guided installation and manual OSGeo Shell usage.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
 - Added an Exploratory Regression safety limit so overly large candidate-variable searches fail fast with guidance instead of tying up QGIS.
