@@ -123,6 +123,23 @@ def test_gwr_reports_local_support() -> None:
     assert np.min(result["local_support"]) > 0
 
 
+def test_ripleys_k_returns_l_diagnostics() -> None:
+    results = stats.calculate_ripleys_k(
+        np.array([0.0, 1.0, 2.0, 5.0]),
+        np.array([0.0, 0.0, 0.0, 0.0]),
+        1.0,
+        1.0,
+        3,
+        study_area=10.0,
+    )
+    assert len(results) == 3
+    for row in results:
+        assert "observed_k" in row
+        assert "expected_k" in row
+        assert "l_minus_d" in row
+        assert "isolated_count" in row
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -131,6 +148,7 @@ def run_all() -> None:
     test_regression_quality_flags_collinearity()
     test_incremental_autocorrelation_neighbor_diagnostics()
     test_gwr_reports_local_support()
+    test_ripleys_k_returns_l_diagnostics()
     print("CORE SMOKE TESTS OK")
 
 

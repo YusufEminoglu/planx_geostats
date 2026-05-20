@@ -1274,6 +1274,52 @@ def calculate_incremental_autocorrelation(
     return results
 
 
+def calculate_ripleys_k(
+    x: np.ndarray,
+    y_coords: np.ndarray,
+    start_dist: float,
+    dist_increment: float,
+    n_increments: int,
+    study_area: Optional[float] = None
+) -> list[dict]:
+    """Calculates Ripley's K, expected K, and L(d)-d across distance bands."""
+    n = len(x)
+    if n < 3:
+        raise ValueError("Ripley's K requires at least 3 features.")
+    coords = np.column_stack((x, y_coords))
+    dists_matrix = np.sqrt(((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
+    if study_area is None or study_area <= 0:
+        width = float(np.max(x) - np.min(x))
+        height = float(np.max(y_coords) - np.min(y_coords))
+        study_area = max(width * height, 1e-12)
+
+    results = []
+    for inc in range(n_increments):
+        distance = start_dist + inc * dist_increment
+        within = (dists_matrix <= distance).astype(float)
+        np.fill_diagonal(within, 0.0)
+        observed_pairs = float(np.sum(within))
+        observed_k = (study_area / (n * (n - 1))) * observed_pairs
+        expected_k = math.pi * (distance ** 2)
+        l_value = math.sqrt(max(observed_k, 0.0) / math.pi) if observed_k >= 0 else 0.0
+        l_minus_d = l_value - distance
+        neighbor_counts = np.sum(within > 0, axis=1)
+        results.append({
+            "distance": float(distance),
+            "observed_k": float(observed_k),
+            "expected_k": float(expected_k),
+            "l_value": float(l_value),
+            "l_minus_d": float(l_minus_d),
+            "observed_pairs": int(observed_pairs),
+            "min_neighbors": int(np.min(neighbor_counts)),
+            "median_neighbors": float(np.median(neighbor_counts)),
+            "max_neighbors": int(np.max(neighbor_counts)),
+            "isolated_count": int(np.sum(neighbor_counts == 0)),
+            "study_area": float(study_area),
+        })
+    return results
+
+
 def calculate_exploratory_regression(
     y: np.ndarray,
     X_data: np.ndarray,

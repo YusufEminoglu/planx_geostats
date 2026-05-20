@@ -14,6 +14,7 @@ from .algorithms.alg_local_moran import LocalMoranAlgorithm
 from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
 from .algorithms.alg_global_moran import GlobalMoranAlgorithm
 from .algorithms.alg_incremental_autocorrelation import IncrementalAutocorrelationAlgorithm
+from .algorithms.alg_ripleys_k import RipleysKFunctionAlgorithm
 from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgorithm
 from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
 from .algorithms.alg_gwr import GWRAlgorithm
@@ -61,6 +62,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(GlobalMoranAlgorithm())
         self.addAlgorithm(GeneralGAlgorithm())
         self.addAlgorithm(IncrementalAutocorrelationAlgorithm())
+        self.addAlgorithm(RipleysKFunctionAlgorithm())
         self.addAlgorithm(AverageNearestNeighborAlgorithm())
 
         # 03 | Hot Spots and Spatial Outliers

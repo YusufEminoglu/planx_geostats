@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Upgraded GWR outputs and reports with local support diagnostics, model-quality checks, CRS caveats, and bandwidth interpretation guidance.
 - Added audit fields to Multivariate Clustering and Similarity Search outputs for cluster size, cluster distance, similarity percentile, and similarity tier.
 - Added weight-quality checks and audit fields to Mean Center, Standard Distance, and Standard Deviational Ellipse outputs.
+- Added Ripley's K-Function as a new urban pattern scan tool with L(d)-d diagnostics, neighborhood support, and planning caveats.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
 - Documented the smoke-test and packaging validation workflow in the README.
 - Cleaned remaining special symbols from Processing feedback and generated reports.
