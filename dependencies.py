@@ -40,7 +40,7 @@ def resolve_qgis_python_executable() -> Optional[str]:
     """Return a Python executable that belongs to the running QGIS install."""
     executable = sys.executable
     name = os.path.basename(executable).lower()
-    if name.startswith("python") and name.endswith((".exe", "")):
+    if name.startswith("python"):
         return executable
 
     candidates = []

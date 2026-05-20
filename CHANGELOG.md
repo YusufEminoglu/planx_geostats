@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added a GeoStats Libraries toolbar action so the helper remains visible even when QGIS nests plugin menus differently.
 - Corrected dependency command generation so QGIS application executables are not shown as pip runners; the helper and status report now distinguish the QGIS host application from the Python executable used for pip.
 - Expanded the library status report with a clear "How to install" section for guided installation and manual OSGeo Shell usage.
+- Added a Processing Toolbox installer, `Install / Update GeoStats Libraries`, under `00 | Setup and Diagnostics` for profiles where the menu helper is not visible.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
 - Added an Exploratory Regression safety limit so overly large candidate-variable searches fail fast with guidance instead of tying up QGIS.
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Exploratory Regression tool for screening OLS variable combinations and ranking candidate models by AICc.
 - Exploratory Regression report now records how many candidate models were estimated.
 - GeoStats Library Status diagnostic algorithm under `00 | Setup and Diagnostics`, producing a non-installing HTML dependency report and QGIS Python command preview.
+- Install / Update GeoStats Libraries diagnostic algorithm with explicit approval, command logging, OSGeo Shell mode, and restart guidance.
 
 ## [0.8.0] - 2026-05-20
 

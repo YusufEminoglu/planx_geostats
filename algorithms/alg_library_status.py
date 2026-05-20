@@ -128,7 +128,7 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
             summary = (
                 "Missing optional libraries: "
                 + html.escape(", ".join(missing))
-                + ". Use PlanX GeoStats Lab > GeoStats Libraries for guided installation."
+                + ". Use PlanX GeoStats Lab > GeoStats Libraries or the Processing installer for guided installation."
             )
         else:
             summary = "All checked optional GeoStats libraries are available in the active QGIS Python environment."
@@ -160,6 +160,7 @@ Python executable selected for pip: <strong>{html.escape(qgis_python or 'Not fou
 <div class="summary">{summary}</div>
 <h2>How to install the missing libraries</h2>
 <p><strong>Recommended path:</strong> open <strong>PlanX GeoStats Lab &gt; GeoStats Libraries</strong>, review the command preview, then press <strong>Install Missing / Update Libraries</strong>. This runs the command only after your confirmation and streams the install log inside QGIS.</p>
+<p><strong>Toolbox fallback:</strong> if the menu action is not visible, run <strong>PlanX GeoStats Lab &gt; 00 | Setup and Diagnostics &gt; Install / Update GeoStats Libraries</strong> from Processing Toolbox, select an installation mode, enable the approval checkbox, and run the tool.</p>
 <p><strong>Manual path:</strong> copy the command below into OSGeo Shell or a terminal that belongs to the same QGIS installation. Do not use the QGIS application executable directly with <code>-m pip</code>; pip must be run by Python.</p>
 <p>Detected OSGeo Shell: <strong>{html.escape(osgeo_shell or 'Not found')}</strong></p>
 <div class="command">{html.escape(command)}</div>

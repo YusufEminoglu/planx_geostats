@@ -28,6 +28,7 @@ from .algorithms.alg_export_attributes import ExportAttributesAlgorithm
 from .algorithms.alg_linear_directional_mean import LinearDirectionalMeanAlgorithm
 from .algorithms.alg_sensitivity_test import SensitivityTestAlgorithm
 from .algorithms.alg_library_status import GeoStatsLibraryStatusAlgorithm
+from .algorithms.alg_install_libraries import InstallGeoStatsLibrariesAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -50,6 +51,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
     def loadAlgorithms(self) -> None:
         # 00 | Setup and Diagnostics
         self.addAlgorithm(GeoStatsLibraryStatusAlgorithm())
+        self.addAlgorithm(InstallGeoStatsLibrariesAlgorithm())
 
         # 01 | Data Preparation and Neighborhoods
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
