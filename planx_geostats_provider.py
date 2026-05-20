@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Processing provider registration for PlanX-GeoStats."""
+"""Processing provider registration for PlanX GeoStats Lab."""
 from __future__ import annotations
 
 import os
@@ -7,17 +7,19 @@ import os
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import QgsProcessingProvider
 
-from .algorithms.alg_dependency_installer import DependencyInstallerAlgorithm
 from .algorithms.alg_getis_ord import GetisOrdAlgorithm
 from .algorithms.alg_mean_center import MeanCenterAlgorithm
 from .algorithms.alg_sde import SDEAlgorithm
 from .algorithms.alg_local_moran import LocalMoranAlgorithm
 from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
 from .algorithms.alg_global_moran import GlobalMoranAlgorithm
+from .algorithms.alg_incremental_autocorrelation import IncrementalAutocorrelationAlgorithm
 from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgorithm
 from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
 from .algorithms.alg_gwr import GWRAlgorithm
+from .algorithms.alg_exploratory_regression import ExploratoryRegressionAlgorithm
 from .algorithms.alg_median_center import MedianCenterAlgorithm
+from .algorithms.alg_central_feature import CentralFeatureAlgorithm
 from .algorithms.alg_general_g import GeneralGAlgorithm
 from .algorithms.alg_similarity_search import SimilaritySearchAlgorithm
 from .algorithms.alg_calculate_distance_band import CalculateDistanceBandAlgorithm
@@ -29,7 +31,7 @@ from .algorithms.alg_sensitivity_test import SensitivityTestAlgorithm
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
     PROVIDER_ID = "planx_geostats"
-    PROVIDER_NAME = "PlanX-GeoStats"
+    PROVIDER_NAME = "PlanX GeoStats Lab"
 
     def id(self) -> str:
         return self.PROVIDER_ID
@@ -45,23 +47,32 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         return QIcon(icon_path) if os.path.exists(icon_path) else super().icon()
 
     def loadAlgorithms(self) -> None:
-        # Register the algorithms:
-        self.addAlgorithm(GetisOrdAlgorithm())
-        self.addAlgorithm(MeanCenterAlgorithm())
-        self.addAlgorithm(SDEAlgorithm())
-        self.addAlgorithm(LocalMoranAlgorithm())
-        self.addAlgorithm(SpatialRegressionAlgorithm())
-        self.addAlgorithm(GlobalMoranAlgorithm())
-        self.addAlgorithm(AverageNearestNeighborAlgorithm())
-        self.addAlgorithm(StandardDistanceAlgorithm())
-        self.addAlgorithm(GWRAlgorithm())
-        self.addAlgorithm(MedianCenterAlgorithm())
-        self.addAlgorithm(GeneralGAlgorithm())
-        self.addAlgorithm(SimilaritySearchAlgorithm())
+        # 01 | Data Preparation and Neighborhoods
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
-        self.addAlgorithm(MultivariateClusteringAlgorithm())
         self.addAlgorithm(ExportAttributesAlgorithm())
-        self.addAlgorithm(LinearDirectionalMeanAlgorithm())
-        self.addAlgorithm(SensitivityTestAlgorithm())
-        self.addAlgorithm(DependencyInstallerAlgorithm())
 
+        # 02 | Urban Pattern Scan
+        self.addAlgorithm(GlobalMoranAlgorithm())
+        self.addAlgorithm(GeneralGAlgorithm())
+        self.addAlgorithm(IncrementalAutocorrelationAlgorithm())
+        self.addAlgorithm(AverageNearestNeighborAlgorithm())
+
+        # 03 | Hot Spots and Spatial Outliers
+        self.addAlgorithm(GetisOrdAlgorithm())
+        self.addAlgorithm(LocalMoranAlgorithm())
+        self.addAlgorithm(MultivariateClusteringAlgorithm())
+        self.addAlgorithm(SimilaritySearchAlgorithm())
+
+        # 04 | Centers, Direction and Dispersion
+        self.addAlgorithm(MeanCenterAlgorithm())
+        self.addAlgorithm(CentralFeatureAlgorithm())
+        self.addAlgorithm(MedianCenterAlgorithm())
+        self.addAlgorithm(StandardDistanceAlgorithm())
+        self.addAlgorithm(SDEAlgorithm())
+        self.addAlgorithm(LinearDirectionalMeanAlgorithm())
+
+        # 05 | Models and Scenarios
+        self.addAlgorithm(SpatialRegressionAlgorithm())
+        self.addAlgorithm(ExploratoryRegressionAlgorithm())
+        self.addAlgorithm(GWRAlgorithm())
+        self.addAlgorithm(SensitivityTestAlgorithm())

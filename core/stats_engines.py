@@ -1161,3 +1161,165 @@ def run_sensitivity_simulation(
     }
 
 
+def calculate_incremental_autocorrelation(
+    x: np.ndarray,
+    y_coords: np.ndarray,
+    values: np.ndarray,
+    start_dist: float,
+    dist_increment: float,
+    n_increments: int
+) -> list[dict]:
+    """Calculates Global Moran's I at multiple distance bands.
+
+    Returns:
+        A list of dicts, each with keys: distance, morans_i, expected_i, z_score, p_value.
+    """
+    n = len(x)
+    if n < 4:
+        raise ValueError("Incremental autocorrelation requires at least 4 features.")
+
+    coords = np.column_stack((x, y_coords))
+    dists_matrix = np.sqrt(((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
+
+    y_mean = np.mean(values)
+    z = values - y_mean
+    sum_z2 = np.sum(z ** 2)
+
+    if sum_z2 == 0:
+        return [{"distance": start_dist + i * dist_increment,
+                 "morans_i": 0.0, "expected_i": -1.0 / (n - 1),
+                 "z_score": 0.0, "p_value": 1.0}
+                for i in range(n_increments)]
+
+    results = []
+    for inc in range(n_increments):
+        threshold = start_dist + inc * dist_increment
+
+        W = (dists_matrix <= threshold).astype(float)
+        np.fill_diagonal(W, 0.0)
+
+        S0 = np.sum(W)
+        if S0 == 0:
+            results.append({
+                "distance": threshold,
+                "morans_i": 0.0,
+                "expected_i": -1.0 / (n - 1),
+                "z_score": 0.0,
+                "p_value": 1.0
+            })
+            continue
+
+        numerator = float(z @ W @ z)
+        morans_i = (n / S0) * (numerator / sum_z2)
+        expected_i = -1.0 / (n - 1)
+
+        # Variance under randomization (simplified)
+        S1 = float(np.sum((W + W.T) ** 2)) / 2.0
+        row_sums = np.sum(W, axis=1)
+        col_sums = np.sum(W, axis=0)
+        S2 = float(np.sum((row_sums + col_sums) ** 2))
+
+        sum_z4 = np.sum(z ** 4)
+        D = (n * sum_z4) / (sum_z2 ** 2)
+
+        num_var = (n * ((n ** 2 - 3 * n + 3) * S1 - n * S2 + 3 * S0 ** 2)
+                   - D * ((n ** 2 - n) * S1 - 2 * n * S2 + 6 * S0 ** 2))
+        den_var = (n - 1) * (n - 2) * (n - 3) * S0 ** 2
+
+        variance = num_var / den_var - (expected_i ** 2) if den_var > 0 else 0.0
+
+        if variance > 0:
+            z_score = (morans_i - expected_i) / math.sqrt(variance)
+            p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
+        else:
+            z_score = 0.0
+            p_value = 1.0
+
+        results.append({
+            "distance": threshold,
+            "morans_i": float(morans_i),
+            "expected_i": float(expected_i),
+            "z_score": float(z_score),
+            "p_value": float(p_value)
+        })
+
+    return results
+
+
+def calculate_exploratory_regression(
+    y: np.ndarray,
+    X_data: np.ndarray,
+    x_names: list[str],
+    max_vars: int | None = None
+) -> list[dict]:
+    """Tests all possible OLS variable combinations and returns ranked models.
+
+    Returns:
+        A sorted list of model dicts with keys: variables, r2, adj_r2, aic, coefficients.
+    """
+    from itertools import combinations
+
+    n, total_p = X_data.shape
+    if max_vars is None:
+        max_vars = min(total_p, 5)  # cap at 5 to keep runtime manageable
+    max_vars = min(max_vars, total_p)
+
+    y_mean = np.mean(y)
+    ss_tot = np.sum((y - y_mean) ** 2)
+    if ss_tot == 0:
+        return []
+
+    models = []
+
+    for k in range(1, max_vars + 1):
+        for combo in combinations(range(total_p), k):
+            X_sub = X_data[:, combo]
+            X_design = np.column_stack((np.ones(n), X_sub))
+
+            try:
+                xtx_inv = np.linalg.pinv(X_design.T @ X_design)
+                beta = xtx_inv @ X_design.T @ y
+            except Exception:
+                continue
+
+            y_pred = X_design @ beta
+            residuals = y - y_pred
+            ss_res = np.sum(residuals ** 2)
+
+            p = len(combo)
+            df = n - p - 1
+            if df <= 0:
+                continue
+
+            r2 = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+            adj_r2 = 1.0 - ((1.0 - r2) * (n - 1) / df) if df > 0 else 0.0
+
+            # AICc
+            if ss_res > 0 and n > 0:
+                log_lik = -n / 2.0 * (np.log(2.0 * np.pi * ss_res / n) + 1.0)
+                k_params = p + 2  # intercept + vars + variance
+                aic = -2.0 * log_lik + 2.0 * k_params
+                if n - k_params - 1 > 0:
+                    aicc = aic + (2.0 * k_params * (k_params + 1)) / (n - k_params - 1)
+                else:
+                    aicc = float('inf')
+            else:
+                aicc = float('inf')
+
+            var_names = [x_names[i] for i in combo]
+            coef_dict = {"Intercept": float(beta[0])}
+            for idx, vi in enumerate(combo):
+                coef_dict[x_names[vi]] = float(beta[idx + 1])
+
+            models.append({
+                "variables": var_names,
+                "r2": float(r2),
+                "adj_r2": float(adj_r2),
+                "aicc": float(aicc),
+                "coefficients": coef_dict,
+                "n_vars": p
+            })
+
+    # Sort by AICc ascending (best first)
+    models.sort(key=lambda m: m["aicc"])
+    return models

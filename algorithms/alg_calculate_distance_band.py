@@ -34,10 +34,10 @@ class CalculateDistanceBandAlgorithm(QgsProcessingAlgorithm):
         return "Calculate Distance Band from Neighbor Count"
 
     def group(self) -> str:
-        return "Spatial Component Utilities"
+        return "01 | Data Preparation and Neighborhoods"
 
     def groupId(self) -> str:
-        return "spatial_component_utilities"
+        return "planx_prepare_neighbors"
 
     def createInstance(self):
         return CalculateDistanceBandAlgorithm()

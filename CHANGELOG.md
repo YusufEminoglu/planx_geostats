@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-05-20
+
+### Changed
+- Renamed the Processing provider to **PlanX GeoStats Lab**.
+- Reorganized tools into English PlanX planning workflow groups: Data Preparation and Neighborhoods, Urban Pattern Scan, Hot Spots and Spatial Outliers, Centers Direction and Dispersion, and Models and Scenarios.
+- Moved dependency installation out of Processing and into the built-in GeoStats Libraries helper under the PlanX menu.
+- Expanded the GeoStats Libraries helper with detailed English guide text, package role explanations, command preview guidance, install-mode guidance, and restart guidance.
+
+### Added
+- Registered Central Feature and Incremental Spatial Autocorrelation in the provider.
+- Exploratory Regression tool for screening OLS variable combinations and ranking candidate models by AICc.
+
 ## [0.8.0] - 2026-05-20
 
 ### Added

@@ -37,10 +37,10 @@ class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
         return "Linear Directional Mean"
 
     def group(self) -> str:
-        return "Measuring Geographic Distributions"
+        return "04 | Centers, Direction and Dispersion"
 
     def groupId(self) -> str:
-        return "measuring_distributions"
+        return "planx_center_direction_spread"
 
     def createInstance(self):
         return LinearDirectionalMeanAlgorithm()

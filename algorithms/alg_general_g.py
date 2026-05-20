@@ -37,10 +37,10 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
         return "High/Low Clustering (Getis-Ord General G)"
 
     def group(self) -> str:
-        return "Analyzing Patterns"
+        return "02 | Urban Pattern Scan"
 
     def groupId(self) -> str:
-        return "analyzing_patterns"
+        return "planx_pattern_scan"
 
     def createInstance(self):
         return GeneralGAlgorithm()

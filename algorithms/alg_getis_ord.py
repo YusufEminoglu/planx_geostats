@@ -50,10 +50,10 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
         return "Hot Spot Analysis (Getis-Ord Gi*)"
 
     def group(self) -> str:
-        return "Mapping Clusters"
+        return "03 | Hot Spots and Spatial Outliers"
 
     def groupId(self) -> str:
-        return "mapping_clusters"
+        return "planx_hotspots_outliers"
 
     def createInstance(self):
         return GetisOrdAlgorithm()

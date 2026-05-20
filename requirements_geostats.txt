@@ -1,0 +1,4 @@
+libpysal
+esda
+spreg
+scikit-learn

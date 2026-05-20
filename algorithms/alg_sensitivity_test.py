@@ -38,10 +38,10 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
         return "Attribute Randomization Sensitivity Test"
 
     def group(self) -> str:
-        return "Assessing Sensitivity"
+        return "05 | Models and Scenarios"
 
     def groupId(self) -> str:
-        return "assessing_sensitivity"
+        return "planx_model_scenario"
 
     def createInstance(self):
         return SensitivityTestAlgorithm()

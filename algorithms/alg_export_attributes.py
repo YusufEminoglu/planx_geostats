@@ -34,10 +34,10 @@ class ExportAttributesAlgorithm(QgsProcessingAlgorithm):
         return "Export Feature Attributes to CSV/ASCII"
 
     def group(self) -> str:
-        return "Utilities"
+        return "01 | Data Preparation and Neighborhoods"
 
     def groupId(self) -> str:
-        return "utilities"
+        return "planx_prepare_neighbors"
 
     def createInstance(self):
         return ExportAttributesAlgorithm()

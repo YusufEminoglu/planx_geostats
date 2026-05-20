@@ -47,10 +47,10 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
         return "Multivariate Clustering (K-Means)"
 
     def group(self) -> str:
-        return "Mapping Clusters"
+        return "03 | Hot Spots and Spatial Outliers"
 
     def groupId(self) -> str:
-        return "mapping_clusters"
+        return "planx_hotspots_outliers"
 
     def createInstance(self):
         return MultivariateClusteringAlgorithm()

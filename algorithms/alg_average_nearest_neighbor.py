@@ -35,10 +35,10 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
         return "Average Nearest Neighbor"
 
     def group(self) -> str:
-        return "Analyzing Patterns"
+        return "02 | Urban Pattern Scan"
 
     def groupId(self) -> str:
-        return "analyzing_patterns"
+        return "planx_pattern_scan"
 
     def createInstance(self):
         return AverageNearestNeighborAlgorithm()

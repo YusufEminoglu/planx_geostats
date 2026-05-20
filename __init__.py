@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""QGIS plugin entry point — PlanX-GeoStats."""
+"""QGIS plugin entry point for PlanX GeoStats Lab."""
 from __future__ import annotations
 
 import logging
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 # Check for spatial statistics dependencies
 DEPENDENCIES_MISSING = False
@@ -25,9 +25,9 @@ for lib in ["libpysal", "esda", "spreg", "sklearn"]:
         MISSING_LIBS.append(lib)
 
 if DEPENDENCIES_MISSING:
-    logger.warning("Missing dependencies for PlanX-GeoStats: %s", ", ".join(MISSING_LIBS))
+    logger.warning("Missing dependencies for PlanX GeoStats Lab: %s", ", ".join(MISSING_LIBS))
 else:
-    logger.info("PlanX-GeoStats dependencies loaded successfully.")
+    logger.info("PlanX GeoStats Lab dependencies loaded successfully.")
 
 from .main_plugin import PlanXGeoStatsPlugin
 

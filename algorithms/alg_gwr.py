@@ -54,10 +54,10 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         return "Geographically Weighted Regression (GWR)"
 
     def group(self) -> str:
-        return "Modeling Spatial Relationships"
+        return "05 | Models and Scenarios"
 
     def groupId(self) -> str:
-        return "modeling_relationships"
+        return "planx_model_scenario"
 
     def createInstance(self):
         return GWRAlgorithm()

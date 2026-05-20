@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Median Center Processing Algorithm."""
+"""Central Feature Processing Algorithm."""
 from __future__ import annotations
 
 import logging
@@ -10,32 +10,31 @@ from qgis.core import (
     QgsFeature,
     QgsField,
     QgsFields,
-    QgsPointXY,
-    QgsGeometry,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
-    QgsProcessingParameterFeatureSink
+    QgsProcessingParameterFeatureSink,
+    QgsFeatureSink
 )
 
-from ..core.stats_engines import calculate_median_center
+from ..core.stats_engines import calculate_central_feature
 
 logger = logging.getLogger("PlanX-GeoStats")
 
 
-class MedianCenterAlgorithm(QgsProcessingAlgorithm):
+class CentralFeatureAlgorithm(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     WEIGHT_FIELD = "WEIGHT_FIELD"
     OUTPUT = "OUTPUT"
 
     def name(self) -> str:
-        return "median_center"
+        return "central_feature"
 
     def displayName(self) -> str:
-        return "Median Center"
+        return "Central Feature"
 
     def group(self) -> str:
         return "04 | Centers, Direction and Dispersion"
@@ -44,14 +43,14 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
         return "planx_center_direction_spread"
 
     def createInstance(self):
-        return MedianCenterAlgorithm()
+        return CentralFeatureAlgorithm()
 
     def shortHelpString(self) -> str:
         return (
-            "Computes the Median Center, which is the coordinate location that minimizes "
-            "the sum of Euclidean distances from all features to that point.\n\n"
-            "This algorithm iteratively solves for the optimal center using Weiszfeld's "
-            "algorithm, and outputs a single point feature layer."
+            "Identifies the most centrally located feature in a dataset.\n\n"
+            "The central feature is the one that minimizes the total Euclidean "
+            "distance to all other features. An optional weight field can be used "
+            "to emphasize certain features in the distance calculation."
         )
 
     def initAlgorithm(self, config=None):
@@ -74,7 +73,7 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
-                "Output median center layer"
+                "Output central feature layer"
             )
         )
 
@@ -85,18 +84,14 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
 
         weight_field = self.parameterAsString(parameters, self.WEIGHT_FIELD, context)
 
-        # Extract features
         x_coords = []
         y_coords = []
         weights = []
+        features_list = []
 
         has_weight = weight_field != ""
-        if has_weight:
-            field_idx = source.fields().lookupField(weight_field)
-            if field_idx < 0:
-                raise QgsProcessingException(f"Weight field '{weight_field}' not found.")
 
-        feedback.pushInfo("Extracting coordinates...")
+        feedback.pushInfo("Extracting feature centroids...")
         total = source.featureCount() or 1
         for idx, f in enumerate(source.getFeatures()):
             if feedback.isCanceled():
@@ -109,6 +104,7 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
             centroid = geom.centroid().asPoint()
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
+            features_list.append(f)
 
             w_val = 1.0
             if has_weight:
@@ -119,42 +115,53 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
                     except (ValueError, TypeError):
                         pass
             weights.append(w_val)
-            feedback.setProgress(int(40 * (idx / total)))
+            feedback.setProgress(int(50 * (idx / total)))
 
-        if len(x_coords) == 0:
-            raise QgsProcessingException("No features with valid geometries were found.")
+        n = len(x_coords)
+        if n == 0:
+            raise QgsProcessingException("No features with valid geometries found.")
 
+        feedback.pushInfo(f"Computing central feature among {n} features...")
         x_arr = np.array(x_coords)
         y_arr = np.array(y_coords)
-        w_arr = np.array(weights)
+        w_arr = np.array(weights) if has_weight else None
 
-        feedback.pushInfo("Iterating using Weiszfeld's algorithm...")
-        med_x, med_y, total_dist = calculate_median_center(x_arr, y_arr, w_arr)
+        central_idx = calculate_central_feature(x_arr, y_arr, w_arr)
+        central_feat = features_list[central_idx]
 
-        # Output fields
-        out_fields = QgsFields()
-        out_fields.append(QgsField("median_x", QVariant.Double, len=15, prec=6))
-        out_fields.append(QgsField("median_y", QVariant.Double, len=15, prec=6))
-        out_fields.append(QgsField("total_dist", QVariant.Double, len=15, prec=6))
+        # Output fields: original fields + central_feature flag + total_distance
+        out_fields = source.fields()
+        out_fields.append(QgsField("is_central", QVariant.Int))
+        out_fields.append(QgsField("total_distance", QVariant.Double, len=15, prec=6))
 
-        # Setup sink
         (sink, dest_id) = self.parameterAsSink(
             parameters,
             self.OUTPUT,
             context,
             out_fields,
-            QgsWkbTypes.Point,
+            source.wkbType(),
             source.sourceCrs()
         )
 
-        out_feat = QgsFeature()
-        out_feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(med_x, med_y)))
-        out_feat.setFields(out_fields)
-        out_feat.setAttribute("median_x", med_x)
-        out_feat.setAttribute("median_y", med_y)
-        out_feat.setAttribute("total_dist", total_dist)
+        # Calculate total distance for the central feature
+        coords = np.column_stack((x_arr, y_arr))
+        dists = np.sqrt(np.sum((coords - coords[central_idx]) ** 2, axis=1))
+        if w_arr is not None:
+            total_dist = float(np.sum(dists * w_arr))
+        else:
+            total_dist = float(np.sum(dists))
 
-        sink.addFeature(out_feat)
+        out_feat = QgsFeature(central_feat)
+        out_feat.setFields(out_fields)
+        out_feat.setAttribute("is_central", 1)
+        out_feat.setAttribute("total_distance", total_dist)
+
+        sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
         feedback.setProgress(100)
+
+        feedback.pushInfo(
+            f"Central feature ID: {central_feat.id()} | "
+            f"Total distance: {total_dist:.4f}"
+        )
 
         return {self.OUTPUT: dest_id}

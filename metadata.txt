@@ -1,23 +1,24 @@
 [general]
-name=PlanX-GeoStats
+name=PlanX GeoStats Lab
 qgisMinimumVersion=3.28
 qgisMaximumVersion=3.99
-description=Advanced spatial statistics suite for QGIS — hot spot analysis, LISA, clustering, regression, directional statistics, sensitivity testing and more.
-version=0.8.0
+description=PlanX spatial analysis lab for QGIS planning workflows: data preparation, urban pattern scanning, hot spots, centers, exploratory models and scenarios.
+version=0.9.0
 author=Yusuf Eminoglu
 email=yusuf.eminoglu@deu.edu.tr
-about=PlanX-GeoStats brings 17 advanced spatial statistics tools to the QGIS Processing Toolbox organized across 7 toolsets: Analyzing Patterns, Assessing Sensitivity, Mapping Clusters, Measuring Geographic Distributions, Modeling Spatial Relationships, Spatial Component Utilities, and Utilities. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
+about=PlanX GeoStats Lab brings advanced spatial statistics tools to the QGIS Processing Toolbox with a planning-analysis workflow designed for PlanX: Data Preparation and Neighborhoods, Urban Pattern Scan, Hot Spots and Spatial Outliers, Centers Direction and Dispersion, and Models and Scenarios. The model workflow includes OLS, Exploratory Regression, GWR and sensitivity testing. Optional GeoStats Python libraries are managed by the built-in GeoStats Libraries helper under the PlanX menu; the helper explains the active QGIS Python environment, package roles, command preview, installation modes, and restart requirements before running anything. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
 tracker=https://github.com/YusufEminoglu/planx_geostats/issues
 repository=https://github.com/YusufEminoglu/planx_geostats
 homepage=https://github.com/YusufEminoglu/planx_geostats
 category=Processing
 hasProcessingProvider=yes
-tags=planx,qgis,processing,spatial statistics,hotspot,lisa,moran,getis-ord,gwr,regression,clustering,k-means,sensitivity,monte carlo,directional mean
+tags=planx,qgis,processing,spatial statistics,planning analysis,hotspot,lisa,moran,getis-ord,gwr,regression,clustering,k-means,sensitivity,monte carlo,directional mean
 icon=icons/icon.png
 experimental=False
 deprecated=False
 license=GPL-3
 changelog=
+    0.9.0 - Renamed to PlanX GeoStats Lab; reorganized tools into English PlanX planning workflow groups; added Exploratory Regression; dependency installer moved to built-in GeoStats Libraries helper with detailed guidance.
     0.8.0 - Linear Directional Mean; Attribute Randomization Sensitivity Test (Monte Carlo).
     0.7.0 - Multivariate Clustering (K-Means); Export Feature Attributes to CSV/ASCII.
     0.6.0 - Similarity Search; Calculate Distance Band from Neighbor Count.
@@ -26,4 +27,3 @@ changelog=
     0.3.0 - Global Moran's I; OLS Spatial Regression.
     0.2.0 - Local Moran's I (LISA); Mean Center; Standard Deviational Ellipse; Dependency Installer.
     0.1.0 - Initial release with Getis-Ord Gi* Hot Spot Analysis.
-
