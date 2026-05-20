@@ -762,3 +762,133 @@ def calculate_gwr(
     }
 
 
+def calculate_median_center(
+    x: np.ndarray,
+    y: np.ndarray,
+    weights: np.ndarray | None = None,
+    max_iter: int = 100,
+    tol: float = 1e-6
+) -> tuple[float, float, float]:
+    """Calculates Median Center using Weiszfeld's algorithm.
+
+    Returns:
+        A tuple of (median_x, median_y, total_distance)
+    """
+    n = len(x)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+    if n == 1:
+        return float(x[0]), float(y[0]), 0.0
+
+    if weights is None or len(weights) == 0:
+        weights = np.ones(n)
+
+    # Initial guess: mean center
+    cx, cy = calculate_mean_center(x, y, weights)
+
+    for _ in range(max_iter):
+        dists = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
+        dists = np.maximum(dists, 1e-12)
+
+        inv_dists = weights / dists
+        sum_inv = np.sum(inv_dists)
+
+        if sum_inv == 0:
+            break
+
+        new_cx = np.sum(x * inv_dists) / sum_inv
+        new_cy = np.sum(y * inv_dists) / sum_inv
+
+        shift = math.sqrt((new_cx - cx) ** 2 + (new_cy - cy) ** 2)
+        cx, cy = new_cx, new_cy
+
+        if shift < tol:
+            break
+
+    total_dist = float(np.sum(weights * np.sqrt((x - cx) ** 2 + (y - cy) ** 2)))
+    return float(cx), float(cy), total_dist
+
+
+def calculate_general_g(
+    values: np.ndarray,
+    neighbors: dict[int, list[int]],
+    weights: dict[int, list[float]],
+    id_order: list[int]
+) -> tuple[float, float, float, float, float]:
+    """Calculates Getis-Ord General G statistics under randomization.
+
+    Returns:
+        A tuple of (observed_g, expected_g, variance, z_score, p_value)
+    """
+    n = len(id_order)
+    if n < 4:
+        raise ValueError("General G requires at least 4 features.")
+
+    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+    x = np.array([float(values[i]) for i in range(n)])
+
+    x_sum = np.sum(x)
+    x_sum2 = np.sum(x ** 2)
+    x_sum3 = np.sum(x ** 3)
+    x_sum4 = np.sum(x ** 4)
+
+    # Build dense weight matrix
+    W = np.zeros((n, n))
+    for i, fid in enumerate(id_order):
+        neighs = neighbors.get(fid, [])
+        w_list = weights.get(fid, [])
+        for j_fid, w in zip(neighs, w_list):
+            if j_fid in id_to_idx:
+                j = id_to_idx[j_fid]
+                W[i, j] = w
+
+    np.fill_diagonal(W, 0.0)
+
+    S0 = np.sum(W)
+    A1 = np.sum(W ** 2)
+    A2 = np.sum(W * W.T)
+
+    row_sums = np.sum(W, axis=1)
+    col_sums = np.sum(W, axis=0)
+
+    A3 = np.sum(row_sums ** 2) + np.sum(col_sums ** 2)
+    A4 = np.sum(row_sums * col_sums)
+    A5 = S0 ** 2
+
+    # Observed G
+    numerator = 0.0
+    for i in range(n):
+        for j in range(n):
+            if i != j:
+                numerator += W[i, j] * x[i] * x[j]
+
+    denominator = x_sum ** 2 - x_sum2
+    if denominator == 0:
+        return 0.0, 0.0, 0.0, 0.0, 1.0
+
+    observed_g = numerator / denominator
+    expected_g = S0 / (n * (n - 1))
+
+    # Permutations of x values
+    S_22 = x_sum2 ** 2 - x_sum4
+    S_211 = x_sum2 * (x_sum ** 2 - x_sum2) - 2.0 * x_sum * x_sum3 + 2.0 * x_sum4
+    S_1111 = (x_sum ** 4) - 6.0 * (x_sum ** 2) * x_sum2 + 8.0 * x_sum * x_sum3 + 3.0 * (x_sum2 ** 2) - 6.0 * x_sum4
+
+    term1 = (A1 + A2) * S_22 / (n * (n - 1))
+    term2 = (2.0 * A3 + 4.0 * A4 - 4.0 * A1 - 4.0 * A2) * S_211 / (n * (n - 1) * (n - 2))
+    term3 = (A5 - 2.0 * A3 - 4.0 * A4 + 3.0 * A1 + 3.0 * A2) * S_1111 / (n * (n - 1) * (n - 2) * (n - 3))
+
+    E_A2 = term1 + term2 + term3
+    E_G2 = E_A2 / (denominator ** 2)
+
+    variance = E_G2 - (expected_g ** 2)
+    if variance > 0:
+        z_score = (observed_g - expected_g) / math.sqrt(variance)
+        p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
+    else:
+        z_score = 0.0
+        p_value = 1.0
+
+    return float(observed_g), float(expected_g), float(variance), float(z_score), float(p_value)
+
+

@@ -17,6 +17,8 @@ from .algorithms.alg_global_moran import GlobalMoranAlgorithm
 from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgorithm
 from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
 from .algorithms.alg_gwr import GWRAlgorithm
+from .algorithms.alg_median_center import MedianCenterAlgorithm
+from .algorithms.alg_general_g import GeneralGAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -47,5 +49,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(AverageNearestNeighborAlgorithm())
         self.addAlgorithm(StandardDistanceAlgorithm())
         self.addAlgorithm(GWRAlgorithm())
+        self.addAlgorithm(MedianCenterAlgorithm())
+        self.addAlgorithm(GeneralGAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
 
