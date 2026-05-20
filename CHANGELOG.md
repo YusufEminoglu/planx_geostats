@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added neighbor-support diagnostics to Incremental Autocorrelation distance scan results.
 - Upgraded Sensitivity Test reports with Monte Carlo interpretation, input diagnostics, neighborhood diagnostics, caveats, and next-action guidance.
 - Upgraded GWR outputs and reports with local support diagnostics, model-quality checks, CRS caveats, and bandwidth interpretation guidance.
+- Added audit fields to Multivariate Clustering and Similarity Search outputs for cluster size, cluster distance, similarity percentile, and similarity tier.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
 - Documented the smoke-test and packaging validation workflow in the README.
 - Cleaned remaining special symbols from Processing feedback and generated reports.

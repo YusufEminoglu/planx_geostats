@@ -117,6 +117,7 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
         # Extract features and attribute matrix
         fids = []
         attribute_matrix = []
+        skipped = 0
 
         feedback.pushInfo("Extracting attributes for clustering...")
         total = source.featureCount() or 1
@@ -138,6 +139,7 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
                     break
 
             if has_null:
+                skipped += 1
                 continue
 
             fids.append(f.id())
@@ -151,10 +153,31 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
             )
 
         data = np.array(attribute_matrix)
+        field_stds = np.std(data, axis=0)
+        near_constant = [name for name, std in zip(compare_fields, field_stds) if std <= 1e-9]
+        if skipped:
+            feedback.pushInfo(f"Skipped {skipped} feature(s) with missing or non-numeric analysis values.")
+        if near_constant:
+            feedback.pushWarning(
+                "Near-constant clustering field(s) detected: "
+                + ", ".join(near_constant)
+                + ". These fields contribute little to cluster separation."
+            )
 
         feedback.pushInfo(f"Running K-Means algorithm for {k_clusters} clusters...")
         labels, wcss = calculate_kmeans(data, k_clusters)
         feedback.pushInfo(f"WCSS (Within-Cluster Sum of Squares): {wcss:.4f}")
+        z_data = (data - np.mean(data, axis=0)) / np.where(field_stds == 0.0, 1.0, field_stds)
+        centroids = np.vstack([np.mean(z_data[labels == cluster], axis=0) for cluster in range(k_clusters)])
+        cluster_sizes = np.array([int(np.sum(labels == cluster)) for cluster in range(k_clusters)])
+        cluster_distances = np.array([
+            float(np.linalg.norm(z_data[idx] - centroids[labels[idx]]))
+            for idx in range(n)
+        ])
+        feedback.pushInfo(
+            "Cluster size diagnostics: "
+            + ", ".join(f"Cluster {idx}: {size}" for idx, size in enumerate(cluster_sizes))
+        )
 
         if feedback.isCanceled():
             return {}
@@ -162,6 +185,8 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
         # Set up output fields
         out_fields = source.fields()
         out_fields.append(QgsField("cluster_id", QVariant.Int))
+        out_fields.append(QgsField("clust_size", QVariant.Int))
+        out_fields.append(QgsField("clust_dist", QVariant.Double, len=12, prec=6))
 
         (sink, dest_id) = self.parameterAsSink(
             parameters,
@@ -174,7 +199,10 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
         self.out_layer_id = dest_id
 
         # Write categorized features
-        results_map = {fids[i]: labels[i] for i in range(n)}
+        results_map = {
+            fids[i]: (labels[i], cluster_sizes[labels[i]], cluster_distances[i])
+            for i in range(n)
+        }
         
         feedback.pushInfo("Writing clustered features to destination layer...")
         for current, f in enumerate(source.getFeatures()):
@@ -186,9 +214,14 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
 
             fid = f.id()
             if fid in results_map:
-                out_feat.setAttribute("cluster_id", int(results_map[fid]))
+                label, cluster_size, cluster_distance = results_map[fid]
+                out_feat.setAttribute("cluster_id", int(label))
+                out_feat.setAttribute("clust_size", int(cluster_size))
+                out_feat.setAttribute("clust_dist", float(cluster_distance))
             else:
                 out_feat.setAttribute("cluster_id", None)
+                out_feat.setAttribute("clust_size", None)
+                out_feat.setAttribute("clust_dist", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(40 + 60 * (current / total)))

@@ -136,6 +136,7 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
         fids = []
         attribute_matrix = []
         is_target_list = []
+        skipped = 0
 
         field_idxs = [source.fields().lookupField(name) for name in compare_fields]
         for name, idx in zip(compare_fields, field_idxs):
@@ -167,6 +168,7 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
                     break
 
             if has_null:
+                skipped += 1
                 continue
 
             fids.append(f.id())
@@ -177,6 +179,16 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
         n = len(fids)
         if n == 0:
             raise QgsProcessingException("No features found with valid numeric attributes for comparison.")
+        if skipped:
+            feedback.pushInfo(f"Skipped {skipped} feature(s) with missing or non-numeric profile values.")
+        field_stds = np.std(np.array(attribute_matrix, dtype=float), axis=0)
+        near_constant = [name for name, std in zip(compare_fields, field_stds) if std <= 1e-9]
+        if near_constant:
+            feedback.pushWarning(
+                "Near-constant similarity profile field(s) detected: "
+                + ", ".join(near_constant)
+                + ". These fields contribute little to standardized profile distance."
+            )
 
         # Identify targets indices
         target_indices = [i for i, target in enumerate(is_target_list) if target]
@@ -202,12 +214,28 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
         
         for rank, idx in enumerate(sorted_candidates, start=1):
             rankings[idx] = rank
+        candidate_count = len(candidate_indices)
+        similarity_percentiles = np.zeros(n, dtype=float)
+        similarity_tiers = ["Target"] * n
+        for idx in candidate_indices:
+            if candidate_count > 0:
+                similarity_percentiles[idx] = 100.0 * (candidate_count - rankings[idx] + 1) / candidate_count
+            if rankings[idx] <= 10:
+                similarity_tiers[idx] = "Top 10"
+            elif similarity_percentiles[idx] >= 75:
+                similarity_tiers[idx] = "High"
+            elif similarity_percentiles[idx] >= 50:
+                similarity_tiers[idx] = "Moderate"
+            else:
+                similarity_tiers[idx] = "Low"
 
         # Set up output fields
         out_fields = source.fields()
         out_fields.append(QgsField("is_target", QVariant.Int))
         out_fields.append(QgsField("sim_index", QVariant.Double, len=12, prec=6))
         out_fields.append(QgsField("sim_rank", QVariant.Int))
+        out_fields.append(QgsField("sim_pct", QVariant.Double, len=10, prec=3))
+        out_fields.append(QgsField("sim_tier", QVariant.String, len=20))
 
         (sink, dest_id) = self.parameterAsSink(
             parameters,
@@ -236,10 +264,14 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
                 out_feat.setAttribute("is_target", 1 if is_target_list[idx] else 0)
                 out_feat.setAttribute("sim_index", float(scores[idx]))
                 out_feat.setAttribute("sim_rank", int(rankings[idx]))
+                out_feat.setAttribute("sim_pct", float(similarity_percentiles[idx]))
+                out_feat.setAttribute("sim_tier", similarity_tiers[idx])
             else:
                 out_feat.setAttribute("is_target", 0)
                 out_feat.setAttribute("sim_index", None)
                 out_feat.setAttribute("sim_rank", None)
+                out_feat.setAttribute("sim_pct", None)
+                out_feat.setAttribute("sim_tier", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
