@@ -36,6 +36,7 @@ class PlanXGeoStatsPlugin:
         self.dependencies_action = QAction(icon, "GeoStats Libraries", self.iface.mainWindow())
         self.dependencies_action.triggered.connect(self.open_dependencies)
         self.iface.addPluginToMenu(self.MENU_NAME, self.dependencies_action)
+        self.iface.addToolBarIcon(self.dependencies_action)
         self._warn_if_dependencies_missing()
 
     def unload(self) -> None:
@@ -44,6 +45,7 @@ class PlanXGeoStatsPlugin:
             self.provider = None
         if self.dependencies_action is not None:
             self.iface.removePluginMenu(self.MENU_NAME, self.dependencies_action)
+            self.iface.removeToolBarIcon(self.dependencies_action)
             self.dependencies_action = None
         self.dependencies_dialog = None
 

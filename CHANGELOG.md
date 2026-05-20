@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Moved dependency installation out of Processing and into the built-in GeoStats Libraries helper under the PlanX GeoStats Lab menu.
 - Expanded the GeoStats Libraries helper with detailed English guide text, package role explanations, command preview guidance, install-mode guidance, and restart guidance.
 - Moved the GeoStats Libraries menu action under **PlanX GeoStats Lab > GeoStats Libraries** so it is scoped to the GeoStats plugin rather than the general PlanX menu.
+- Added a GeoStats Libraries toolbar action so the helper remains visible even when QGIS nests plugin menus differently.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
 - Added an Exploratory Regression safety limit so overly large candidate-variable searches fail fast with guidance instead of tying up QGIS.
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Registered Central Feature and Incremental Spatial Autocorrelation in the provider.
 - Exploratory Regression tool for screening OLS variable combinations and ranking candidate models by AICc.
 - Exploratory Regression report now records how many candidate models were estimated.
+- GeoStats Library Status diagnostic algorithm under `00 | Setup and Diagnostics`, producing a non-installing HTML dependency report and QGIS Python command preview.
 
 ## [0.8.0] - 2026-05-20
 

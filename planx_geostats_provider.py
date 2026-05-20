@@ -27,6 +27,7 @@ from .algorithms.alg_multivariate_clustering import MultivariateClusteringAlgori
 from .algorithms.alg_export_attributes import ExportAttributesAlgorithm
 from .algorithms.alg_linear_directional_mean import LinearDirectionalMeanAlgorithm
 from .algorithms.alg_sensitivity_test import SensitivityTestAlgorithm
+from .algorithms.alg_library_status import GeoStatsLibraryStatusAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -47,6 +48,9 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         return QIcon(icon_path) if os.path.exists(icon_path) else super().icon()
 
     def loadAlgorithms(self) -> None:
+        # 00 | Setup and Diagnostics
+        self.addAlgorithm(GeoStatsLibraryStatusAlgorithm())
+
         # 01 | Data Preparation and Neighborhoods
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
         self.addAlgorithm(ExportAttributesAlgorithm())
