@@ -28,7 +28,7 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_local_moran
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class LocalMoranAlgorithm(QgsProcessingAlgorithm):

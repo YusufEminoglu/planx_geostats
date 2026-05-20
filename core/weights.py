@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
+
 from qgis.core import (
     QgsFeature,
     QgsVectorLayer,
@@ -11,7 +13,7 @@ from qgis.core import (
     QgsFeedback
 )
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 # Try importing libpysal
 HAS_PYSAL = False
@@ -27,8 +29,8 @@ def build_weights_matrix(
     weight_type: str,
     k_neighbors: int = 5,
     distance_band: float = 1000.0,
-    feedback: QgsFeedback | None = None
-) -> tuple[dict[int, list[int]], dict[int, list[float]], list[int], object | None]:
+    feedback: Optional[QgsFeedback] = None
+) -> tuple[dict[int, list[int]], dict[int, list[float]], list[int], Optional[object]]:
     """Builds a spatial weights matrix from a QGIS vector layer.
 
     Args:

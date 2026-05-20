@@ -7,6 +7,7 @@ Analysis algorithms appear under the Processing Toolbox.
 from __future__ import annotations
 
 import os
+from typing import Optional
 
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
@@ -20,9 +21,9 @@ class PlanXGeoStatsPlugin:
     def __init__(self, iface):
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
-        self.provider: PlanXGeoStatsProvider | None = None
-        self.dependencies_action: QAction | None = None
-        self.dependencies_dialog: GeoStatsDependencyDialog | None = None
+        self.provider: Optional[PlanXGeoStatsProvider] = None
+        self.dependencies_action: Optional[QAction] = None
+        self.dependencies_dialog: Optional[GeoStatsDependencyDialog] = None
 
     def initGui(self) -> None:
         self.provider = PlanXGeoStatsProvider()

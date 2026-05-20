@@ -24,7 +24,7 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_mean_center, calculate_central_feature
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class MeanCenterAlgorithm(QgsProcessingAlgorithm):

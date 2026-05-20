@@ -25,7 +25,7 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_standard_distance
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class StandardDistanceAlgorithm(QgsProcessingAlgorithm):

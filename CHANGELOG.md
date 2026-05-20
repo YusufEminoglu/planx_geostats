@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Reorganized tools into English PlanX planning workflow groups: Data Preparation and Neighborhoods, Urban Pattern Scan, Hot Spots and Spatial Outliers, Centers Direction and Dispersion, and Models and Scenarios.
 - Moved dependency installation out of Processing and into the built-in GeoStats Libraries helper under the PlanX menu.
 - Expanded the GeoStats Libraries helper with detailed English guide text, package role explanations, command preview guidance, install-mode guidance, and restart guidance.
+- Replaced remaining legacy PlanX-GeoStats labels in logs and generated HTML reports with PlanX GeoStats Lab.
+- Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
 
 ### Added
 - Registered Central Feature and Incremental Spatial Autocorrelation in the provider.

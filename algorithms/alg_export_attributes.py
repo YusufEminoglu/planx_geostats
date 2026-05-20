@@ -17,7 +17,7 @@ from qgis.core import (
     QgsProcessingOutputFile
 )
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class ExportAttributesAlgorithm(QgsProcessingAlgorithm):

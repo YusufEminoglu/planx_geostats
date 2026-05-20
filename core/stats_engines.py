@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import logging
 import math
+from typing import Optional
+
 import numpy as np
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 # Try importing PySAL modules
 HAS_PYQ = False
@@ -89,7 +91,7 @@ def calculate_getis_ord(
 def calculate_mean_center(
     x_coords: np.ndarray,
     y_coords: np.ndarray,
-    weights: np.ndarray | None = None
+    weights: Optional[np.ndarray] = None
 ) -> tuple[float, float]:
     """Calculates the mean center of coordinate pairs."""
     if weights is None or len(weights) == 0:
@@ -107,7 +109,7 @@ def calculate_mean_center(
 def calculate_central_feature(
     x_coords: np.ndarray,
     y_coords: np.ndarray,
-    weights: np.ndarray | None = None
+    weights: Optional[np.ndarray] = None
 ) -> int:
     """Finds the index of the central feature based on minimum total distance."""
     n = len(x_coords)
@@ -130,7 +132,7 @@ def calculate_central_feature(
 def calculate_sde(
     x_coords: np.ndarray,
     y_coords: np.ndarray,
-    weights: np.ndarray | None = None,
+    weights: Optional[np.ndarray] = None,
     num_std: int = 1
 ) -> tuple[float, float, float, float, float]:
     """Calculates Standard Deviational Ellipse (SDE) parameters.
@@ -528,7 +530,7 @@ def calculate_global_moran(
 def calculate_average_nearest_neighbor(
     x: np.ndarray,
     y: np.ndarray,
-    study_area: float | None = None
+    study_area: Optional[float] = None
 ) -> tuple[float, float, float, float, float, float]:
     """Calculates Average Nearest Neighbor statistics.
 
@@ -585,7 +587,7 @@ def calculate_average_nearest_neighbor(
 def calculate_standard_distance(
     x_coords: np.ndarray,
     y_coords: np.ndarray,
-    weights: np.ndarray | None = None
+    weights: Optional[np.ndarray] = None
 ) -> tuple[float, float, float]:
     """Calculates Standard Distance and mean center.
 
@@ -765,7 +767,7 @@ def calculate_gwr(
 def calculate_median_center(
     x: np.ndarray,
     y: np.ndarray,
-    weights: np.ndarray | None = None,
+    weights: Optional[np.ndarray] = None,
     max_iter: int = 100,
     tol: float = 1e-6
 ) -> tuple[float, float, float]:
@@ -1250,7 +1252,7 @@ def calculate_exploratory_regression(
     y: np.ndarray,
     X_data: np.ndarray,
     x_names: list[str],
-    max_vars: int | None = None
+    max_vars: Optional[int] = None
 ) -> list[dict]:
     """Tests all possible OLS variable combinations and returns ranked models.
 

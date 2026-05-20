@@ -23,7 +23,7 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_median_center
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class MedianCenterAlgorithm(QgsProcessingAlgorithm):

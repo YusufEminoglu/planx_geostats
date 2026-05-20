@@ -28,7 +28,7 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_getis_ord
 
-logger = logging.getLogger("PlanX-GeoStats")
+logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class GetisOrdAlgorithm(QgsProcessingAlgorithm):
