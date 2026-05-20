@@ -78,6 +78,24 @@ def neighbor_summary(neighbors: dict, valid_ids: Iterable[int]) -> dict:
     }
 
 
+def filter_weights_to_valid_ids(neighbors: dict, valid_ids: Iterable[int]) -> tuple[dict[int, list[int]], dict[int, list[float]], list[int]]:
+    """Filter a neighbor graph to complete records and rebuild row-standardized weights."""
+    id_order = [int(fid) for fid in valid_ids]
+    valid_set = set(id_order)
+    filtered_neighbors: dict[int, list[int]] = {}
+    filtered_weights: dict[int, list[float]] = {}
+
+    for fid in id_order:
+        row_neighbors = [int(nid) for nid in neighbors.get(fid, []) if int(nid) in valid_set]
+        filtered_neighbors[fid] = row_neighbors
+        if row_neighbors:
+            filtered_weights[fid] = [1.0 / len(row_neighbors)] * len(row_neighbors)
+        else:
+            filtered_weights[fid] = []
+
+    return filtered_neighbors, filtered_weights, id_order
+
+
 def crs_unit_warning(source) -> Optional[str]:
     try:
         crs = source.sourceCrs()

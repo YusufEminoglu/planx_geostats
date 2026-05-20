@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added weight-quality checks and audit fields to Mean Center, Standard Distance, and Standard Deviational Ellipse outputs.
 - Added Ripley's K-Function as a new urban pattern scan tool with L(d)-d diagnostics, neighborhood support, and planning caveats.
 - Added Generalized Linear Regression (GLR) with Gaussian, Logistic, and Poisson model families.
+- Added Spatial Autoregression as a PySAL spreg-based spatial lag model with rho diagnostics, neighbor support, output audit fields, and a PlanX analyst report.
 - Added Bivariate Spatial Association (Lee's L) for local cross-variable neighborhood diagnostics.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
 - Documented the smoke-test and packaging validation workflow in the README.

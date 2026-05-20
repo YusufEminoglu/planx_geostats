@@ -13,6 +13,7 @@ from .algorithms.alg_sde import SDEAlgorithm
 from .algorithms.alg_local_moran import LocalMoranAlgorithm
 from .algorithms.alg_bivariate_lee_l import BivariateLeeLAlgorithm
 from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
+from .algorithms.alg_spatial_autoregression import SpatialAutoregressionAlgorithm
 from .algorithms.alg_global_moran import GlobalMoranAlgorithm
 from .algorithms.alg_incremental_autocorrelation import IncrementalAutocorrelationAlgorithm
 from .algorithms.alg_ripleys_k import RipleysKFunctionAlgorithm
@@ -85,6 +86,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         # 05 | Models and Scenarios
         self.addAlgorithm(SpatialRegressionAlgorithm())
         self.addAlgorithm(GeneralizedLinearRegressionAlgorithm())
+        self.addAlgorithm(SpatialAutoregressionAlgorithm())
         self.addAlgorithm(ExploratoryRegressionAlgorithm())
         self.addAlgorithm(GWRAlgorithm())
         self.addAlgorithm(SensitivityTestAlgorithm())

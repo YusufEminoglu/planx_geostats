@@ -135,7 +135,7 @@ class GeoStatsDependencyDialog(QDialog):
         "spatial weights and neighborhood structures used by autocorrelation methods. "
         "esda provides established exploratory spatial data analysis statistics such "
         "as Moran and Getis-Ord variants. spreg supports spatial-regression oriented "
-        "diagnostics and model extensions. scikit-learn supports nearest-neighbor "
+        "diagnostics and the Spatial Autoregression tool. scikit-learn supports nearest-neighbor "
         "search, clustering, and standardized multivariate analysis routines.\n\n"
         "Use 'QGIS Python pip' when QGIS already has a working Python executable and "
         "internet access. On Windows OSGeo4W installations, 'OSGeo Shell' can be useful "
@@ -401,6 +401,6 @@ class GeoStatsDependencyDialog(QDialog):
             "scikit-learn": "Nearest-neighbor search, clustering support, and standardized multivariate workflows.",
             "libpysal": "Spatial weights, neighborhood graphs, and PySAL-compatible spatial structures.",
             "esda": "Exploratory spatial data analysis statistics such as Moran and Getis-Ord routines.",
-            "spreg": "Spatial regression utilities and diagnostics for model-oriented workflows.",
+            "spreg": "Spatial regression utilities for model-oriented workflows, including Spatial Autoregression.",
         }
         return roles.get(package, "Optional GeoStats support package.")

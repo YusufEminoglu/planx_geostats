@@ -73,6 +73,18 @@ def test_sparse_neighbor_summary() -> None:
     assert summary["density_label"] == "Sparse with isolated observations"
 
 
+def test_filter_weights_to_valid_ids_restandardizes_rows() -> None:
+    neighbors, weights, id_order = diagnostics.filter_weights_to_valid_ids(
+        {10: [20, 30], 20: [10, 30, 40], 40: [20], 90: [10]},
+        [10, 20, 40],
+    )
+    assert id_order == [10, 20, 40]
+    assert neighbors == {10: [20], 20: [10, 40], 40: [20]}
+    assert weights[10] == [1.0]
+    assert weights[20] == [0.5, 0.5]
+    assert weights[40] == [1.0]
+
+
 def test_regression_quality_flags_collinearity() -> None:
     y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     x = np.array([
@@ -173,6 +185,7 @@ def run_all() -> None:
     test_global_moran_zero_variance_is_graceful()
     test_general_g_non_contiguous_ids()
     test_sparse_neighbor_summary()
+    test_filter_weights_to_valid_ids_restandardizes_rows()
     test_regression_quality_flags_collinearity()
     test_incremental_autocorrelation_neighbor_diagnostics()
     test_gwr_reports_local_support()
