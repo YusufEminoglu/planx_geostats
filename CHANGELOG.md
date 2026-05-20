@@ -1,0 +1,73 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [0.8.0] - 2026-05-20
+
+### Added
+- **Assessing Sensitivity** toolset:
+  - Attribute Randomization Sensitivity Test — Monte Carlo permutation simulation for Global Moran's I with SVG histogram HTML report.
+- **Measuring Geographic Distributions** toolset:
+  - Linear Directional Mean — circular weighted mean orientation for line features with trend line output.
+
+## [0.7.0] - 2026-05-20
+
+### Added
+- **Mapping Clusters** toolset:
+  - Multivariate Clustering (K-Means) — K-Means++ initialization, Z-score standardization, auto categorized symbology.
+- **Utilities** toolset:
+  - Export Feature Attributes to CSV/ASCII — configurable delimiter, optional centroid coordinates.
+
+## [0.6.0] - 2026-05-20
+
+### Added
+- **Mapping Clusters** toolset:
+  - Similarity Search — Z-score attribute profiling with Euclidean/Manhattan distance metrics, auto graduated symbology.
+- **Spatial Component Utilities** toolset:
+  - Calculate Distance Band from Neighbor Count — k-th neighbor distance statistics with percentile HTML report.
+
+## [0.5.0] - 2026-05-20
+
+### Added
+- **Measuring Geographic Distributions** toolset:
+  - Median Center — Weiszfeld's algorithm for weighted spatial median.
+- **Analyzing Patterns** toolset:
+  - High/Low Clustering (Getis-Ord General G) — global G index with randomization variance, HTML report.
+
+## [0.4.0] - 2026-05-20
+
+### Added
+- **Analyzing Patterns** toolset:
+  - Average Nearest Neighbor (ANN) — chunked KDTree with z-score significance testing, HTML report.
+- **Measuring Geographic Distributions** toolset:
+  - Standard Distance — weighted circular dispersion polygon at 1/2/3 std dev.
+- **Modeling Spatial Relationships** toolset:
+  - Geographically Weighted Regression (GWR) — Fixed Gaussian, Fixed/Adaptive Bisquare kernels, local coefficients, auto graduated symbology on local R².
+
+## [0.3.0] - 2026-05-20
+
+### Added
+- **Analyzing Patterns** toolset:
+  - Global Moran's I — spatial autocorrelation with randomization variance.
+- **Modeling Spatial Relationships** toolset:
+  - OLS Spatial Regression — ordinary least squares with diagnostics HTML report.
+
+## [0.2.0] - 2026-05-20
+
+### Added
+- **Mapping Clusters** toolset:
+  - Local Moran's I (LISA) — local spatial autocorrelation with HH/HL/LH/LL classification, auto categorized symbology.
+- **Measuring Geographic Distributions** toolset:
+  - Mean Center — weighted arithmetic mean center.
+  - Standard Deviational Ellipse (SDE) — orientation, semi-axes, ellipse polygon output.
+- Dependency Installer utility algorithm.
+
+## [0.1.0] - 2026-05-20
+
+### Added
+- **Mapping Clusters** toolset:
+  - Getis-Ord Gi* Hot Spot Analysis — z-score and p-value with auto graduated symbology.
+- Initial plugin skeleton, metadata, icons, and Processing provider registration.

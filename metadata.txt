@@ -2,20 +2,28 @@
 name=PlanX-GeoStats
 qgisMinimumVersion=3.28
 qgisMaximumVersion=3.99
-description=PlanX suite spatial statistics and geographic distribution tools, featuring Hot Spot and LISA analysis.
-version=0.1.0
+description=Advanced spatial statistics suite for QGIS — hot spot analysis, LISA, clustering, regression, directional statistics, sensitivity testing and more.
+version=0.8.0
 author=Yusuf Eminoglu
 email=yusuf.eminoglu@deu.edu.tr
-about=PlanX-GeoStats brings advanced spatial statistics tools to QGIS Processing Toolbox, inspired by ArcGIS Pro Spatial Statistics. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
-tracker=https://github.com/YusufEminoglu/PlanX-GeoStats/issues
-repository=https://github.com/YusufEminoglu/PlanX-GeoStats
-homepage=https://github.com/YusufEminoglu/PlanX-GeoStats
+about=PlanX-GeoStats brings 17 advanced spatial statistics tools to the QGIS Processing Toolbox organized across 7 toolsets: Analyzing Patterns, Assessing Sensitivity, Mapping Clusters, Measuring Geographic Distributions, Modeling Spatial Relationships, Spatial Component Utilities, and Utilities. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
+tracker=https://github.com/YusufEminoglu/planx_geostats/issues
+repository=https://github.com/YusufEminoglu/planx_geostats
+homepage=https://github.com/YusufEminoglu/planx_geostats
 category=Processing
 hasProcessingProvider=yes
-tags=planx,qgis,processing,spatial statistics,pysal,hotspot,lisa,ols
+tags=planx,qgis,processing,spatial statistics,hotspot,lisa,moran,getis-ord,gwr,regression,clustering,k-means,sensitivity,monte carlo,directional mean
 icon=icons/icon.png
 experimental=False
 deprecated=False
 license=GPL-3
 changelog=
-    PlanX-GeoStats 0.1.0 - Initial release with Getis-Ord Gi* Hotspot Analysis.
+    0.8.0 - Linear Directional Mean; Attribute Randomization Sensitivity Test (Monte Carlo).
+    0.7.0 - Multivariate Clustering (K-Means); Export Feature Attributes to CSV/ASCII.
+    0.6.0 - Similarity Search; Calculate Distance Band from Neighbor Count.
+    0.5.0 - Median Center (Weiszfeld); High/Low Clustering (Getis-Ord General G).
+    0.4.0 - Average Nearest Neighbor; Standard Distance; Geographically Weighted Regression (GWR).
+    0.3.0 - Global Moran's I; OLS Spatial Regression.
+    0.2.0 - Local Moran's I (LISA); Mean Center; Standard Deviational Ellipse; Dependency Installer.
+    0.1.0 - Initial release with Getis-Ord Gi* Hot Spot Analysis.
+
