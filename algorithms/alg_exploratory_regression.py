@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import logging
+import math
 import os
 import tempfile
 
@@ -27,6 +28,8 @@ logger = logging.getLogger("PlanX GeoStats Lab")
 
 
 class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
+    MAX_MODEL_COMBINATIONS = 5000
+
     INPUT = "INPUT"
     DEPENDENT_FIELD = "DEPENDENT_FIELD"
     EXPLANATORY_FIELDS = "EXPLANATORY_FIELDS"
@@ -158,8 +161,17 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
             )
 
         max_allowed = max(1, min(max_variables, len(explanatory_fields), n_records - 2))
+        combination_count = self._count_model_combinations(len(explanatory_fields), max_allowed)
+        if combination_count > self.MAX_MODEL_COMBINATIONS:
+            raise QgsProcessingException(
+                "This exploratory regression setup would estimate "
+                f"{combination_count:,} candidate models, which is above the safety limit of "
+                f"{self.MAX_MODEL_COMBINATIONS:,}. Reduce the number of candidate fields or "
+                "lower the maximum variables per model."
+            )
         feedback.pushInfo(
-            f"Testing OLS combinations with up to {max_allowed} explanatory variables..."
+            f"Testing {combination_count} OLS combinations with up to "
+            f"{max_allowed} explanatory variables..."
         )
         models = calculate_exploratory_regression(
             np.array(y_values, dtype=float),
@@ -177,6 +189,7 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
             n_records,
             skipped,
             max_allowed,
+            combination_count,
             models,
         )
         feedback.setProgress(100)
@@ -202,6 +215,7 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
         n_records,
         skipped,
         max_allowed,
+        combination_count,
         models,
     ):
         top_models = models[:20]
@@ -256,7 +270,8 @@ Adjusted R2: <strong>{best['adj_r2']:.4f}</strong> | AICc: <strong>{best['aicc']
 <p><strong>Complete records used:</strong> {n_records}<br>
 <strong>Skipped records with missing/non-numeric values:</strong> {skipped}<br>
 <strong>Candidate explanatory fields:</strong> {candidate_text}<br>
-<strong>Maximum variables per tested model:</strong> {max_allowed}</p>
+<strong>Maximum variables per tested model:</strong> {max_allowed}<br>
+<strong>Candidate models estimated:</strong> {combination_count}</p>
 <div class="note">
 Exploratory regression is a screening tool, not an automatic model approval step. Review coefficient signs, field meaning, residual behavior, spatial autocorrelation, and planning theory before selecting a final model.
 </div>
@@ -273,3 +288,10 @@ Exploratory regression is a screening tool, not an automatic model approval step
 </html>"""
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(content)
+
+    def _count_model_combinations(self, n_fields, max_variables):
+        total = 0
+        upper = min(n_fields, max_variables)
+        for size in range(1, upper + 1):
+            total += math.comb(n_fields, size)
+        return total

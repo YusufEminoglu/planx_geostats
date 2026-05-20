@@ -14,10 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Expanded the GeoStats Libraries helper with detailed English guide text, package role explanations, command preview guidance, install-mode guidance, and restart guidance.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
+- Added an Exploratory Regression safety limit so overly large candidate-variable searches fail fast with guidance instead of tying up QGIS.
 
 ### Added
 - Registered Central Feature and Incremental Spatial Autocorrelation in the provider.
 - Exploratory Regression tool for screening OLS variable combinations and ranking candidate models by AICc.
+- Exploratory Regression report now records how many candidate models were estimated.
 
 ## [0.8.0] - 2026-05-20
 
