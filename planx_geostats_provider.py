@@ -9,6 +9,10 @@ from qgis.core import QgsProcessingProvider
 
 from .algorithms.alg_dependency_installer import DependencyInstallerAlgorithm
 from .algorithms.alg_getis_ord import GetisOrdAlgorithm
+from .algorithms.alg_mean_center import MeanCenterAlgorithm
+from .algorithms.alg_sde import SDEAlgorithm
+from .algorithms.alg_local_moran import LocalMoranAlgorithm
+from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -31,4 +35,9 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
     def loadAlgorithms(self) -> None:
         # Register the algorithms:
         self.addAlgorithm(GetisOrdAlgorithm())
+        self.addAlgorithm(MeanCenterAlgorithm())
+        self.addAlgorithm(SDEAlgorithm())
+        self.addAlgorithm(LocalMoranAlgorithm())
+        self.addAlgorithm(SpatialRegressionAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
+
