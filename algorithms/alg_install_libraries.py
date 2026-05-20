@@ -20,7 +20,9 @@ from ..dependencies import (
     PIP_PACKAGES,
     build_osgeo_shell_pip_command,
     build_qgis_python_pip_command,
+    find_osgeo_shell,
     format_command,
+    resolve_qgis_python_executable,
 )
 
 
@@ -53,12 +55,12 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
             "the package list from requirements_geostats.txt, builds a pip command "
             "for the Python environment used by QGIS, and streams the installation "
             "log into the Processing feedback panel.\n\n"
-            "This tool is intentionally not silent. It will not run until the "
-            "confirmation checkbox is enabled. The command is printed before "
-            "execution so you can review exactly which executable and packages will "
-            "be used. After a successful installation, restart QGIS before running "
-            "advanced GeoStats workflows because Python imports are cached in the "
-            "current QGIS session.\n\n"
+            "This tool is intentionally not silent. If the confirmation checkbox is "
+            "left disabled, the tool prints a preview of the exact command and then "
+            "stops before running pip. Enable the checkbox only after reviewing which "
+            "executable and packages will be used. After a successful installation, "
+            "restart QGIS before running advanced GeoStats workflows because Python "
+            "imports are cached in the current QGIS session.\n\n"
             "Use QGIS Python pip when a python.exe belonging to the active QGIS "
             "installation is detected. Use OSGeo Shell on Windows when QGIS was "
             "launched through an OSGeo4W application executable and direct Python "
@@ -66,7 +68,7 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
         )
 
     def initAlgorithm(self, config=None):
-        default_mode = 1 if sys.platform.startswith("win") else 0
+        default_mode = self._default_mode_index()
         self.addParameter(
             QgsProcessingParameterEnum(
                 self.INSTALL_MODE,
@@ -85,13 +87,6 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
         self.addOutput(QgsProcessingOutputString(self.COMMAND, "Executed command"))
 
     def processAlgorithm(self, parameters, context, feedback):
-        approved = self.parameterAsBoolean(parameters, self.CONFIRM, context)
-        if not approved:
-            raise QgsProcessingException(
-                "Installation was not started. Enable the confirmation checkbox after "
-                "reviewing the tool description and run it again."
-            )
-
         mode = self.parameterAsEnum(parameters, self.INSTALL_MODE, context)
         packages = self._read_requirements()
         program, args = self._build_command(mode, packages)
@@ -99,6 +94,17 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
 
         feedback.pushInfo("PlanX GeoStats Lab dependency installation")
         feedback.pushInfo(f"Command: {command_text}")
+        feedback.pushInfo(f"QGIS host application executable: {sys.executable}")
+        feedback.pushInfo(f"Python executable selected for pip: {resolve_qgis_python_executable() or 'not found'}")
+        feedback.pushInfo(f"Detected OSGeo Shell: {find_osgeo_shell() or 'not found'}")
+
+        approved = self.parameterAsBoolean(parameters, self.CONFIRM, context)
+        if not approved:
+            raise QgsProcessingException(
+                "Preview only: installation was not started. Review the command above, "
+                "enable the confirmation checkbox, and run the tool again to execute pip."
+            )
+
         feedback.pushInfo("The process may take several minutes. Keep QGIS open until it finishes.")
 
         exit_code = self._run_process(program, args, feedback)
@@ -111,6 +117,13 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
         feedback.pushInfo("GeoStats libraries installed or updated successfully.")
         feedback.pushInfo("Restart QGIS before running advanced GeoStats tools.")
         return {self.COMMAND: command_text}
+
+    def _default_mode_index(self) -> int:
+        if resolve_qgis_python_executable():
+            return 0
+        if sys.platform.startswith("win") and find_osgeo_shell():
+            return 1
+        return 0
 
     def _build_command(self, mode: int, packages: List[str]) -> Tuple[str, List[str]]:
         if mode == 0:
