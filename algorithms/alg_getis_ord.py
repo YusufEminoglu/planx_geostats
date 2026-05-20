@@ -62,9 +62,10 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
         return (
             "Given a set of weighted features, identifies statistically significant "
             "hot spots and cold spots using the Getis-Ord Gi* statistic.\n\n"
-            "The output layer will include three new columns: gi_zscore, gi_pvalue, "
-            "and gi_conf. A confidence bin value of +3 indicates a 99% confidence hot spot, "
-            "while -3 indicates a 99% confidence cold spot."
+            "The output layer will include gi_zscore, gi_pvalue, gi_conf, and gi_nbrs. "
+            "A confidence bin value of +3 indicates a 99% confidence hot spot, while -3 "
+            "indicates a 99% confidence cold spot. The gi_nbrs field records how many "
+            "valid neighboring features supported each local statistic."
         )
 
     def initAlgorithm(self, config=None):
@@ -190,6 +191,7 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
         out_fields.append(QgsField("gi_zscore", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("gi_pvalue", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("gi_conf", QVariant.Int))
+        out_fields.append(QgsField("gi_nbrs", QVariant.Int))
 
         # Initialize output sink
         (sink, dest_id) = self.parameterAsSink(
@@ -204,8 +206,17 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
 
         # Map results to feature IDs
         results_map = {}
+        valid_ids = set(valid_id_order)
+        isolated_count = 0
         for idx, fid in enumerate(valid_id_order):
-            results_map[fid] = (z_scores[idx], p_values[idx], conf_bins[idx])
+            neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
+            if neighbor_count == 0:
+                isolated_count += 1
+            results_map[fid] = (z_scores[idx], p_values[idx], conf_bins[idx], neighbor_count)
+        if isolated_count:
+            feedback.pushWarning(
+                f"{isolated_count} feature(s) had no valid neighbors. Review gi_nbrs and consider a larger distance band or K value."
+            )
 
         feedback.pushInfo("Writing results to output layer...")
         total = source.featureCount() or 1
@@ -218,14 +229,16 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
 
             fid = f.id()
             if fid in results_map:
-                z, p, c = results_map[fid]
+                z, p, c, neighbor_count = results_map[fid]
                 out_feat.setAttribute("gi_zscore", float(z))
                 out_feat.setAttribute("gi_pvalue", float(p))
                 out_feat.setAttribute("gi_conf", int(c))
+                out_feat.setAttribute("gi_nbrs", int(neighbor_count))
             else:
                 out_feat.setAttribute("gi_zscore", None)
                 out_feat.setAttribute("gi_pvalue", None)
                 out_feat.setAttribute("gi_conf", None)
+                out_feat.setAttribute("gi_nbrs", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))

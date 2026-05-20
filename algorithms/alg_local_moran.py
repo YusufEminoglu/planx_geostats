@@ -62,8 +62,9 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
         return (
             "Given a set of weighted features, identifies statistically significant "
             "hot spots, cold spots, and spatial outliers using the Anselin Local Moran's I statistic.\n\n"
-            "The output layer will include four new columns: lisa_i, lisa_z, lisa_p, "
-            "and quadrant. The quadrants represent:\n"
+            "The output layer will include lisa_i, lisa_z, lisa_p, quadrant, and lisa_nbrs. "
+            "The lisa_nbrs field records how many valid neighboring features supported each "
+            "local statistic. The quadrants represent:\n"
             "- HH (High-High): High values surrounded by high values\n"
             "- LL (Low-Low): Low values surrounded by low values\n"
             "- HL (High-Low): Spatial outlier (high value surrounded by low values)\n"
@@ -191,6 +192,7 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
         out_fields.append(QgsField("lisa_z", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("lisa_p", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("quadrant", QVariant.String, len=20))
+        out_fields.append(QgsField("lisa_nbrs", QVariant.Int))
 
         # Setup sink
         (sink, dest_id) = self.parameterAsSink(
@@ -205,8 +207,17 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
 
         # Map results to feature IDs
         results_map = {}
+        valid_ids = set(valid_id_order)
+        isolated_count = 0
         for idx, fid in enumerate(valid_id_order):
-            results_map[fid] = (i_vals[idx], z_scores[idx], p_values[idx], quadrants[idx])
+            neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
+            if neighbor_count == 0:
+                isolated_count += 1
+            results_map[fid] = (i_vals[idx], z_scores[idx], p_values[idx], quadrants[idx], neighbor_count)
+        if isolated_count:
+            feedback.pushWarning(
+                f"{isolated_count} feature(s) had no valid neighbors. Review lisa_nbrs and consider a larger distance band or K value."
+            )
 
         feedback.pushInfo("Writing results to output layer...")
         total = source.featureCount() or 1
@@ -219,16 +230,18 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
 
             fid = f.id()
             if fid in results_map:
-                i_val, z, p, quad = results_map[fid]
+                i_val, z, p, quad, neighbor_count = results_map[fid]
                 out_feat.setAttribute("lisa_i", float(i_val))
                 out_feat.setAttribute("lisa_z", float(z))
                 out_feat.setAttribute("lisa_p", float(p))
                 out_feat.setAttribute("quadrant", str(quad))
+                out_feat.setAttribute("lisa_nbrs", int(neighbor_count))
             else:
                 out_feat.setAttribute("lisa_i", None)
                 out_feat.setAttribute("lisa_z", None)
                 out_feat.setAttribute("lisa_p", None)
                 out_feat.setAttribute("quadrant", "Not Significant")
+                out_feat.setAttribute("lisa_nbrs", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
