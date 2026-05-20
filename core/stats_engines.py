@@ -892,3 +892,73 @@ def calculate_general_g(
     return float(observed_g), float(expected_g), float(variance), float(z_score), float(p_value)
 
 
+def calculate_similarity_search(
+    full_data: np.ndarray,
+    target_indices: list[int],
+    metric: str = "euclidean"
+) -> np.ndarray:
+    """Standardizes attributes and computes distance score from target feature profiles.
+
+    Returns:
+        An array of similarity scores for each feature in full_data.
+    """
+    n, p = full_data.shape
+    if n == 0 or p == 0:
+        return np.array([])
+
+    # Z-score standardization
+    means = np.mean(full_data, axis=0)
+    stds = np.std(full_data, axis=0)
+    stds[stds == 0.0] = 1.0  # avoid division by zero
+
+    z_data = (full_data - means) / stds
+
+    # Extract target profile (mean profile if multiple targets are selected)
+    z_targets = z_data[target_indices]
+    target_profile = np.mean(z_targets, axis=0)
+
+    # Compute score based on selected distance metric
+    if metric == "manhattan":
+        scores = np.sum(np.abs(z_data - target_profile), axis=1)
+    else:  # euclidean
+        scores = np.sqrt(np.sum((z_data - target_profile) ** 2, axis=1))
+
+    return scores
+
+
+def calculate_distance_band_stats(
+    x: np.ndarray,
+    y: np.ndarray,
+    k_neighbors: int = 1
+) -> dict:
+    """Calculates statistics for distance to the k-th nearest neighbor.
+
+    Returns:
+        A dictionary containing min, max, mean, median, p25, p75 values.
+    """
+    n = len(x)
+    if n <= 1:
+        raise ValueError("At least 2 points are required to compute distance bands.")
+
+    coords = np.column_stack((x, y))
+
+    # Compute distance matrix
+    dists_matrix = np.sqrt(((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
+
+    k_dists = np.zeros(n)
+    for i in range(n):
+        sorted_d = np.sort(dists_matrix[i])
+        k_idx = min(k_neighbors, n - 1)
+        k_dists[i] = sorted_d[k_idx]
+
+    return {
+        "min": float(np.min(k_dists)),
+        "max": float(np.max(k_dists)),
+        "mean": float(np.mean(k_dists)),
+        "median": float(np.median(k_dists)),
+        "p25": float(np.percentile(k_dists, 25)),
+        "p75": float(np.percentile(k_dists, 75))
+    }
+
+
+

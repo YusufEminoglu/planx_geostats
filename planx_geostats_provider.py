@@ -19,6 +19,8 @@ from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
 from .algorithms.alg_gwr import GWRAlgorithm
 from .algorithms.alg_median_center import MedianCenterAlgorithm
 from .algorithms.alg_general_g import GeneralGAlgorithm
+from .algorithms.alg_similarity_search import SimilaritySearchAlgorithm
+from .algorithms.alg_calculate_distance_band import CalculateDistanceBandAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -51,5 +53,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(GWRAlgorithm())
         self.addAlgorithm(MedianCenterAlgorithm())
         self.addAlgorithm(GeneralGAlgorithm())
+        self.addAlgorithm(SimilaritySearchAlgorithm())
+        self.addAlgorithm(CalculateDistanceBandAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
 
