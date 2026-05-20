@@ -23,6 +23,8 @@ from .algorithms.alg_similarity_search import SimilaritySearchAlgorithm
 from .algorithms.alg_calculate_distance_band import CalculateDistanceBandAlgorithm
 from .algorithms.alg_multivariate_clustering import MultivariateClusteringAlgorithm
 from .algorithms.alg_export_attributes import ExportAttributesAlgorithm
+from .algorithms.alg_linear_directional_mean import LinearDirectionalMeanAlgorithm
+from .algorithms.alg_sensitivity_test import SensitivityTestAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -59,5 +61,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
         self.addAlgorithm(MultivariateClusteringAlgorithm())
         self.addAlgorithm(ExportAttributesAlgorithm())
+        self.addAlgorithm(LinearDirectionalMeanAlgorithm())
+        self.addAlgorithm(SensitivityTestAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
 

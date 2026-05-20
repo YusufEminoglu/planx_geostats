@@ -1039,5 +1039,125 @@ def calculate_kmeans(
     return labels, float(wcss)
 
 
+def calculate_linear_directional_mean(
+    start_x: np.ndarray,
+    start_y: np.ndarray,
+    end_x: np.ndarray,
+    end_y: np.ndarray
+) -> tuple[float, float, float, float]:
+    """Calculates Linear Directional Mean for line features.
+
+    Returns:
+        A tuple of (center_x, center_y, mean_angle_degrees, mean_length)
+    """
+    n = len(start_x)
+    if n == 0:
+        return 0.0, 0.0, 0.0, 0.0
+
+    # Line midpoints
+    mid_x = (start_x + end_x) / 2.0
+    mid_y = (start_y + end_y) / 2.0
+
+    center_x = float(np.mean(mid_x))
+    center_y = float(np.mean(mid_y))
+
+    # Line lengths
+    dx = end_x - start_x
+    dy = end_y - start_y
+    lengths = np.sqrt(dx ** 2 + dy ** 2)
+    lengths_safe = np.maximum(lengths, 1e-12)
+
+    mean_length = float(np.mean(lengths))
+
+    # Orientation angles (radians, compass-style: 0=North, clockwise)
+    # atan2(dx, dy) gives compass bearing
+    angles = np.arctan2(dx, dy)
+
+    # Circular mean weighted by length
+    sin_sum = np.sum(lengths_safe * np.sin(angles))
+    cos_sum = np.sum(lengths_safe * np.cos(angles))
+
+    mean_angle_rad = math.atan2(sin_sum, cos_sum)
+    mean_angle_deg = math.degrees(mean_angle_rad) % 360.0
+
+    return center_x, center_y, mean_angle_deg, mean_length
+
+
+def _compute_moran_i_fast(
+    z: np.ndarray,
+    W: np.ndarray,
+    S0: float,
+    n: int
+) -> float:
+    """Fast internal Moran's I calculator using pre-built weight matrix."""
+    sum_z2 = np.sum(z ** 2)
+    if sum_z2 == 0:
+        return 0.0
+    numerator = float(z @ W @ z)
+    return (n / S0) * (numerator / sum_z2)
+
+
+def run_sensitivity_simulation(
+    values: np.ndarray,
+    neighbors: dict[int, list[int]],
+    weights: dict[int, list[float]],
+    id_order: list[int],
+    n_simulations: int = 999,
+    seed: int = 42
+) -> dict:
+    """Monte Carlo simulation for Global Moran's I sensitivity assessment.
+
+    Returns:
+        A dictionary with observed_i, simulated_mean, simulated_std,
+        empirical_p, percentile_5, percentile_95, and simulated_values.
+    """
+    n = len(id_order)
+    if n < 4:
+        raise ValueError("Sensitivity simulation requires at least 4 features.")
+
+    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+
+    # Build dense weight matrix
+    W = np.zeros((n, n))
+    for i, fid in enumerate(id_order):
+        neighs = neighbors.get(fid, [])
+        w_list = weights.get(fid, [])
+        for j_fid, w in zip(neighs, w_list):
+            if j_fid in id_to_idx:
+                j = id_to_idx[j_fid]
+                W[i, j] = w
+    np.fill_diagonal(W, 0.0)
+    S0 = float(np.sum(W))
+
+    if S0 == 0:
+        raise ValueError("No spatial neighbors found. Cannot run simulation.")
+
+    # Observed Moran's I
+    y = np.array([float(values[i]) for i in range(n)])
+    z_obs = y - np.mean(y)
+    observed_i = _compute_moran_i_fast(z_obs, W, S0, n)
+
+    # Monte Carlo permutations
+    rng = np.random.default_rng(seed)
+    sim_values = np.zeros(n_simulations)
+
+    for s in range(n_simulations):
+        y_perm = rng.permutation(y)
+        z_perm = y_perm - np.mean(y_perm)
+        sim_values[s] = _compute_moran_i_fast(z_perm, W, S0, n)
+
+    # Empirical p-value (two-tailed)
+    count_extreme = np.sum(np.abs(sim_values) >= abs(observed_i))
+    empirical_p = float((count_extreme + 1) / (n_simulations + 1))
+
+    return {
+        "observed_i": float(observed_i),
+        "simulated_mean": float(np.mean(sim_values)),
+        "simulated_std": float(np.std(sim_values)),
+        "empirical_p": empirical_p,
+        "percentile_5": float(np.percentile(sim_values, 5)),
+        "percentile_95": float(np.percentile(sim_values, 95)),
+        "simulated_values": sim_values.tolist()
+    }
 
 
