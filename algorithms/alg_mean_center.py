@@ -41,10 +41,10 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
         return "Central Feature / Mean Center"
 
     def group(self) -> str:
-        return "Spatial Statistics"
+        return "Measuring Geographic Distributions"
 
     def groupId(self) -> str:
-        return "spatial_statistics"
+        return "measuring_distributions"
 
     def createInstance(self):
         return MeanCenterAlgorithm()

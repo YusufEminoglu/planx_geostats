@@ -52,10 +52,10 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
         return "Ordinary Least Squares (OLS) Regression"
 
     def group(self) -> str:
-        return "Spatial Statistics"
+        return "Modeling Spatial Relationships"
 
     def groupId(self) -> str:
-        return "spatial_statistics"
+        return "modeling_relationships"
 
     def createInstance(self):
         return SpatialRegressionAlgorithm()

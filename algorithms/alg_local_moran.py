@@ -50,10 +50,10 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
         return "Cluster and Outlier Analysis (Local Moran's I)"
 
     def group(self) -> str:
-        return "Spatial Statistics"
+        return "Mapping Clusters"
 
     def groupId(self) -> str:
-        return "spatial_statistics"
+        return "mapping_clusters"
 
     def createInstance(self):
         return LocalMoranAlgorithm()

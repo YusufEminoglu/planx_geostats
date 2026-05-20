@@ -23,10 +23,10 @@ class DependencyInstallerAlgorithm(QgsProcessingAlgorithm):
         return "Install/Update SpatialStats Python Dependencies"
 
     def group(self) -> str:
-        return "System"
+        return "Utilities"
 
     def groupId(self) -> str:
-        return "system"
+        return "utilities"
 
     def createInstance(self):
         return DependencyInstallerAlgorithm()

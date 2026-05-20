@@ -13,6 +13,7 @@ from .algorithms.alg_mean_center import MeanCenterAlgorithm
 from .algorithms.alg_sde import SDEAlgorithm
 from .algorithms.alg_local_moran import LocalMoranAlgorithm
 from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
+from .algorithms.alg_global_moran import GlobalMoranAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -39,5 +40,6 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(SDEAlgorithm())
         self.addAlgorithm(LocalMoranAlgorithm())
         self.addAlgorithm(SpatialRegressionAlgorithm())
+        self.addAlgorithm(GlobalMoranAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
 
