@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import html
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -20,6 +21,14 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_general_g
+from ..core.analysis_diagnostics import (
+    caveats_html,
+    crs_unit_warning,
+    diagnostics_html,
+    neighbor_summary,
+    numeric_quality_summary,
+    push_diagnostics,
+)
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -150,11 +159,15 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
             feedback.setProgress(int(20 * (idx / total)))
 
         n_feats = len(id_order)
+        val_array = np.array([values[fid] for fid in id_order])
+        numeric_summary = numeric_quality_summary(source.featureCount(), values, val_array)
         if n_feats < 4:
             raise QgsProcessingException(
                 f"Insufficient features ({n_feats}) with valid numeric values. "
                 "At least 4 are required for General G analysis."
             )
+        if numeric_summary["is_constant"]:
+            raise QgsProcessingException("General G requires variation in the target field; all valid values are identical.")
 
         # Construct spatial weights matrix (Binary weights within distance band)
         feedback.pushInfo("Constructing spatial weights matrix...")
@@ -186,6 +199,9 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
 
         # Verify weights sum > 0
         total_w = sum(sum(w_list) for w_list in weights.values())
+        neighborhood_summary = neighbor_summary(neighbors, id_order)
+        crs_warning = crs_unit_warning(source)
+        push_diagnostics(feedback, numeric_summary, neighborhood_summary, crs_warning)
         if total_w == 0:
             raise QgsProcessingException(
                 "No neighbors found within the specified distance band. "
@@ -202,7 +218,18 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
 
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(
-            html_path, field_name, n_feats, distance_band, obs_g, exp_g, var_g, z, p
+            html_path,
+            field_name,
+            n_feats,
+            distance_band,
+            obs_g,
+            exp_g,
+            var_g,
+            z,
+            p,
+            numeric_summary,
+            neighborhood_summary,
+            crs_warning,
         )
 
         return {
@@ -210,7 +237,21 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
             "HTML_REPORT_OUT": html_path
         }
 
-    def write_html_report(self, path: str, field: str, n: int, db: float, obs: float, exp: float, var: float, z: float, p: float):
+    def write_html_report(
+        self,
+        path: str,
+        field: str,
+        n: int,
+        db: float,
+        obs: float,
+        exp: float,
+        var: float,
+        z: float,
+        p: float,
+        numeric_summary: dict,
+        neighborhood_summary: dict,
+        crs_warning: str,
+    ):
         is_significant = p < 0.05
         if is_significant:
             if z > 0:
@@ -234,6 +275,17 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
                 "Given the z-score of {:.2f}, the spatial distribution of values "
                 "appears to be completely random (Complete Spatial Randomness)."
             ).format(z)
+
+        if neighborhood_summary["isolated"] > 0:
+            next_action = "Increase the distance band before interpreting high/low clustering; isolated observations weaken the global statistic."
+        elif neighborhood_summary["all_connected"]:
+            next_action = "Try a smaller distance band because the current threshold connects every feature to every other feature."
+        elif is_significant and z > 0:
+            next_action = "Use Gi* Hot Spot Analysis to map the specific high-value concentrations suggested by this global result."
+        elif is_significant:
+            next_action = "Use Gi* or Local Moran's I to locate the low-value concentrations suggested by this global result."
+        else:
+            next_action = "Review the threshold distance and attribute distribution before treating the absence of significance as absence of spatial structure."
 
         html_content = f"""<!DOCTYPE html>
 <html>
@@ -328,19 +380,38 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
         color: #a0aec0;
         text-align: center;
     }}
+    section {{
+        margin: 28px 0;
+    }}
+    h2 {{
+        color: #1a202c;
+        font-size: 1.15rem;
+        margin: 0 0 12px 0;
+    }}
+    .next-action {{
+        background: #f0fff4;
+        border-left: 5px solid #2f855a;
+        padding: 16px 18px;
+        border-radius: 4px;
+    }}
 </style>
 </head>
 <body>
 <div class="container">
     <header>
         <h1>High/Low Clustering (General G) Summary</h1>
-        <p class="subtitle">Attribute Analyzed: <strong>{field}</strong> | Count: <strong>{n}</strong> | Distance Band: <strong>{db} map units</strong></p>
+        <p class="subtitle">Attribute Analyzed: <strong>{html.escape(field)}</strong> | Count: <strong>{n}</strong> | Distance Band: <strong>{db} map units</strong></p>
     </header>
 
     <div class="interpretation-box">
         <h2 class="status-title">{pattern}</h2>
         <p class="status-desc">{desc}</p>
     </div>
+
+    <section>
+        <h2>Executive Summary</h2>
+        <p>Getis-Ord General G evaluates whether high values or low values are globally concentrated within the selected distance band. This result is scale-sensitive: a threshold that is too small can create isolated observations, while a threshold that is too large can flatten local structure into a broad global average.</p>
+    </section>
 
     <table>
         <thead>
@@ -372,6 +443,15 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
             </tr>
         </tbody>
     </table>
+
+    {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
+
+    <section>
+        <h2>Recommended Next Action</h2>
+        <div class="next-action">{html.escape(next_action)}</div>
+    </section>
+
+    {caveats_html("Getis-Ord General G", neighborhood_summary, numeric_summary)}
 
     <footer>
         Generated by PlanX GeoStats Lab global spatial statistics engine.

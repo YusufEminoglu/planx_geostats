@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fixed Global Moran's I z-score and p-value calculation in the shared statistics engine.
 - Fixed General G value alignment for QGIS layers whose feature IDs are not contiguous zero-based indices.
 - Added neighbor-count diagnostic fields to Gi* and Local Moran output layers.
+- Added shared analysis diagnostics for numeric quality, CRS warnings, and neighborhood graph summaries.
+- Upgraded Global Moran and General G reports with executive summaries, diagnostics, caveats, and recommended next actions.
+- Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
 - Cleaned remaining special symbols from Processing feedback and generated reports.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.

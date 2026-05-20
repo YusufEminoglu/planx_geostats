@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import html
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -22,6 +23,14 @@ from qgis.core import (
 
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_global_moran
+from ..core.analysis_diagnostics import (
+    caveats_html,
+    crs_unit_warning,
+    diagnostics_html,
+    neighbor_summary,
+    numeric_quality_summary,
+    push_diagnostics,
+)
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -171,9 +180,15 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
         # Filter id_order and construct y array
         valid_id_order = [fid for fid in id_order if fid in y_dict]
         y = np.array([y_dict[fid] for fid in valid_id_order])
+        numeric_summary = numeric_quality_summary(source.featureCount(), y_dict, y)
+        neighborhood_summary = neighbor_summary(neighbors, valid_id_order)
+        crs_warning = crs_unit_warning(source)
+        push_diagnostics(feedback, numeric_summary, neighborhood_summary, crs_warning)
 
         if len(y) <= 3:
             raise QgsProcessingException("At least 4 valid features with numeric values are required for Global Moran's I analysis.")
+        if numeric_summary["is_constant"]:
+            raise QgsProcessingException("Global Moran's I requires variation in the target field; all valid values are identical.")
 
         feedback.pushInfo("Calculating Global Moran's I statistics...")
         moran_i, expected_i, variance, z_score, p_value = calculate_global_moran(
@@ -188,7 +203,18 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
 
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(
-            html_path, field_name, len(y), moran_i, expected_i, variance, z_score, p_value
+            html_path,
+            field_name,
+            len(y),
+            moran_i,
+            expected_i,
+            variance,
+            z_score,
+            p_value,
+            numeric_summary,
+            neighborhood_summary,
+            crs_warning,
+            weight_type,
         )
 
         return {
@@ -196,7 +222,21 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
             "HTML_REPORT_OUT": html_path
         }
 
-    def write_html_report(self, path: str, field_name: str, n: int, mi: float, ei: float, var: float, z: float, p: float):
+    def write_html_report(
+        self,
+        path: str,
+        field_name: str,
+        n: int,
+        mi: float,
+        ei: float,
+        var: float,
+        z: float,
+        p: float,
+        numeric_summary: dict,
+        neighborhood_summary: dict,
+        crs_warning: str,
+        weight_type: str,
+    ):
         # Interpretation logic
         sig_threshold = 0.05
         is_significant = p < sig_threshold
@@ -226,6 +266,24 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
             ).format(z)
             status_class = "random"
             status_color = "#718096"
+
+        if p < 0.01:
+            confidence = "very strong"
+        elif p < 0.05:
+            confidence = "strong"
+        elif p < 0.10:
+            confidence = "suggestive but not conventionally significant"
+        else:
+            confidence = "weak"
+
+        if neighborhood_summary["isolated"] > 0:
+            next_action = "Increase the distance band or choose KNN weights before using this result for planning decisions."
+        elif neighborhood_summary["all_connected"]:
+            next_action = "Try a smaller threshold or a data-driven distance band to avoid masking local structure."
+        elif is_significant:
+            next_action = "Follow up with Local Moran's I or Gi* to locate the neighborhoods driving this global pattern."
+        else:
+            next_action = "Review scale, zoning geography, and candidate distance bands before concluding that the process is spatially random."
 
         html_content = f"""<!DOCTYPE html>
 <html>
@@ -320,19 +378,38 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
         color: #a0aec0;
         text-align: center;
     }}
+    section {{
+        margin: 28px 0;
+    }}
+    h2 {{
+        color: #1a202c;
+        font-size: 1.15rem;
+        margin: 0 0 12px 0;
+    }}
+    .next-action {{
+        background: #f0fff4;
+        border-left: 5px solid #2f855a;
+        padding: 16px 18px;
+        border-radius: 4px;
+    }}
 </style>
 </head>
 <body>
 <div class="container">
     <header>
         <h1>Spatial Autocorrelation (Global Moran's I)</h1>
-        <p class="subtitle">Field Analyzed: <strong>{field_name}</strong> | Feature Count: <strong>{n}</strong></p>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
     </header>
 
     <div class="interpretation-box">
         <h2 class="status-title">Spatial Pattern: {pattern}</h2>
-        <p class="status-desc">{desc}</p>
+        <p class="status-desc">{desc} Evidence strength is <strong>{confidence}</strong> at p = {p:.4f}.</p>
     </div>
+
+    <section>
+        <h2>Executive Summary</h2>
+        <p>Global Moran's I tests whether similar values are spatially clustered across the full study area. This run indicates <strong>{pattern.lower()}</strong> behavior for <strong>{html.escape(field_name)}</strong>. A global result does not identify where the pattern occurs; it should be paired with a local statistic when planning decisions require location-specific action.</p>
+    </section>
 
     <table>
         <thead>
@@ -364,6 +441,15 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
             </tr>
         </tbody>
     </table>
+
+    {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
+
+    <section>
+        <h2>Recommended Next Action</h2>
+        <div class="next-action">{html.escape(next_action)}</div>
+    </section>
+
+    {caveats_html("Global Moran's I", neighborhood_summary, numeric_summary)}
 
     <footer>
         Generated by PlanX GeoStats Lab spatial statistics engine.
