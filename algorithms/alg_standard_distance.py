@@ -102,6 +102,9 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
         x_coords = []
         y_coords = []
         weights = []
+        skipped_geometry = 0
+        invalid_weights = 0
+        negative_weights = 0
 
         has_weight = weight_field != ""
         if has_weight:
@@ -117,6 +120,7 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
 
             geom = f.geometry()
             if geom.isEmpty():
+                skipped_geometry += 1
                 continue
 
             centroid = geom.centroid().asPoint()
@@ -129,17 +133,30 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
                 if val is not None and val != QVariant() and str(val) != 'NULL':
                     try:
                         w_val = float(val)
+                        if w_val < 0:
+                            negative_weights += 1
                     except (ValueError, TypeError):
-                        pass
+                        invalid_weights += 1
+                        w_val = 1.0
+                else:
+                    invalid_weights += 1
             weights.append(w_val)
             feedback.setProgress(int(40 * (idx / total)))
 
         if len(x_coords) <= 1:
             raise QgsProcessingException("At least 2 valid features with geometries are required to calculate standard distance.")
+        if negative_weights:
+            raise QgsProcessingException("Weight field contains negative values. Use non-negative weights for standard distance.")
 
         x_arr = np.array(x_coords)
         y_arr = np.array(y_coords)
         w_arr = np.array(weights)
+        if has_weight and float(np.sum(w_arr)) <= 0:
+            raise QgsProcessingException("The sum of weights must be greater than zero.")
+        feedback.pushInfo(
+            f"Standard distance diagnostics: valid={len(x_coords)}, skipped_geometry={skipped_geometry}, "
+            f"invalid_or_null_weights={invalid_weights}, total_weight={float(np.sum(w_arr)):.6f}."
+        )
 
         feedback.pushInfo("Calculating standard distance...")
         mean_x, mean_y, std_dist = calculate_standard_distance(x_arr, y_arr, w_arr)
@@ -164,6 +181,9 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
         out_fields.append(QgsField("std_dist", QVariant.Double, len=15, prec=6))
         out_fields.append(QgsField("multiplier", QVariant.Int))
         out_fields.append(QgsField("radius", QVariant.Double, len=15, prec=6))
+        out_fields.append(QgsField("input_n", QVariant.Int))
+        out_fields.append(QgsField("skip_geom", QVariant.Int))
+        out_fields.append(QgsField("bad_w", QVariant.Int))
 
         # Setup sink
         (sink, dest_id) = self.parameterAsSink(
@@ -183,6 +203,9 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
         out_feat.setAttribute("std_dist", std_dist)
         out_feat.setAttribute("multiplier", multiplier)
         out_feat.setAttribute("radius", radius)
+        out_feat.setAttribute("input_n", len(x_coords))
+        out_feat.setAttribute("skip_geom", skipped_geometry)
+        out_feat.setAttribute("bad_w", invalid_weights)
 
         sink.addFeature(out_feat)
         feedback.setProgress(100)

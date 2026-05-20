@@ -104,6 +104,9 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
         y_coords = []
         weights = []
         features = []
+        skipped_geometry = 0
+        invalid_weights = 0
+        negative_weights = 0
 
         has_weight = weight_field != ""
         if has_weight:
@@ -120,6 +123,7 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
 
             geom = f.geometry()
             if geom.isEmpty():
+                skipped_geometry += 1
                 continue
 
             centroid = geom.centroid().asPoint()
@@ -132,18 +136,31 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
                 if val is not None and val != QVariant() and str(val) != 'NULL':
                     try:
                         w_val = float(val)
+                        if w_val < 0:
+                            negative_weights += 1
                     except (ValueError, TypeError):
-                        pass
+                        invalid_weights += 1
+                        w_val = 1.0
+                else:
+                    invalid_weights += 1
             weights.append(w_val)
             features.append(f)
             feedback.setProgress(int(30 * (idx / total)))
 
         if len(features) == 0:
             raise QgsProcessingException("No valid geometries found in the input layer.")
+        if negative_weights:
+            raise QgsProcessingException("Weight field contains negative values. Use non-negative weights for center calculations.")
 
         x_arr = np.array(x_coords)
         y_arr = np.array(y_coords)
         w_arr = np.array(weights)
+        if has_weight and float(np.sum(w_arr)) <= 0:
+            raise QgsProcessingException("The sum of weights must be greater than zero.")
+        feedback.pushInfo(
+            f"Center diagnostics: valid={len(features)}, skipped_geometry={skipped_geometry}, "
+            f"invalid_or_null_weights={invalid_weights}, total_weight={float(np.sum(w_arr)):.6f}."
+        )
 
         # Define outputs dynamically based on the mode
         if mode_idx == 0:
@@ -153,6 +170,9 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
             out_fields.append(QgsField("mean_x", QVariant.Double, len=15, prec=6))
             out_fields.append(QgsField("mean_y", QVariant.Double, len=15, prec=6))
             out_fields.append(QgsField("total_w", QVariant.Double, len=15, prec=6))
+            out_fields.append(QgsField("input_n", QVariant.Int))
+            out_fields.append(QgsField("skip_geom", QVariant.Int))
+            out_fields.append(QgsField("bad_w", QVariant.Int))
         else:
             # Central Feature: Output geometry and fields are identical to source
             out_geom_type = source.wkbType()
@@ -177,6 +197,9 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
             out_feat.setAttribute("mean_x", mean_x)
             out_feat.setAttribute("mean_y", mean_y)
             out_feat.setAttribute("total_w", float(np.sum(w_arr)))
+            out_feat.setAttribute("input_n", len(features))
+            out_feat.setAttribute("skip_geom", skipped_geometry)
+            out_feat.setAttribute("bad_w", invalid_weights)
             sink.addFeature(out_feat)
         else:
             # Central Feature

@@ -103,6 +103,9 @@ class SDEAlgorithm(QgsProcessingAlgorithm):
         x_coords = []
         y_coords = []
         weights = []
+        skipped_geometry = 0
+        invalid_weights = 0
+        negative_weights = 0
 
         has_weight = weight_field != ""
         if has_weight:
@@ -118,6 +121,7 @@ class SDEAlgorithm(QgsProcessingAlgorithm):
 
             geom = f.geometry()
             if geom.isEmpty():
+                skipped_geometry += 1
                 continue
 
             centroid = geom.centroid().asPoint()
@@ -130,17 +134,30 @@ class SDEAlgorithm(QgsProcessingAlgorithm):
                 if val is not None and val != QVariant() and str(val) != 'NULL':
                     try:
                         w_val = float(val)
+                        if w_val < 0:
+                            negative_weights += 1
                     except (ValueError, TypeError):
-                        pass
+                        invalid_weights += 1
+                        w_val = 1.0
+                else:
+                    invalid_weights += 1
             weights.append(w_val)
             feedback.setProgress(int(30 * (idx / total)))
 
         if len(x_coords) <= 2:
             raise QgsProcessingException("At least 3 valid features with geometries are required to calculate SDE.")
+        if negative_weights:
+            raise QgsProcessingException("Weight field contains negative values. Use non-negative weights for SDE.")
 
         x_arr = np.array(x_coords)
         y_arr = np.array(y_coords)
         w_arr = np.array(weights)
+        if has_weight and float(np.sum(w_arr)) <= 0:
+            raise QgsProcessingException("The sum of weights must be greater than zero.")
+        feedback.pushInfo(
+            f"SDE diagnostics: valid={len(x_coords)}, skipped_geometry={skipped_geometry}, "
+            f"invalid_or_null_weights={invalid_weights}, total_weight={float(np.sum(w_arr)):.6f}."
+        )
 
         feedback.pushInfo("Calculating SDE parameters...")
         mean_x, mean_y, angle_rad, semi_major, semi_minor = calculate_sde(x_arr, y_arr, w_arr, num_std)
@@ -176,6 +193,9 @@ class SDEAlgorithm(QgsProcessingAlgorithm):
         out_fields.append(QgsField("semi_major", QVariant.Double, len=15, prec=6))
         out_fields.append(QgsField("semi_minor", QVariant.Double, len=15, prec=6))
         out_fields.append(QgsField("std_dev", QVariant.Int))
+        out_fields.append(QgsField("input_n", QVariant.Int))
+        out_fields.append(QgsField("skip_geom", QVariant.Int))
+        out_fields.append(QgsField("bad_w", QVariant.Int))
 
         # Setup sink
         (sink, dest_id) = self.parameterAsSink(
@@ -197,6 +217,9 @@ class SDEAlgorithm(QgsProcessingAlgorithm):
         out_feat.setAttribute("semi_major", semi_major)
         out_feat.setAttribute("semi_minor", semi_minor)
         out_feat.setAttribute("std_dev", num_std)
+        out_feat.setAttribute("input_n", len(x_coords))
+        out_feat.setAttribute("skip_geom", skipped_geometry)
+        out_feat.setAttribute("bad_w", invalid_weights)
 
         sink.addFeature(out_feat)
         feedback.setProgress(100)
