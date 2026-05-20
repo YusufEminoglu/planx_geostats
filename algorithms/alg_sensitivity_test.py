@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import html
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -20,6 +21,14 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import run_sensitivity_simulation
+from ..core.analysis_diagnostics import (
+    caveats_html,
+    crs_unit_warning,
+    diagnostics_html,
+    neighbor_summary,
+    numeric_quality_summary,
+    push_diagnostics,
+)
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -127,6 +136,7 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
         centroids = {}
         id_order = []
         values = {}
+        skipped = 0
 
         feedback.pushInfo("Extracting attributes and geometries...")
         total = source.featureCount() or 1
@@ -136,14 +146,17 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
 
             geom = f.geometry()
             if geom.isEmpty():
+                skipped += 1
                 continue
 
             val = f.attribute(field_idx)
             if val is None or val == QVariant() or str(val) == 'NULL':
+                skipped += 1
                 continue
             try:
                 val_f = float(val)
             except (ValueError, TypeError):
+                skipped += 1
                 continue
 
             fid = f.id()
@@ -153,10 +166,14 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
             feedback.setProgress(int(15 * (idx / total)))
 
         n_feats = len(id_order)
+        val_array = np.array([values[fid] for fid in id_order])
+        numeric_summary = numeric_quality_summary(source.featureCount(), values, val_array)
         if n_feats < 4:
             raise QgsProcessingException(
                 f"Insufficient features ({n_feats}). At least 4 are required."
             )
+        if numeric_summary["is_constant"]:
+            raise QgsProcessingException("Sensitivity testing requires variation in the input field; all valid values are identical.")
 
         # Construct spatial weights
         feedback.pushInfo("Constructing spatial weights matrix...")
@@ -182,26 +199,39 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
             feedback.setProgress(int(15 + 25 * (i / n_feats)))
 
         total_w = sum(len(wl) for wl in weights.values())
+        neighborhood_summary = neighbor_summary(neighbors, id_order)
+        crs_warning = crs_unit_warning(source)
+        push_diagnostics(feedback, numeric_summary, neighborhood_summary, crs_warning)
         if total_w == 0:
             raise QgsProcessingException(
                 "No neighbors found within the specified distance band."
             )
 
         feedback.pushInfo(f"Running {n_sims} Monte Carlo permutations...")
-        val_array = np.array([values[fid] for fid in id_order])
         results = run_sensitivity_simulation(
             val_array, neighbors, weights, id_order, n_sims
         )
 
         feedback.pushInfo("Generating HTML report...")
-        self._write_html_report(html_path, field_name, n_feats, distance_band, n_sims, results)
+        self._write_html_report(
+            html_path,
+            field_name,
+            n_feats,
+            distance_band,
+            n_sims,
+            results,
+            numeric_summary,
+            neighborhood_summary,
+            crs_warning,
+            skipped,
+        )
 
         return {
             self.HTML_REPORT: html_path,
             "HTML_REPORT_OUT": html_path
         }
 
-    def _write_html_report(self, path: str, field: str, n: int, db: float, n_sims: int, r: dict):
+    def _write_html_report(self, path: str, field: str, n: int, db: float, n_sims: int, r: dict, numeric_summary: dict, neighborhood_summary: dict, crs_warning: str, skipped: int):
         obs_i = r["observed_i"]
         sim_mean = r["simulated_mean"]
         sim_std = r["simulated_std"]
@@ -226,6 +256,12 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
                 f"expected under random spatial arrangement (empirical p = {emp_p:.4f}). "
                 f"The spatial pattern may be sensitive to the specific arrangement of values."
             )
+        if neighborhood_summary["isolated"] > 0:
+            next_action = "Increase the distance band or use a data-driven threshold before relying on this robustness result."
+        elif is_sig:
+            next_action = "Treat the spatial pattern as robust enough for follow-up local analysis, then map where the pattern is concentrated."
+        else:
+            next_action = "Revisit variable choice, study area, and neighborhood definition before using this pattern as planning evidence."
 
         # Simple ASCII histogram of simulated values
         sim_vals = r["simulated_values"]
@@ -342,6 +378,17 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
         margin-bottom: 10px;
         color: #2d3748;
     }}
+    h2 {{
+        color: #1a202c;
+        font-size: 1.15rem;
+        margin: 28px 0 12px;
+    }}
+    .next-action {{
+        background: #f0fff4;
+        border-left: 5px solid #2f855a;
+        padding: 16px 18px;
+        border-radius: 4px;
+    }}
     footer {{
         margin-top: 40px;
         border-top: 1px solid #edf2f7;
@@ -356,13 +403,16 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
 <div class="container">
     <header>
         <h1>Sensitivity Analysis (Monte Carlo Simulation)</h1>
-        <p class="subtitle">Attribute: <strong>{field}</strong> | Features: <strong>{n}</strong> | Distance Band: <strong>{db}</strong> | Simulations: <strong>{n_sims}</strong></p>
+        <p class="subtitle">Attribute: <strong>{html.escape(field)}</strong> | Features: <strong>{n}</strong> | Distance Band: <strong>{db}</strong> | Simulations: <strong>{n_sims}</strong> | Skipped: <strong>{skipped}</strong></p>
     </header>
 
     <div class="verdict-box">
         <h2 class="verdict-title">{verdict}</h2>
         <p class="verdict-desc">{verdict_desc}</p>
     </div>
+
+    <h2>Executive Summary</h2>
+    <p>This sensitivity test compares the observed Moran's I against a Monte Carlo reference distribution created by randomly permuting attribute values across the same spatial structure. A robust result means the observed pattern is unusual under random reassignment; it does not by itself prove causation.</p>
 
     <table>
         <thead>
@@ -378,6 +428,8 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
         </tbody>
     </table>
 
+    {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
+
     <div class="hist-section">
         <h3>Reference Distribution of Simulated Moran's I Values</h3>
         <svg width="{svg_w}" height="{svg_h + 10}" viewBox="0 0 {svg_w} {svg_h + 10}">
@@ -388,6 +440,11 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
             <text x="{svg_w - 60}" y="{svg_h}" fill="#718096" font-size="10">{hist_max:.4f}</text>
         </svg>
     </div>
+
+    <h2>Recommended Next Action</h2>
+    <div class="next-action">{html.escape(next_action)}</div>
+
+    {caveats_html("Attribute Randomization Sensitivity Test", neighborhood_summary, numeric_summary)}
 
     <footer>
         Generated by PlanX GeoStats Lab sensitivity analysis engine.
