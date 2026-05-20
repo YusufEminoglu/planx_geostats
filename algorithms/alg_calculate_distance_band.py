@@ -234,7 +234,7 @@ class CalculateDistanceBandAlgorithm(QgsProcessingAlgorithm):
     </header>
 
     <div class="advice-box">
-        <strong>💡 Recommendation:</strong> To ensure that every feature in the dataset has at least <strong>{k}</strong> neighbor(s) during analysis, select a threshold distance band of at least <strong>{stats["max"]:.6f}</strong> map units.
+        <strong>Recommendation:</strong> To ensure that every feature in the dataset has at least <strong>{k}</strong> neighbor(s) during analysis, select a threshold distance band of at least <strong>{stats["max"]:.6f}</strong> map units.
     </div>
 
     <table>

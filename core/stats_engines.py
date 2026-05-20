@@ -523,6 +523,13 @@ def calculate_global_moran(
     den_var = (n - 1) * (n - 2) * (n - 3) * S0 ** 2
     
     variance = num_var / den_var - (expected_i ** 2) if den_var > 0 else 0.0
+    if variance > 0:
+        z_score = (moran_i - expected_i) / math.sqrt(variance)
+        p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
+    else:
+        variance = 0.0
+        z_score = 0.0
+        p_value = 1.0
 
     return float(moran_i), float(expected_i), float(variance), float(z_score), float(p_value)
 

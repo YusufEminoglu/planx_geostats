@@ -119,7 +119,7 @@ class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
             np.array(e_x), np.array(e_y)
         )
 
-        feedback.pushInfo(f"Mean Angle: {mean_angle:.2f}°  |  Mean Length: {mean_length:.4f}  |  Center: ({center_x:.4f}, {center_y:.4f})")
+        feedback.pushInfo(f"Mean Angle: {mean_angle:.2f} degrees  |  Mean Length: {mean_length:.4f}  |  Center: ({center_x:.4f}, {center_y:.4f})")
 
         # Build the output trend line
         angle_rad = math.radians(mean_angle)

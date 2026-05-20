@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Expanded the library status report with a clear "How to install" section for guided installation and manual OSGeo Shell usage.
 - Added a Processing Toolbox installer, `Install / Update GeoStats Libraries`, under `00 | Setup and Diagnostics` for profiles where the menu helper is not visible.
 - Improved the Processing installer with preview-only behavior, detected path logging, and smarter default mode selection.
+- Fixed Global Moran's I z-score and p-value calculation in the shared statistics engine.
+- Cleaned remaining special symbols from Processing feedback and generated reports.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
 - Added an Exploratory Regression safety limit so overly large candidate-variable searches fail fast with guidance instead of tying up QGIS.

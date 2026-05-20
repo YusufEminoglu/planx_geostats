@@ -211,7 +211,7 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
 
         is_sig = emp_p < 0.05
         if is_sig:
-            verdict = "ROBUST — Statistically Significant"
+            verdict = "ROBUST - Statistically Significant"
             verdict_color = "#2b9348"
             verdict_desc = (
                 f"The observed Moran's I ({obs_i:.6f}) is statistically significant "
@@ -219,7 +219,7 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
                 f"the result of random chance and the analysis is considered robust."
             )
         else:
-            verdict = "SENSITIVE — Not Statistically Significant"
+            verdict = "SENSITIVE - Not Statistically Significant"
             verdict_color = "#d62728"
             verdict_desc = (
                 f"The observed Moran's I ({obs_i:.6f}) falls within the range of values "
