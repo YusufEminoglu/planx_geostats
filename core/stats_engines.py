@@ -1397,3 +1397,135 @@ def calculate_exploratory_regression(
     # Sort by AICc ascending (best first)
     models.sort(key=lambda m: m["aicc"])
     return models
+
+
+def calculate_glr(
+    y: np.ndarray,
+    X_data: np.ndarray,
+    family: str = "gaussian",
+    max_iter: int = 100,
+    tol: float = 1e-6
+) -> dict:
+    """Fits Gaussian, logistic, or Poisson generalized linear regression."""
+    n = len(y)
+    p = X_data.shape[1]
+    if n <= p + 1:
+        raise ValueError("GLR requires more observations than model parameters.")
+    X = np.column_stack((np.ones(n), X_data))
+    family = family.lower()
+
+    if family == "gaussian":
+        xtx_inv = np.linalg.pinv(X.T @ X)
+        beta = xtx_inv @ X.T @ y
+        mu = X @ beta
+        residuals = y - mu
+        rss = float(np.sum(residuals ** 2))
+        df = n - p - 1
+        sigma2 = rss / df if df > 0 else 0.0
+        cov = sigma2 * xtx_inv
+        se = np.sqrt(np.maximum(0.0, np.diagonal(cov)))
+        z_stats = np.divide(beta, se, out=np.zeros_like(beta), where=se > 0)
+        p_values = 2.0 * (1.0 - 0.5 * (1.0 + np.vectorize(math.erf)(np.abs(z_stats) / math.sqrt(2.0))))
+        tss = float(np.sum((y - np.mean(y)) ** 2))
+        r2 = 1.0 - (rss / tss) if tss > 0 else 0.0
+        log_likelihood = -n / 2.0 * (math.log(2.0 * math.pi * rss / n) + 1.0) if rss > 0 else 0.0
+        aic = -2.0 * log_likelihood + 2.0 * (p + 2)
+        return {
+            "family": "gaussian",
+            "coefficients": beta,
+            "std_errors": se,
+            "z_statistics": z_stats,
+            "p_values": p_values,
+            "fitted": mu,
+            "residuals": residuals,
+            "log_likelihood": float(log_likelihood),
+            "aic": float(aic),
+            "r2": float(r2),
+            "iterations": 1,
+            "converged": True,
+        }
+
+    if family == "logistic":
+        if not np.all((y == 0) | (y == 1)):
+            raise ValueError("Logistic GLR requires a binary dependent variable coded as 0 and 1.")
+        beta = np.zeros(p + 1)
+        converged = False
+        for iteration in range(1, max_iter + 1):
+            eta = X @ beta
+            mu = 1.0 / (1.0 + np.exp(-np.clip(eta, -35.0, 35.0)))
+            w = np.maximum(mu * (1.0 - mu), 1e-9)
+            z = eta + (y - mu) / w
+            xtw = X.T * w
+            new_beta = np.linalg.pinv(xtw @ X) @ xtw @ z
+            if np.max(np.abs(new_beta - beta)) < tol:
+                beta = new_beta
+                converged = True
+                break
+            beta = new_beta
+        eta = X @ beta
+        mu = 1.0 / (1.0 + np.exp(-np.clip(eta, -35.0, 35.0)))
+        w = np.maximum(mu * (1.0 - mu), 1e-9)
+        cov = np.linalg.pinv((X.T * w) @ X)
+        se = np.sqrt(np.maximum(0.0, np.diagonal(cov)))
+        z_stats = np.divide(beta, se, out=np.zeros_like(beta), where=se > 0)
+        p_values = 2.0 * (1.0 - 0.5 * (1.0 + np.vectorize(math.erf)(np.abs(z_stats) / math.sqrt(2.0))))
+        eps = 1e-12
+        log_likelihood = float(np.sum(y * np.log(mu + eps) + (1.0 - y) * np.log(1.0 - mu + eps)))
+        aic = -2.0 * log_likelihood + 2.0 * (p + 1)
+        residuals = y - mu
+        return {
+            "family": "logistic",
+            "coefficients": beta,
+            "std_errors": se,
+            "z_statistics": z_stats,
+            "p_values": p_values,
+            "fitted": mu,
+            "residuals": residuals,
+            "log_likelihood": log_likelihood,
+            "aic": float(aic),
+            "r2": None,
+            "iterations": iteration,
+            "converged": converged,
+        }
+
+    if family == "poisson":
+        if np.any(y < 0) or np.any(np.floor(y) != y):
+            raise ValueError("Poisson GLR requires non-negative integer count values.")
+        beta = np.zeros(p + 1)
+        converged = False
+        for iteration in range(1, max_iter + 1):
+            eta = np.clip(X @ beta, -30.0, 30.0)
+            mu = np.maximum(np.exp(eta), 1e-9)
+            z = eta + (y - mu) / mu
+            xtw = X.T * mu
+            new_beta = np.linalg.pinv(xtw @ X) @ xtw @ z
+            if np.max(np.abs(new_beta - beta)) < tol:
+                beta = new_beta
+                converged = True
+                break
+            beta = new_beta
+        eta = np.clip(X @ beta, -30.0, 30.0)
+        mu = np.maximum(np.exp(eta), 1e-9)
+        cov = np.linalg.pinv((X.T * mu) @ X)
+        se = np.sqrt(np.maximum(0.0, np.diagonal(cov)))
+        z_stats = np.divide(beta, se, out=np.zeros_like(beta), where=se > 0)
+        p_values = 2.0 * (1.0 - 0.5 * (1.0 + np.vectorize(math.erf)(np.abs(z_stats) / math.sqrt(2.0))))
+        log_likelihood = float(np.sum(y * np.log(mu) - mu))
+        aic = -2.0 * log_likelihood + 2.0 * (p + 1)
+        residuals = y - mu
+        return {
+            "family": "poisson",
+            "coefficients": beta,
+            "std_errors": se,
+            "z_statistics": z_stats,
+            "p_values": p_values,
+            "fitted": mu,
+            "residuals": residuals,
+            "log_likelihood": log_likelihood,
+            "aic": float(aic),
+            "r2": None,
+            "iterations": iteration,
+            "converged": converged,
+        }
+
+    raise ValueError("Unsupported GLR family. Use gaussian, logistic, or poisson.")

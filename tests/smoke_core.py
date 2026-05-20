@@ -140,6 +140,19 @@ def test_ripleys_k_returns_l_diagnostics() -> None:
         assert "isolated_count" in row
 
 
+def test_glr_families_return_fitted_values() -> None:
+    x = np.array([[0.0], [1.0], [2.0], [3.0], [4.0], [5.0]])
+    gaussian = stats.calculate_glr(np.array([1.0, 2.0, 2.8, 4.2, 5.1, 5.9]), x, "gaussian")
+    assert gaussian["converged"]
+    assert len(gaussian["fitted"]) == len(x)
+    logistic = stats.calculate_glr(np.array([0.0, 0.0, 0.0, 1.0, 1.0, 1.0]), x, "logistic")
+    assert len(logistic["fitted"]) == len(x)
+    assert np.all((logistic["fitted"] >= 0.0) & (logistic["fitted"] <= 1.0))
+    poisson = stats.calculate_glr(np.array([0.0, 1.0, 1.0, 3.0, 5.0, 8.0]), x, "poisson")
+    assert len(poisson["fitted"]) == len(x)
+    assert np.all(poisson["fitted"] >= 0.0)
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -149,6 +162,7 @@ def run_all() -> None:
     test_incremental_autocorrelation_neighbor_diagnostics()
     test_gwr_reports_local_support()
     test_ripleys_k_returns_l_diagnostics()
+    test_glr_families_return_fitted_values()
     print("CORE SMOKE TESTS OK")
 
 

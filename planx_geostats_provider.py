@@ -19,6 +19,7 @@ from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgor
 from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
 from .algorithms.alg_gwr import GWRAlgorithm
 from .algorithms.alg_exploratory_regression import ExploratoryRegressionAlgorithm
+from .algorithms.alg_generalized_linear_regression import GeneralizedLinearRegressionAlgorithm
 from .algorithms.alg_median_center import MedianCenterAlgorithm
 from .algorithms.alg_central_feature import CentralFeatureAlgorithm
 from .algorithms.alg_general_g import GeneralGAlgorithm
@@ -81,6 +82,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
 
         # 05 | Models and Scenarios
         self.addAlgorithm(SpatialRegressionAlgorithm())
+        self.addAlgorithm(GeneralizedLinearRegressionAlgorithm())
         self.addAlgorithm(ExploratoryRegressionAlgorithm())
         self.addAlgorithm(GWRAlgorithm())
         self.addAlgorithm(SensitivityTestAlgorithm())

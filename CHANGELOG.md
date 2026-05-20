@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added audit fields to Multivariate Clustering and Similarity Search outputs for cluster size, cluster distance, similarity percentile, and similarity tier.
 - Added weight-quality checks and audit fields to Mean Center, Standard Distance, and Standard Deviational Ellipse outputs.
 - Added Ripley's K-Function as a new urban pattern scan tool with L(d)-d diagnostics, neighborhood support, and planning caveats.
+- Added Generalized Linear Regression (GLR) with Gaussian, Logistic, and Poisson model families.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
 - Documented the smoke-test and packaging validation workflow in the README.
 - Cleaned remaining special symbols from Processing feedback and generated reports.
