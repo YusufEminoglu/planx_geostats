@@ -19,3 +19,13 @@ The helper intentionally does not install packages silently. QGIS plugins run in
 After installation, restart QGIS completely. Newly installed Python modules may not be visible to already-loaded Processing providers until the application starts a fresh Python process.
 
 If the menu action is not visible in a QGIS profile, open Processing Toolbox and use `PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status` to inspect the detected Python paths. To install from the Toolbox, run `Install / Update GeoStats Libraries`, choose `QGIS Python pip` or `OSGeo Shell`, and review the Processing log. With the confirmation checkbox disabled, the tool prints a preview command and stops; with the checkbox enabled, it runs pip and streams the install log. The installer never runs silently.
+
+## Developer Validation
+
+Run the QGIS-independent smoke tests before packaging:
+
+```powershell
+py -3 planx_geostats\tests\smoke_core.py
+py -3 packaging\validate_plugin.py planx_geostats --strict
+powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
+```

@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Upgraded Sensitivity Test reports with Monte Carlo interpretation, input diagnostics, neighborhood diagnostics, caveats, and next-action guidance.
 - Upgraded GWR outputs and reports with local support diagnostics, model-quality checks, CRS caveats, and bandwidth interpretation guidance.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
+- Documented the smoke-test and packaging validation workflow in the README.
 - Cleaned remaining special symbols from Processing feedback and generated reports.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.
