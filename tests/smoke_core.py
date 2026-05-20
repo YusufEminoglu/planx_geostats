@@ -153,6 +153,21 @@ def test_glr_families_return_fitted_values() -> None:
     assert np.all(poisson["fitted"] >= 0.0)
 
 
+def test_bivariate_lee_l_returns_classes() -> None:
+    neighbors = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2]}
+    weights = {0: [1.0], 1: [0.5, 0.5], 2: [0.5, 0.5], 3: [1.0]}
+    lee_l, lag_y, classes = stats.calculate_bivariate_lee_l(
+        np.array([1.0, 2.0, 3.0, 4.0]),
+        np.array([1.0, 2.0, 3.0, 4.0]),
+        neighbors,
+        weights,
+        [0, 1, 2, 3],
+    )
+    assert len(lee_l) == 4
+    assert len(lag_y) == 4
+    assert len(classes) == 4
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -163,6 +178,7 @@ def run_all() -> None:
     test_gwr_reports_local_support()
     test_ripleys_k_returns_l_diagnostics()
     test_glr_families_return_fitted_values()
+    test_bivariate_lee_l_returns_classes()
     print("CORE SMOKE TESTS OK")
 
 

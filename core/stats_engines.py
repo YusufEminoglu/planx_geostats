@@ -88,6 +88,56 @@ def calculate_getis_ord(
     return z_scores, p_values, conf_bins
 
 
+def calculate_bivariate_lee_l(
+    x_values: np.ndarray,
+    y_values: np.ndarray,
+    neighbors: dict[int, list[int]],
+    weights: dict[int, list[float]],
+    id_order: list[int]
+) -> tuple[np.ndarray, np.ndarray, list[str]]:
+    """Calculates local bivariate spatial association using a Lee's L style statistic."""
+    n = len(x_values)
+    if n < 3:
+        raise ValueError("Bivariate spatial association requires at least 3 observations.")
+    x_std = np.std(x_values)
+    y_std = np.std(y_values)
+    local_l = np.zeros(n)
+    spatial_lag_y = np.zeros(n)
+    classes = ["Not Significant"] * n
+    if x_std == 0 or y_std == 0:
+        return local_l, spatial_lag_y, classes
+
+    zx = (x_values - np.mean(x_values)) / x_std
+    zy = (y_values - np.mean(y_values)) / y_std
+    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+
+    for idx, fid in enumerate(id_order):
+        neighs = neighbors.get(fid, [])
+        w_list = weights.get(fid, [])
+        lag = 0.0
+        w_sum = 0.0
+        for j, nid in enumerate(neighs):
+            if nid in id_to_idx:
+                w = w_list[j] if j < len(w_list) else 0.0
+                lag += w * zy[id_to_idx[nid]]
+                w_sum += w
+        if w_sum == 0:
+            continue
+        spatial_lag_y[idx] = lag
+        local_l[idx] = zx[idx] * lag
+        if local_l[idx] > 0:
+            if zx[idx] > 0 and lag > 0:
+                classes[idx] = "High-X / High-Y Lag"
+            elif zx[idx] < 0 and lag < 0:
+                classes[idx] = "Low-X / Low-Y Lag"
+        elif local_l[idx] < 0:
+            if zx[idx] > 0 and lag < 0:
+                classes[idx] = "High-X / Low-Y Lag"
+            elif zx[idx] < 0 and lag > 0:
+                classes[idx] = "Low-X / High-Y Lag"
+    return local_l, spatial_lag_y, classes
+
+
 def calculate_mean_center(
     x_coords: np.ndarray,
     y_coords: np.ndarray,
