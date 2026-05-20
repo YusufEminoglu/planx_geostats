@@ -73,11 +73,28 @@ def test_sparse_neighbor_summary() -> None:
     assert summary["density_label"] == "Sparse with isolated observations"
 
 
+def test_regression_quality_flags_collinearity() -> None:
+    y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+    x = np.array([
+        [1.0, 2.0],
+        [2.0, 4.0],
+        [3.0, 6.0],
+        [4.0, 8.0],
+        [5.0, 10.0],
+    ])
+    summary = diagnostics.regression_quality_summary(y, x, ["x1", "x2"], 6)
+    assert summary["used_records"] == 5
+    assert summary["skipped_records"] == 1
+    assert summary["high_correlations"]
+    assert summary["condition_number"] is not None
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
     test_general_g_non_contiguous_ids()
     test_sparse_neighbor_summary()
+    test_regression_quality_flags_collinearity()
     print("CORE SMOKE TESTS OK")
 
 

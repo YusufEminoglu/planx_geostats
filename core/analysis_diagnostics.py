@@ -181,3 +181,91 @@ def caveats_html(method_name: str, neighborhood_summary: Optional[dict], numeric
             caveats.append("A fully connected graph can hide local structure; consider a smaller distance band or a data-driven threshold.")
     items = "".join(f"<li>{html.escape(item)}</li>" for item in caveats)
     return f"<section><h2>Assumptions and Caveats</h2><ul>{items}</ul></section>"
+
+
+def regression_quality_summary(y: np.ndarray, x_data: np.ndarray, x_names: list[str], total_features: int) -> dict:
+    n = int(len(y))
+    p = int(x_data.shape[1]) if x_data.ndim == 2 else 0
+    skipped = max(0, int(total_features) - n)
+    near_constant = []
+    for idx, name in enumerate(x_names):
+        column = x_data[:, idx]
+        if float(np.std(column)) <= 1e-9:
+            near_constant.append(name)
+
+    corr_warnings = []
+    max_abs_corr = 0.0
+    if p > 1 and n > 2:
+        corr = np.corrcoef(x_data, rowvar=False)
+        for i in range(p):
+            for j in range(i + 1, p):
+                value = corr[i, j]
+                if np.isfinite(value):
+                    max_abs_corr = max(max_abs_corr, abs(float(value)))
+                    if abs(value) >= 0.85:
+                        corr_warnings.append((x_names[i], x_names[j], float(value)))
+
+    condition_number = None
+    if p > 0 and n > p:
+        design = np.column_stack((np.ones(n), x_data))
+        try:
+            condition_number = float(np.linalg.cond(design))
+        except Exception:
+            condition_number = None
+
+    risks = []
+    if n <= (p + 1) * 5:
+        risks.append("Sample size is small relative to the number of model parameters.")
+    if near_constant:
+        risks.append("One or more predictors are constant or nearly constant.")
+    if corr_warnings:
+        risks.append("High pairwise predictor correlation suggests possible multicollinearity.")
+    if condition_number is not None and condition_number >= 30:
+        risks.append("The design matrix condition number suggests unstable coefficient estimates.")
+
+    return {
+        "total_features": int(total_features),
+        "used_records": n,
+        "skipped_records": skipped,
+        "predictor_count": p,
+        "near_constant": near_constant,
+        "high_correlations": corr_warnings,
+        "max_abs_correlation": max_abs_corr,
+        "condition_number": condition_number,
+        "risks": risks,
+    }
+
+
+def regression_quality_html(summary: dict) -> str:
+    corr_text = "None above 0.85"
+    if summary["high_correlations"]:
+        corr_text = "; ".join(
+            f"{left} vs {right}: {corr:.3f}"
+            for left, right, corr in summary["high_correlations"][:8]
+        )
+    rows = [
+        ("Total input features", str(summary["total_features"])),
+        ("Complete records used", str(summary["used_records"])),
+        ("Skipped/incomplete records", str(summary["skipped_records"])),
+        ("Predictor count", str(summary["predictor_count"])),
+        ("Near-constant predictors", ", ".join(summary["near_constant"]) or "None"),
+        ("Maximum absolute predictor correlation", format_number(summary["max_abs_correlation"], 3)),
+        ("High-correlation pairs", corr_text),
+        ("Condition number", format_number(summary["condition_number"], 3)),
+    ]
+    body = "".join(
+        "<tr>"
+        f"<td class=\"metric-name\">{html.escape(label)}</td>"
+        f"<td>{html.escape(value)}</td>"
+        "</tr>"
+        for label, value in rows
+    )
+    risk_items = "".join(f"<li>{html.escape(risk)}</li>" for risk in summary["risks"])
+    if not risk_items:
+        risk_items = "<li>No major automatic model-quality warning was triggered.</li>"
+    return (
+        "<h2>Model Quality Checks</h2>"
+        "<table><thead><tr><th>Check</th><th>Result</th></tr></thead>"
+        f"<tbody>{body}</tbody></table>"
+        f"<div class=\"note\"><strong>Analyst review:</strong><ul>{risk_items}</ul></div>"
+    )
