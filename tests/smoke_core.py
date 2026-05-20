@@ -106,6 +106,23 @@ def test_incremental_autocorrelation_neighbor_diagnostics() -> None:
         assert "isolated_count" in result
 
 
+def test_gwr_reports_local_support() -> None:
+    y = np.array([1.0, 2.0, 2.5, 4.0, 5.0, 6.0])
+    x = np.array([[1.0], [2.0], [2.5], [4.0], [5.0], [6.0]])
+    coords = np.array([
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [2.0, 0.0],
+        [3.0, 0.0],
+        [4.0, 0.0],
+        [5.0, 0.0],
+    ])
+    result = stats.calculate_gwr(y, x, coords, 4, "adaptive_bisquare")
+    assert "local_support" in result
+    assert len(result["local_support"]) == len(y)
+    assert np.min(result["local_support"]) > 0
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -113,6 +130,7 @@ def run_all() -> None:
     test_sparse_neighbor_summary()
     test_regression_quality_flags_collinearity()
     test_incremental_autocorrelation_neighbor_diagnostics()
+    test_gwr_reports_local_support()
     print("CORE SMOKE TESTS OK")
 
 

@@ -654,6 +654,7 @@ def calculate_gwr(
     local_t = np.zeros((n, p + 1))
     y_pred = np.zeros(n)
     local_r2 = np.zeros(n)
+    local_support = np.zeros(n, dtype=int)
 
     # Compute distance matrix
     dists_matrix = np.sqrt(((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
@@ -685,6 +686,7 @@ def calculate_gwr(
         if sum_w == 0:
             w = np.ones(n)
             sum_w = n
+        local_support[i] = int(np.sum(w > 1e-12))
 
         # Solve local regression: beta_i = (X.T * W * X)^-1 * X.T * W * Y
         try:
@@ -760,6 +762,7 @@ def calculate_gwr(
         "local_beta": local_beta,
         "local_se": local_se,
         "local_t": local_t,
+        "local_support": local_support,
         "y_pred": y_pred,
         "residuals": residuals,
         "local_r2": local_r2,

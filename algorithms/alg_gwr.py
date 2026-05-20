@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import html
 import os
 import tempfile
 import numpy as np
@@ -30,6 +31,11 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_gwr
+from ..core.analysis_diagnostics import (
+    crs_unit_warning,
+    regression_quality_html,
+    regression_quality_summary,
+)
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -174,6 +180,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         indep_vals = []
         coords_list = []
         valid_fids = []
+        skipped = 0
 
         total = source.featureCount() or 1
         for idx, f in enumerate(source.getFeatures()):
@@ -182,10 +189,12 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
 
             geom = f.geometry()
             if geom.isEmpty():
+                skipped += 1
                 continue
 
             y_val = f.attribute(dep_idx)
             if y_val is None or y_val == QVariant() or str(y_val) == 'NULL':
+                skipped += 1
                 continue
 
             has_null = False
@@ -202,6 +211,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                     break
 
             if has_null:
+                skipped += 1
                 continue
 
             try:
@@ -211,6 +221,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                 coords_list.append([pt.x(), pt.y()])
                 valid_fids.append(f.id())
             except (ValueError, TypeError):
+                skipped += 1
                 continue
             
             feedback.setProgress(int(20 * (idx / total)))
@@ -227,6 +238,18 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         y = np.array(dep_vals)
         X_data = np.array(indep_vals)
         coords = np.array(coords_list)
+        model_quality = regression_quality_summary(y, X_data, indep_fields, source.featureCount())
+        crs_warning = crs_unit_warning(source)
+        feedback.pushInfo(
+            "GWR model quality diagnostics: "
+            f"{model_quality['used_records']} complete record(s), "
+            f"{model_quality['skipped_records']} skipped record(s), "
+            f"{model_quality['predictor_count']} predictor(s)."
+        )
+        for risk in model_quality["risks"]:
+            feedback.pushWarning(risk)
+        if crs_warning:
+            feedback.pushWarning(crs_warning)
 
         feedback.pushInfo("Solving Geographically Weighted Regression...")
         results = calculate_gwr(y, X_data, coords, bandwidth, kernel_type)
@@ -240,6 +263,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         out_fields.append(QgsField("y_predicted", QVariant.Double, len=12, prec=6))
         out_fields.append(QgsField("residual", QVariant.Double, len=12, prec=6))
         out_fields.append(QgsField("local_r2", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("gwr_nbrs", QVariant.Int))
         
         # Intercept and beta fields
         out_fields.append(QgsField("coef_int", QVariant.Double, len=12, prec=6))
@@ -268,6 +292,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         local_beta = results["local_beta"]
         local_se = results["local_se"]
         local_t = results["local_t"]
+        local_support = results["local_support"]
         y_pred = results["y_pred"]
         residuals = results["residuals"]
         local_r2 = results["local_r2"]
@@ -291,6 +316,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                 out_feat.setAttribute("y_predicted", float(y_pred[idx]))
                 out_feat.setAttribute("residual", float(residuals[idx]))
                 out_feat.setAttribute("local_r2", float(local_r2[idx]))
+                out_feat.setAttribute("gwr_nbrs", int(local_support[idx]))
                 
                 # Intercept
                 out_feat.setAttribute("coef_int", float(local_beta[idx, 0]))
@@ -308,6 +334,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                 out_feat.setAttribute("y_predicted", None)
                 out_feat.setAttribute("residual", None)
                 out_feat.setAttribute("local_r2", None)
+                out_feat.setAttribute("gwr_nbrs", None)
                 out_feat.setAttribute("coef_int", None)
                 out_feat.setAttribute("se_int", None)
                 out_feat.setAttribute("t_int", None)
@@ -322,7 +349,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
 
         # Generate GWR diagnostics report
         feedback.pushInfo("Generating global diagnostics HTML report...")
-        self.write_html_report(results, html_path, dep_var, kernel_type, bandwidth)
+        self.write_html_report(results, html_path, dep_var, kernel_type, bandwidth, model_quality, crs_warning, skipped)
 
         return {
             self.OUTPUT: dest_id,
@@ -330,7 +357,26 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             "HTML_REPORT_OUT": html_path
         }
 
-    def write_html_report(self, res: dict, path: str, dep: str, kernel: str, bw: float):
+    def write_html_report(self, res: dict, path: str, dep: str, kernel: str, bw: float, model_quality: dict, crs_warning: str, skipped: int):
+        aicc_text = "N/A" if not np.isfinite(res["aicc"]) else f"{res['aicc']:.4f}"
+        local_r2 = np.array(res["local_r2"], dtype=float)
+        support = np.array(res.get("local_support", []), dtype=float)
+        low_support = int(np.sum(support <= model_quality["predictor_count"] + 1)) if len(support) else 0
+        local_r2_summary = (
+            f"min={np.nanmin(local_r2):.4f}, median={np.nanmedian(local_r2):.4f}, max={np.nanmax(local_r2):.4f}"
+            if len(local_r2) else "n/a"
+        )
+        support_summary = (
+            f"min={int(np.nanmin(support))}, median={np.nanmedian(support):.1f}, max={int(np.nanmax(support))}"
+            if len(support) else "n/a"
+        )
+        if low_support:
+            next_action = "Increase the adaptive neighbor count or fixed bandwidth; some local regressions have weak local support."
+        elif model_quality["risks"]:
+            next_action = "Resolve model-quality warnings before interpreting local coefficient surfaces."
+        else:
+            next_action = "Map local coefficients and local R2 together, then compare spatial patterns against planning theory and residual diagnostics."
+        crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>" if crs_warning else ""
         html_content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -429,14 +475,31 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         color: #a0aec0;
         text-align: center;
     }}
+    .note {{
+        background: #fff8e6;
+        border-left: 5px solid #b7791f;
+        padding: 14px 18px;
+        margin: 20px 0;
+    }}
+    .next-action {{
+        background: #f0fff4;
+        border-left: 5px solid #2f855a;
+        padding: 16px 18px;
+        border-radius: 4px;
+    }}
 </style>
 </head>
 <body>
 <div class="container">
     <header>
         <h1>Geographically Weighted Regression (GWR) Report</h1>
-        <p class="subtitle">Dependent Variable: <strong>{dep}</strong> | Sample Size: <strong>{len(res["residuals"])}</strong></p>
+        <p class="subtitle">Dependent Variable: <strong>{html.escape(dep)}</strong> | Sample Size: <strong>{len(res["residuals"])}</strong> | Skipped: <strong>{skipped}</strong></p>
     </header>
+
+    <div class="note">
+        <strong>Executive summary:</strong> GWR estimates local regression equations to explore spatially varying relationships. Treat local coefficients as diagnostic surfaces, not as causal proof; bandwidth choice and local support strongly influence the result.
+    </div>
+    {crs_block}
 
     <div class="grid">
         <div class="card">
@@ -445,7 +508,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         </div>
         <div class="card">
             <div class="card-title">AICc Value</div>
-            <div class="card-value">{res["aicc"]:.4f if res["aicc"] != np.inf else "N/A"}</div>
+            <div class="card-value">{aicc_text}</div>
         </div>
         <div class="card">
             <div class="card-title">Residual Sum of Squares</div>
@@ -456,6 +519,8 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             <div class="card-value">{res["effective_df"]:.4f}</div>
         </div>
     </div>
+
+    {regression_quality_html(model_quality)}
 
     <h2>Kernel Parameter Configurations</h2>
     <table>
@@ -474,8 +539,30 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                 <td><strong>Bandwidth Settings</strong></td>
                 <td>{bw} {"neighbors" if "adaptive" in kernel else "map units"}</td>
             </tr>
+            <tr>
+                <td><strong>Local R2 Distribution</strong></td>
+                <td>{local_r2_summary}</td>
+            </tr>
+            <tr>
+                <td><strong>Local Kernel Support</strong></td>
+                <td>{support_summary}</td>
+            </tr>
+            <tr>
+                <td><strong>Low-Support Local Regressions</strong></td>
+                <td>{low_support}</td>
+            </tr>
         </tbody>
     </table>
+
+    <h2>Recommended Analyst Action</h2>
+    <div class="next-action">{html.escape(next_action)}</div>
+
+    <h2>Assumptions and Caveats</h2>
+    <ul>
+        <li>GWR is exploratory and scale-sensitive; compare several bandwidths before interpreting local coefficient patterns.</li>
+        <li>Local coefficients can be unstable when predictors are collinear or local kernel support is weak.</li>
+        <li>Use local R2, residuals, coefficient signs, and domain knowledge together; do not rely on one surface alone.</li>
+    </ul>
 
     <footer>
         Generated by PlanX GeoStats Lab local spatial statistics engine.
