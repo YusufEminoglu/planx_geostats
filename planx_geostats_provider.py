@@ -14,6 +14,9 @@ from .algorithms.alg_sde import SDEAlgorithm
 from .algorithms.alg_local_moran import LocalMoranAlgorithm
 from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
 from .algorithms.alg_global_moran import GlobalMoranAlgorithm
+from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgorithm
+from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
+from .algorithms.alg_gwr import GWRAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -41,5 +44,8 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(LocalMoranAlgorithm())
         self.addAlgorithm(SpatialRegressionAlgorithm())
         self.addAlgorithm(GlobalMoranAlgorithm())
+        self.addAlgorithm(AverageNearestNeighborAlgorithm())
+        self.addAlgorithm(StandardDistanceAlgorithm())
+        self.addAlgorithm(GWRAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
 

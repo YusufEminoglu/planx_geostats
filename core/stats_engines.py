@@ -522,12 +522,243 @@ def calculate_global_moran(
     
     variance = num_var / den_var - (expected_i ** 2) if den_var > 0 else 0.0
 
-    if variance > 0:
-        z_score = (moran_i - expected_i) / math.sqrt(variance)
-        p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
-    else:
-        z_score = 0.0
-        p_value = 1.0
-
     return float(moran_i), float(expected_i), float(variance), float(z_score), float(p_value)
+
+
+def calculate_average_nearest_neighbor(
+    x: np.ndarray,
+    y: np.ndarray,
+    study_area: float | None = None
+) -> tuple[float, float, float, float, float, float]:
+    """Calculates Average Nearest Neighbor statistics.
+
+    Returns:
+        A tuple of (observed_mean, expected_mean, nn_ratio, z_score, p_value, study_area)
+    """
+    n = len(x)
+    if n <= 1:
+        raise ValueError("Average Nearest Neighbor requires at least 2 points.")
+
+    coords = np.column_stack((x, y))
+
+    # Try using scikit-learn KDTree for maximum performance, fallback to vectorized NumPy
+    try:
+        from sklearn.neighbors import NearestNeighbors
+        nbrs = NearestNeighbors(n_neighbors=2, algorithm='auto').fit(coords)
+        distances, _ = nbrs.kneighbors(coords)
+        nn_dists = distances[:, 1]
+    except ImportError:
+        # Vectorized chunked NumPy distance finder to protect memory
+        nn_dists = np.zeros(n)
+        chunk_size = 1000
+        for start in range(0, n, chunk_size):
+            end = min(start + chunk_size, n)
+            chunk_coords = coords[start:end]
+            d = np.sqrt(((chunk_coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
+            for i in range(start, end):
+                d[i - start, i] = np.inf
+            nn_dists[start:end] = np.min(d, axis=1)
+
+    observed_mean = float(np.mean(nn_dists))
+
+    # Fallback to minimum bounding box area if study area is not provided
+    if study_area is None or study_area <= 0:
+        min_x, max_x = np.min(x), np.max(x)
+        min_y, max_y = np.min(y), np.max(y)
+        w = max_x - min_x
+        h = max_y - min_y
+        study_area = float(w * h) if (w * h > 0) else 1.0
+
+    density = n / study_area
+    expected_mean = 0.5 / math.sqrt(density)
+
+    # Standard error
+    se = 0.26136 / math.sqrt(n * density)
+
+    nn_ratio = observed_mean / expected_mean if expected_mean > 0 else 1.0
+    z_score = (observed_mean - expected_mean) / se if se > 0 else 0.0
+    p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
+
+    return observed_mean, expected_mean, nn_ratio, z_score, p_value, study_area
+
+
+def calculate_standard_distance(
+    x_coords: np.ndarray,
+    y_coords: np.ndarray,
+    weights: np.ndarray | None = None
+) -> tuple[float, float, float]:
+    """Calculates Standard Distance and mean center.
+
+    Returns:
+        A tuple of (mean_x, mean_y, standard_distance)
+    """
+    n = len(x_coords)
+    if n == 0:
+        return 0.0, 0.0, 0.0
+
+    mean_x, mean_y = calculate_mean_center(x_coords, y_coords, weights)
+
+    if weights is None or len(weights) == 0:
+        var_x = np.sum((x_coords - mean_x) ** 2) / n
+        var_y = np.sum((y_coords - mean_y) ** 2) / n
+    else:
+        sum_w = np.sum(weights)
+        if sum_w == 0:
+            var_x = np.sum((x_coords - mean_x) ** 2) / n
+            var_y = np.sum((y_coords - mean_y) ** 2) / n
+        else:
+            var_x = np.sum(weights * (x_coords - mean_x) ** 2) / sum_w
+            var_y = np.sum(weights * (y_coords - mean_y) ** 2) / sum_w
+
+    std_distance = math.sqrt(var_x + var_y)
+    return mean_x, mean_y, std_distance
+
+
+def calculate_gwr(
+    y: np.ndarray,
+    X_data: np.ndarray,
+    coords: np.ndarray,
+    bandwidth: float,
+    kernel_type: str = "adaptive_bisquare"
+) -> dict:
+    """Performs Geographically Weighted Regression (GWR) analysis.
+
+    Args:
+        y: Dependent variable (n,)
+        X_data: Independent variables (n, p)
+        coords: Centroid coordinates (n, 2)
+        bandwidth: Kernel bandwidth (distance or neighbor count)
+        kernel_type: fixed_gaussian, fixed_bisquare, or adaptive_bisquare
+
+    Returns:
+        A dictionary containing GWR coefficients, errors, local R2, and statistics.
+    """
+    n = len(y)
+    p = X_data.shape[1]
+
+    # Add intercept column
+    X = np.column_stack((np.ones(n), X_data))
+
+    # Initialize results
+    local_beta = np.zeros((n, p + 1))
+    local_se = np.zeros((n, p + 1))
+    local_t = np.zeros((n, p + 1))
+    y_pred = np.zeros(n)
+    local_r2 = np.zeros(n)
+
+    # Compute distance matrix
+    dists_matrix = np.sqrt(((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
+
+    for i in range(n):
+        dists = dists_matrix[i]
+
+        # Calculate weights based on kernel type
+        if kernel_type == "fixed_gaussian":
+            w = np.exp(-0.5 * (dists / bandwidth) ** 2)
+        elif kernel_type == "fixed_bisquare":
+            w = np.zeros(n)
+            mask = dists < bandwidth
+            w[mask] = (1.0 - (dists[mask] / bandwidth) ** 2) ** 2
+        elif kernel_type == "adaptive_bisquare":
+            k = int(bandwidth)
+            sorted_dists = np.sort(dists)
+            d_k = sorted_dists[min(k - 1, n - 1)]
+            w = np.zeros(n)
+            if d_k > 0:
+                mask = dists < d_k
+                w[mask] = (1.0 - (dists[mask] / d_k) ** 2) ** 2
+            else:
+                w[dists == 0] = 1.0
+        else:
+            w = np.ones(n)
+
+        sum_w = np.sum(w)
+        if sum_w == 0:
+            w = np.ones(n)
+            sum_w = n
+
+        # Solve local regression: beta_i = (X.T * W * X)^-1 * X.T * W * Y
+        try:
+            xtw = X.T * w
+            xtwx = xtw @ X
+            xtwx_inv = np.linalg.pinv(xtwx)
+            beta_i = xtwx_inv @ xtw @ y
+            local_beta[i] = beta_i
+            y_pred[i] = X[i] @ beta_i
+
+            # Standard errors and t-statistics
+            res_i = y - (X @ beta_i)
+            df_i = sum_w - p - 1
+            if df_i > 0:
+                s2_i = np.sum(w * (res_i ** 2)) / df_i
+                cov_beta_i = s2_i * xtwx_inv
+                se_beta_i = np.sqrt(np.maximum(0.0, np.diagonal(cov_beta_i)))
+                local_se[i] = se_beta_i
+                for j in range(p + 1):
+                    if se_beta_i[j] > 0:
+                        local_t[i, j] = beta_i[j] / se_beta_i[j]
+
+            # Local R2
+            y_w_mean = np.sum(w * y) / sum_w
+            tss_i = np.sum(w * (y - y_w_mean) ** 2)
+            rss_i = np.sum(w * (res_i ** 2))
+            local_r2[i] = 1.0 - (rss_i / tss_i) if tss_i > 0 else 1.0
+        except Exception:
+            pass
+
+    residuals = y - y_pred
+    rss = np.sum(residuals ** 2)
+    tss = np.sum((y - np.mean(y)) ** 2)
+    global_r2 = 1.0 - (rss / tss) if tss > 0 else 0.0
+
+    # Effective degrees of freedom (Trace of Hat Matrix)
+    tr_S = 0.0
+    for i in range(n):
+        try:
+            if kernel_type == "fixed_gaussian":
+                w = np.exp(-0.5 * (dists_matrix[i] / bandwidth) ** 2)
+            elif kernel_type == "fixed_bisquare":
+                w = np.zeros(n)
+                mask = dists_matrix[i] < bandwidth
+                w[mask] = (1.0 - (dists_matrix[i][mask] / bandwidth) ** 2) ** 2
+            elif kernel_type == "adaptive_bisquare":
+                k = int(bandwidth)
+                d_k = np.sort(dists_matrix[i])[min(k - 1, n - 1)]
+                w = np.zeros(n)
+                if d_k > 0:
+                    mask = dists_matrix[i] < d_k
+                    w[mask] = (1.0 - (dists_matrix[i][mask] / d_k) ** 2) ** 2
+                else:
+                    w[dists_matrix[i] == 0] = 1.0
+            else:
+                w = np.ones(n)
+
+            xtw = X.T * w
+            xtwx_inv = np.linalg.pinv(xtw @ X)
+            s_i = (X[i] @ xtwx_inv) @ xtw
+            tr_S += s_i[i]
+        except Exception:
+            pass
+
+    if tr_S <= 0:
+        tr_S = float(p + 1)
+
+    aicc = np.inf
+    if n - tr_S - 2 > 0 and rss > 0:
+        aicc = n * np.log(rss / n) + n * np.log(2 * np.pi) + n * (n + tr_S) / (n - 2 - tr_S)
+
+    return {
+        "local_beta": local_beta,
+        "local_se": local_se,
+        "local_t": local_t,
+        "y_pred": y_pred,
+        "residuals": residuals,
+        "local_r2": local_r2,
+        "rss": rss,
+        "tss": tss,
+        "r2": global_r2,
+        "aicc": aicc,
+        "effective_df": tr_S
+    }
+
 
