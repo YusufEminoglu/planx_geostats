@@ -1,6 +1,6 @@
 # PlanX GeoStats Lab
 
-PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in planning workflows. It keeps the analytical tools inside the Processing Toolbox, while the built-in **PlanX > GeoStats Libraries** helper manages optional Python libraries used by advanced workflows.
+PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in planning workflows. It keeps the analytical tools inside the Processing Toolbox, while the built-in **PlanX GeoStats Lab > GeoStats Libraries** helper manages optional Python libraries used by advanced workflows.
 
 ## Tool Groups
 
@@ -12,7 +12,7 @@ PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in plann
 
 ## GeoStats Libraries Guide
 
-Open **PlanX > GeoStats Libraries** from the QGIS menu when an advanced method reports that optional Python libraries are missing. The helper checks the active QGIS Python environment, shows which packages are available, explains what each package contributes, previews the exact pip command, and runs installation only after explicit confirmation.
+Open **PlanX GeoStats Lab > GeoStats Libraries** from the QGIS menu when an advanced method reports that optional Python libraries are missing. The helper checks the active QGIS Python environment, shows which packages are available, explains what each package contributes, previews the exact pip command, and runs installation only after explicit confirmation.
 
 The helper intentionally does not install packages silently. QGIS plugins run inside QGIS's own Python process, so installing into a system Python, Anaconda environment, or IDE interpreter will not help unless QGIS is using that same interpreter. The command preview is therefore part of the workflow: it lets the user confirm that the executable path belongs to QGIS before changing the environment.
 

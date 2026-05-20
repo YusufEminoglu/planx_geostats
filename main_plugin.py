@@ -18,6 +18,9 @@ from .planx_geostats_provider import PlanXGeoStatsProvider
 
 
 class PlanXGeoStatsPlugin:
+    MENU_NAME = "&PlanX GeoStats Lab"
+    LIBRARIES_MENU_PATH = "PlanX GeoStats Lab > GeoStats Libraries"
+
     def __init__(self, iface):
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
@@ -32,7 +35,7 @@ class PlanXGeoStatsPlugin:
         icon = QIcon(os.path.join(self.plugin_dir, "icons", "icon.png"))
         self.dependencies_action = QAction(icon, "GeoStats Libraries", self.iface.mainWindow())
         self.dependencies_action.triggered.connect(self.open_dependencies)
-        self.iface.addPluginToMenu("&PlanX", self.dependencies_action)
+        self.iface.addPluginToMenu(self.MENU_NAME, self.dependencies_action)
         self._warn_if_dependencies_missing()
 
     def unload(self) -> None:
@@ -40,7 +43,7 @@ class PlanXGeoStatsPlugin:
             QgsApplication.processingRegistry().removeProvider(self.provider)
             self.provider = None
         if self.dependencies_action is not None:
-            self.iface.removePluginMenu("&PlanX", self.dependencies_action)
+            self.iface.removePluginMenu(self.MENU_NAME, self.dependencies_action)
             self.dependencies_action = None
         self.dependencies_dialog = None
 
@@ -66,5 +69,5 @@ class PlanXGeoStatsPlugin:
         self.iface.messageBar().pushWarning(
             "PlanX GeoStats Lab",
             f"Optional GeoStats libraries are missing: {missing}. "
-            "Open PlanX > GeoStats Libraries to review and install them.",
+            f"Open {self.LIBRARIES_MENU_PATH} to review and install them.",
         )
