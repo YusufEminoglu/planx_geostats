@@ -1,0 +1,21 @@
+[general]
+name=PlanX-GeoStats
+qgisMinimumVersion=3.28
+qgisMaximumVersion=3.99
+description=PlanX suite spatial statistics and geographic distribution tools, featuring Hot Spot and LISA analysis.
+version=0.1.0
+author=Yusuf Eminoglu
+email=yusuf.eminoglu@deu.edu.tr
+about=PlanX-GeoStats brings advanced spatial statistics tools to QGIS Processing Toolbox, inspired by ArcGIS Pro Spatial Statistics. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
+tracker=https://github.com/YusufEminoglu/PlanX-GeoStats/issues
+repository=https://github.com/YusufEminoglu/PlanX-GeoStats
+homepage=https://github.com/YusufEminoglu/PlanX-GeoStats
+category=Processing
+hasProcessingProvider=yes
+tags=planx,qgis,processing,spatial statistics,pysal,hotspot,lisa,ols
+icon=icons/icon.png
+experimental=False
+deprecated=False
+license=GPL-3
+changelog=
+    PlanX-GeoStats 0.1.0 - Initial release with Getis-Ord Gi* Hotspot Analysis.
