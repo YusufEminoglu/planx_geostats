@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added a Processing Toolbox installer, `Install / Update GeoStats Libraries`, under `00 | Setup and Diagnostics` for profiles where the menu helper is not visible.
 - Improved the Processing installer with preview-only behavior, detected path logging, and smarter default mode selection.
 - Fixed Global Moran's I z-score and p-value calculation in the shared statistics engine.
+- Fixed General G value alignment for QGIS layers whose feature IDs are not contiguous zero-based indices.
 - Cleaned remaining special symbols from Processing feedback and generated reports.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.
 - Reworked optional type hints to avoid Python 3.10-only union syntax in QGIS 3.28-era Python environments.

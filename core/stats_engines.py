@@ -819,7 +819,7 @@ def calculate_median_center(
 
 
 def calculate_general_g(
-    values: np.ndarray,
+    values,
     neighbors: dict[int, list[int]],
     weights: dict[int, list[float]],
     id_order: list[int]
@@ -834,7 +834,10 @@ def calculate_general_g(
         raise ValueError("General G requires at least 4 features.")
 
     id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
-    x = np.array([float(values[i]) for i in range(n)])
+    if isinstance(values, dict):
+        x = np.array([float(values[fid]) for fid in id_order])
+    else:
+        x = np.array([float(values[i]) for i in range(n)])
 
     x_sum = np.sum(x)
     x_sum2 = np.sum(x ** 2)
