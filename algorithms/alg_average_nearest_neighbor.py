@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import html
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -19,6 +20,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_average_nearest_neighbor
+from ..core.analysis_diagnostics import crs_unit_warning
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -103,6 +105,7 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
         # Extract centroids
         x_coords = []
         y_coords = []
+        skipped = 0
 
         feedback.pushInfo("Extracting feature coordinates...")
         total = source.featureCount() or 1
@@ -112,6 +115,7 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
 
             geom = f.geometry()
             if geom.isEmpty():
+                skipped += 1
                 continue
 
             centroid = geom.centroid().asPoint()
@@ -126,6 +130,11 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
         y_arr = np.array(y_coords)
 
         feedback.pushInfo("Calculating nearest neighbor distances...")
+        crs_warning = crs_unit_warning(source)
+        if crs_warning:
+            feedback.pushWarning(crs_warning)
+        if skipped:
+            feedback.pushInfo(f"Skipped {skipped} feature(s) with empty geometry.")
         obs_mean, exp_mean, nn_ratio, z, p, calculated_area = calculate_average_nearest_neighbor(
             x_arr, y_arr, study_area
         )
@@ -135,7 +144,7 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
 
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(
-            html_path, len(x_coords), obs_mean, exp_mean, nn_ratio, z, p, calculated_area
+            html_path, len(x_coords), obs_mean, exp_mean, nn_ratio, z, p, calculated_area, skipped, crs_warning, study_area is not None
         )
 
         return {
@@ -143,7 +152,7 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
             "HTML_REPORT_OUT": html_path
         }
 
-    def write_html_report(self, path: str, n: int, obs: float, exp: float, ratio: float, z: float, p: float, area: float):
+    def write_html_report(self, path: str, n: int, obs: float, exp: float, ratio: float, z: float, p: float, area: float, skipped: int, crs_warning: str, user_area: bool):
         # Interpretation
         is_significant = p < 0.05
         if is_significant:
@@ -168,6 +177,14 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
                 "Given the z-score of {:.2f}, the spatial pattern of features "
                 "appears to be the result of random chance (no significant clustering or dispersion)."
             ).format(z)
+        area_source = "user-provided" if user_area else "layer extent derived"
+        if is_significant and ratio < 1.0:
+            next_action = "Use hot spot or local cluster tools to locate which neighborhoods are driving the clustered point pattern."
+        elif is_significant:
+            next_action = "Review whether zoning, spacing rules, barriers, or sampling design explain the dispersed point pattern."
+        else:
+            next_action = "Test alternative study-area definitions before concluding that the process is spatially random."
+        crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>" if crs_warning else ""
 
         html_content = f"""<!DOCTYPE html>
 <html>
@@ -262,19 +279,26 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
         color: #a0aec0;
         text-align: center;
     }}
+    h2 {{ color: #1a202c; font-size: 1.15rem; margin: 28px 0 12px; }}
+    .note {{ background: #fff8e6; border-left: 5px solid #b7791f; padding: 14px 18px; margin: 20px 0; }}
+    .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
 </style>
 </head>
 <body>
 <div class="container">
     <header>
         <h1>Average Nearest Neighbor Summary</h1>
-        <p class="subtitle">Sample size: <strong>{n}</strong> | Study Area: <strong>{area:.2f}</strong></p>
+        <p class="subtitle">Sample size: <strong>{n}</strong> | Study Area: <strong>{area:.2f}</strong> ({area_source})</p>
     </header>
 
     <div class="interpretation-box">
         <h2 class="status-title">Spatial Pattern: {pattern}</h2>
         <p class="status-desc">{desc}</p>
     </div>
+
+    <h2>Executive Summary</h2>
+    <p>Average Nearest Neighbor evaluates the first-order spacing of feature centroids. It is highly sensitive to the study-area boundary: expanding or shrinking the analysis area changes the expected random distance and can change the conclusion.</p>
+    {crs_block}
 
     <table>
         <thead>
@@ -304,8 +328,22 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
                 <td class="metric-name">p-value</td>
                 <td class="metric-val">{p:.6f}</td>
             </tr>
+            <tr>
+                <td class="metric-name">Skipped empty geometries</td>
+                <td class="metric-val">{skipped}</td>
+            </tr>
         </tbody>
     </table>
+
+    <h2>Recommended Next Action</h2>
+    <div class="next-action">{html.escape(next_action)}</div>
+
+    <h2>Assumptions and Caveats</h2>
+    <ul>
+        <li>The statistic uses feature centroids, so multipart or elongated geometries may simplify complex spatial form.</li>
+        <li>The expected distance assumes a random distribution within the study area.</li>
+        <li>Use a projected CRS for distance interpretation and compare results across plausible study-area boundaries.</li>
+    </ul>
 
     <footer>
         Generated by PlanX GeoStats Lab spatial statistics engine.

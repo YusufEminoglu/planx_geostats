@@ -1211,13 +1211,22 @@ def calculate_incremental_autocorrelation(
         np.fill_diagonal(W, 0.0)
 
         S0 = np.sum(W)
+        neighbor_counts = np.sum(W > 0, axis=1)
+        min_neighbors = int(np.min(neighbor_counts))
+        median_neighbors = float(np.median(neighbor_counts))
+        max_neighbors = int(np.max(neighbor_counts))
+        isolated_count = int(np.sum(neighbor_counts == 0))
         if S0 == 0:
             results.append({
                 "distance": threshold,
                 "morans_i": 0.0,
                 "expected_i": -1.0 / (n - 1),
                 "z_score": 0.0,
-                "p_value": 1.0
+                "p_value": 1.0,
+                "min_neighbors": min_neighbors,
+                "median_neighbors": median_neighbors,
+                "max_neighbors": max_neighbors,
+                "isolated_count": isolated_count,
             })
             continue
 
@@ -1252,7 +1261,11 @@ def calculate_incremental_autocorrelation(
             "morans_i": float(morans_i),
             "expected_i": float(expected_i),
             "z_score": float(z_score),
-            "p_value": float(p_value)
+            "p_value": float(p_value),
+            "min_neighbors": min_neighbors,
+            "median_neighbors": median_neighbors,
+            "max_neighbors": max_neighbors,
+            "isolated_count": isolated_count,
         })
 
     return results

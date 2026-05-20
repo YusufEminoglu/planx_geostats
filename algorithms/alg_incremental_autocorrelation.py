@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+import html
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -20,6 +21,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_incremental_autocorrelation
+from ..core.analysis_diagnostics import crs_unit_warning, numeric_quality_summary, push_diagnostics
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -134,6 +136,8 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
             raise QgsProcessingException(f"Field '{field_name}' not found.")
 
         x_coords, y_coords, values = [], [], []
+        value_dict = {}
+        skipped = 0
 
         feedback.pushInfo("Extracting features...")
         total = source.featureCount() or 1
@@ -142,23 +146,32 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
                 break
             geom = f.geometry()
             if geom.isEmpty():
+                skipped += 1
                 continue
             val = f.attribute(field_idx)
             if val is None or val == QVariant() or str(val) == 'NULL':
+                skipped += 1
                 continue
             try:
                 val_f = float(val)
             except (ValueError, TypeError):
+                skipped += 1
                 continue
             centroid = geom.centroid().asPoint()
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
             values.append(val_f)
+            value_dict[f.id()] = val_f
             feedback.setProgress(int(20 * (idx / total)))
 
         n_feats = len(x_coords)
+        numeric_summary = numeric_quality_summary(source.featureCount(), value_dict, values)
+        crs_warning = crs_unit_warning(source)
+        push_diagnostics(feedback, numeric_summary, None, crs_warning)
         if n_feats < 4:
             raise QgsProcessingException(f"Insufficient features ({n_feats}). At least 4 required.")
+        if numeric_summary["is_constant"]:
+            raise QgsProcessingException("Incremental autocorrelation requires variation in the target field; all valid values are identical.")
 
         feedback.pushInfo(f"Computing Moran's I at {n_inc} distance increments...")
         results = calculate_incremental_autocorrelation(
@@ -170,12 +183,17 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
         peak = max(results, key=lambda r: abs(r["z_score"]))
 
         feedback.pushInfo(f"Peak z-score: {peak['z_score']:.4f} at distance {peak['distance']:.2f}")
+        feedback.pushInfo(
+            f"Peak neighborhood support: min={peak['min_neighbors']}, "
+            f"median={peak['median_neighbors']:.2f}, max={peak['max_neighbors']}, "
+            f"isolated={peak['isolated_count']}."
+        )
         feedback.pushInfo("Generating HTML report...")
-        self._write_html(html_path, field_name, n_feats, results, peak)
+        self._write_html(html_path, field_name, n_feats, results, peak, skipped, crs_warning)
 
         return {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
-    def _write_html(self, path, field, n, results, peak):
+    def _write_html(self, path, field, n, results, peak, skipped, crs_warning):
         # SVG line chart
         svg_w, svg_h = 600, 250
         pad_l, pad_b, pad_t, pad_r = 60, 40, 30, 20
@@ -217,7 +235,19 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
                 <td class="metric-val">{r['morans_i']:.6f}</td>
                 <td class="metric-val">{r['z_score']:.4f}</td>
                 <td class="metric-val">{r['p_value']:.4f} {sig}</td>
+                <td class="metric-val">{r['min_neighbors']} / {r['median_neighbors']:.1f} / {r['max_neighbors']}</td>
+                <td class="metric-val">{r['isolated_count']}</td>
             </tr>"""
+
+        if peak["isolated_count"] > 0:
+            next_action = "Increase the starting distance or increment because the peak still contains isolated observations."
+        elif peak["max_neighbors"] >= n - 1:
+            next_action = "Test smaller distances around the peak because the graph is close to fully connected."
+        elif peak["p_value"] < 0.05:
+            next_action = "Use the peak distance as a candidate threshold for Global Moran, General G, Gi*, or Local Moran tools."
+        else:
+            next_action = "Do not rely on a single peak; compare several distance bands and review the study-area scale."
+        crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>" if crs_warning else ""
 
         html = f"""<!DOCTYPE html>
 <html>
@@ -232,6 +262,9 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
     .subtitle {{ color: #718096; margin: 0; font-size: .95rem; }}
     .peak-box {{ background: #f0fff4; border-left: 5px solid #2b9348; padding: 15px 20px; border-radius: 4px; margin-bottom: 25px; }}
     .peak-box strong {{ color: #22543d; }}
+    .note {{ background: #fff8e6; border-left: 5px solid #b7791f; padding: 14px 18px; margin: 20px 0; }}
+    .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
+    h2 {{ color: #1a202c; font-size: 1.15rem; margin: 28px 0 12px; }}
     table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
     th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid #edf2f7; font-size: .85rem; }}
     th {{ background: #ebf8ff; color: #2b6cb0; font-weight: 700; text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }}
@@ -243,12 +276,17 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
 <div class="container">
     <header>
         <h1>Incremental Spatial Autocorrelation</h1>
-        <p class="subtitle">Attribute: <strong>{field}</strong> | Features: <strong>{n}</strong> | Increments: <strong>{len(results)}</strong></p>
+        <p class="subtitle">Attribute: <strong>{html.escape(field)}</strong> | Features: <strong>{n}</strong> | Increments: <strong>{len(results)}</strong> | Skipped: <strong>{skipped}</strong></p>
     </header>
 
     <div class="peak-box">
         <strong>Peak Clustering Distance: {peak['distance']:.2f} map units</strong> (z-score = {peak['z_score']:.4f}, p = {peak['p_value']:.4f})
+        <br>Neighborhood support at peak: min / median / max neighbors = <strong>{peak['min_neighbors']} / {peak['median_neighbors']:.1f} / {peak['max_neighbors']}</strong>; isolated observations = <strong>{peak['isolated_count']}</strong>.
     </div>
+
+    <h2>Executive Summary</h2>
+    <p>Incremental Spatial Autocorrelation scans multiple distance bands to identify the scale where global clustering is strongest. Treat the peak as a candidate analysis distance, not as an automatic final setting; compare it with domain knowledge and neighborhood support.</p>
+    {crs_block}
 
     <svg width="{svg_w}" height="{svg_h}" viewBox="0 0 {svg_w} {svg_h}">
         <rect x="{pad_l}" y="{pad_t}" width="{plot_w}" height="{plot_h}" fill="#f8fafc" stroke="#e2e8f0"/>
@@ -263,9 +301,19 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
     </svg>
 
     <table>
-        <thead><tr><th>Distance</th><th>Moran's I</th><th>z-score</th><th>p-value</th></tr></thead>
+        <thead><tr><th>Distance</th><th>Moran's I</th><th>z-score</th><th>p-value</th><th>Min / Median / Max Neighbors</th><th>Isolated</th></tr></thead>
         <tbody>{rows}</tbody>
     </table>
+
+    <h2>Recommended Next Action</h2>
+    <div class="next-action">{html.escape(next_action)}</div>
+
+    <h2>Assumptions and Caveats</h2>
+    <ul>
+        <li>Distance increments are evaluated using centroid distances and map units.</li>
+        <li>A high z-score can be unreliable when the neighborhood graph contains many isolated observations.</li>
+        <li>A nearly fully connected graph can hide local structure and make several distances look similar.</li>
+    </ul>
 
     <footer>Generated by PlanX GeoStats Lab spatial statistics engine. Peak marks the strongest absolute z-score; Significant means p &lt; 0.05.</footer>
 </div>

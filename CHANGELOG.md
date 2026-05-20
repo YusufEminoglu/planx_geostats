@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Upgraded Global Moran and General G reports with executive summaries, diagnostics, caveats, and recommended next actions.
 - Added OLS model-quality diagnostics for sample size, skipped records, near-constant predictors, multicollinearity, and condition number.
 - Enhanced Exploratory Regression reports with model-quality checks, AICc rank reasons, and final-model review guidance.
+- Upgraded Average Nearest Neighbor and Incremental Autocorrelation reports with executive summaries, CRS caveats, and next-action guidance.
+- Added neighbor-support diagnostics to Incremental Autocorrelation distance scan results.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
 - Cleaned remaining special symbols from Processing feedback and generated reports.
 - Replaced remaining legacy hyphenated labels in logs and generated HTML reports with PlanX GeoStats Lab.

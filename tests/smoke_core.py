@@ -89,12 +89,30 @@ def test_regression_quality_flags_collinearity() -> None:
     assert summary["condition_number"] is not None
 
 
+def test_incremental_autocorrelation_neighbor_diagnostics() -> None:
+    results = stats.calculate_incremental_autocorrelation(
+        np.array([0.0, 1.0, 2.0, 10.0]),
+        np.array([0.0, 0.0, 0.0, 0.0]),
+        np.array([1.0, 2.0, 3.0, 9.0]),
+        1.5,
+        4.0,
+        3,
+    )
+    assert len(results) == 3
+    for result in results:
+        assert "min_neighbors" in result
+        assert "median_neighbors" in result
+        assert "max_neighbors" in result
+        assert "isolated_count" in result
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
     test_general_g_non_contiguous_ids()
     test_sparse_neighbor_summary()
     test_regression_quality_flags_collinearity()
+    test_incremental_autocorrelation_neighbor_diagnostics()
     print("CORE SMOKE TESTS OK")
 
 
