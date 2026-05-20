@@ -21,6 +21,8 @@ from .algorithms.alg_median_center import MedianCenterAlgorithm
 from .algorithms.alg_general_g import GeneralGAlgorithm
 from .algorithms.alg_similarity_search import SimilaritySearchAlgorithm
 from .algorithms.alg_calculate_distance_band import CalculateDistanceBandAlgorithm
+from .algorithms.alg_multivariate_clustering import MultivariateClusteringAlgorithm
+from .algorithms.alg_export_attributes import ExportAttributesAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -55,5 +57,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(GeneralGAlgorithm())
         self.addAlgorithm(SimilaritySearchAlgorithm())
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
+        self.addAlgorithm(MultivariateClusteringAlgorithm())
+        self.addAlgorithm(ExportAttributesAlgorithm())
         self.addAlgorithm(DependencyInstallerAlgorithm())
 

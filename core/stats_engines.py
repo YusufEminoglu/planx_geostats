@@ -961,4 +961,83 @@ def calculate_distance_band_stats(
     }
 
 
+def calculate_kmeans(
+    data: np.ndarray,
+    k_clusters: int,
+    max_iter: int = 100,
+    tol: float = 1e-4,
+    seed: int = 42
+) -> tuple[np.ndarray, float]:
+    """Performs K-Means clustering on feature attribute data.
+
+    Returns:
+        A tuple of (labels, wcss) where wcss is within-cluster sum of squares.
+    """
+    n, p = data.shape
+    if n < k_clusters:
+        raise ValueError("Number of data points must be greater than or equal to k_clusters.")
+
+    # Z-score standardization
+    means = np.mean(data, axis=0)
+    stds = np.std(data, axis=0)
+    stds[stds == 0.0] = 1.0
+    z_data = (data - means) / stds
+
+    # K-Means++ initialization
+    rng = np.random.default_rng(seed)
+    centroids = np.zeros((k_clusters, p))
+
+    # Pick first centroid
+    idx = rng.choice(n)
+    centroids[0] = z_data[idx]
+
+    for c_idx in range(1, k_clusters):
+        # Distance squared to closest centroid
+        dists_sq = np.min([np.sum((z_data - centroids[c]) ** 2, axis=1) for c in range(c_idx)], axis=0)
+        
+        # Avoid division by zero if all points are at the centroids
+        sum_dists = np.sum(dists_sq)
+        if sum_dists == 0:
+            probs = np.ones(n) / n
+        else:
+            probs = dists_sq / sum_dists
+            
+        idx = rng.choice(n, p=probs)
+        centroids[c_idx] = z_data[idx]
+
+    # Lloyd's algorithm iterations
+    labels = np.zeros(n, dtype=int)
+    prev_wcss = np.inf
+
+    for _ in range(max_iter):
+        # Assign labels
+        dists = np.array([np.sum((z_data - centroids[c]) ** 2, axis=1) for c in range(k_clusters)])
+        labels = np.argmin(dists, axis=0)
+
+        # Calculate WCSS
+        wcss = 0.0
+        for c in range(k_clusters):
+            mask = (labels == c)
+            if np.any(mask):
+                wcss += np.sum((z_data[mask] - centroids[c]) ** 2)
+
+        if abs(prev_wcss - wcss) < tol:
+            break
+        prev_wcss = wcss
+
+        # Update centroids
+        new_centroids = np.zeros_like(centroids)
+        for c in range(k_clusters):
+            mask = (labels == c)
+            if np.any(mask):
+                new_centroids[c] = np.mean(z_data[mask], axis=0)
+            else:
+                # Re-initialize empty cluster with a random point
+                new_centroids[c] = z_data[rng.choice(n)]
+        centroids = new_centroids
+
+    return labels, float(wcss)
+
+
+
 
