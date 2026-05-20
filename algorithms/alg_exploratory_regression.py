@@ -23,6 +23,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_exploratory_regression
+from ..core.analysis_diagnostics import regression_quality_html, regression_quality_summary
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -173,9 +174,15 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
             f"Testing {combination_count} OLS combinations with up to "
             f"{max_allowed} explanatory variables..."
         )
+        y_array = np.array(y_values, dtype=float)
+        x_array = np.array(x_rows, dtype=float)
+        model_quality = regression_quality_summary(y_array, x_array, explanatory_fields, source.featureCount())
+        for risk in model_quality["risks"]:
+            feedback.pushWarning(risk)
+
         models = calculate_exploratory_regression(
-            np.array(y_values, dtype=float),
-            np.array(x_rows, dtype=float),
+            y_array,
+            x_array,
             explanatory_fields,
             max_allowed,
         )
@@ -191,6 +198,7 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
             max_allowed,
             combination_count,
             models,
+            model_quality,
         )
         feedback.setProgress(100)
         feedback.pushInfo(f"Best model AICc: {models[0]['aicc']:.4f}")
@@ -217,11 +225,15 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
         max_allowed,
         combination_count,
         models,
+        model_quality,
     ):
         top_models = models[:20]
         rows = []
+        best_aicc = models[0]["aicc"]
         for rank, model in enumerate(top_models, start=1):
             variables = ", ".join(html.escape(name) for name in model["variables"])
+            delta_aicc = model["aicc"] - best_aicc
+            rank_note = "Best AICc" if rank == 1 else f"Delta AICc {delta_aicc:.3f}"
             coefficient_lines = "<br>".join(
                 f"{html.escape(name)}: {value:.6g}"
                 for name, value in model["coefficients"].items()
@@ -234,6 +246,7 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
                 f"<td>{model['r2']:.4f}</td>"
                 f"<td>{model['adj_r2']:.4f}</td>"
                 f"<td>{model['aicc']:.4f}</td>"
+                f"<td>{rank_note}</td>"
                 f"<td>{coefficient_lines}</td>"
                 "</tr>"
             )
@@ -273,11 +286,15 @@ Adjusted R2: <strong>{best['adj_r2']:.4f}</strong> | AICc: <strong>{best['aicc']
 <strong>Maximum variables per tested model:</strong> {max_allowed}<br>
 <strong>Candidate models estimated:</strong> {combination_count}</p>
 <div class="note">
-Exploratory regression is a screening tool, not an automatic model approval step. Review coefficient signs, field meaning, residual behavior, spatial autocorrelation, and planning theory before selecting a final model.
+Exploratory regression is a screening tool, not an automatic model approval step. Models are ranked by AICc, which rewards fit while penalizing unnecessary complexity. Review coefficient signs, field meaning, residual behavior, spatial autocorrelation, and planning theory before selecting a final model.
+</div>
+{regression_quality_html(model_quality)}
+<div class="note">
+<strong>Recommended next action:</strong> rerun the best candidate specification in Ordinary Least Squares (OLS) Regression and inspect residual diagnostics before using the model for scenario evaluation or policy interpretation.
 </div>
 <table>
 <thead>
-<tr><th>Rank</th><th>Variables</th><th>Count</th><th>R2</th><th>Adjusted R2</th><th>AICc</th><th>Coefficients</th></tr>
+<tr><th>Rank</th><th>Variables</th><th>Count</th><th>R2</th><th>Adjusted R2</th><th>AICc</th><th>Rank Reason</th><th>Coefficients</th></tr>
 </thead>
 <tbody>
 {''.join(rows)}
