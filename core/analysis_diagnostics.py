@@ -398,6 +398,25 @@ def regression_quality_summary(y: np.ndarray, x_data: np.ndarray, x_names: list[
                     if abs(value) >= 0.85:
                         corr_warnings.append((x_names[i], x_names[j], float(value)))
 
+    vif_values = []
+    if p > 1 and n > p + 1:
+        for idx, name in enumerate(x_names):
+            target = x_data[:, idx]
+            others = np.delete(x_data, idx, axis=1)
+            design = np.column_stack((np.ones(n), others))
+            try:
+                beta = np.linalg.pinv(design.T @ design) @ design.T @ target
+                fitted = design @ beta
+                ss_res = float(np.sum((target - fitted) ** 2))
+                ss_tot = float(np.sum((target - np.mean(target)) ** 2))
+                r2 = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+                vif = 1.0 / max(1.0e-9, 1.0 - min(0.999999999, max(0.0, r2)))
+            except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+                vif = None
+            vif_values.append((name, vif))
+    elif p == 1:
+        vif_values.append((x_names[0], 1.0))
+
     condition_number = None
     if p > 0 and n > p:
         design = np.column_stack((np.ones(n), x_data))
@@ -413,6 +432,9 @@ def regression_quality_summary(y: np.ndarray, x_data: np.ndarray, x_names: list[
         risks.append("One or more predictors are constant or nearly constant.")
     if corr_warnings:
         risks.append("High pairwise predictor correlation suggests possible multicollinearity.")
+    high_vif = [(name, value) for name, value in vif_values if value is not None and value >= 7.5]
+    if high_vif:
+        risks.append("One or more predictors have high VIF values; coefficient estimates may be unstable.")
     if condition_number is not None and condition_number >= 30:
         risks.append("The design matrix condition number suggests unstable coefficient estimates.")
 
@@ -423,6 +445,7 @@ def regression_quality_summary(y: np.ndarray, x_data: np.ndarray, x_names: list[
         "predictor_count": p,
         "near_constant": near_constant,
         "high_correlations": corr_warnings,
+        "vif": vif_values,
         "max_abs_correlation": max_abs_corr,
         "condition_number": condition_number,
         "risks": risks,
@@ -456,12 +479,37 @@ def regression_quality_html(summary: dict) -> str:
     risk_items = "".join(f"<li>{html.escape(risk)}</li>" for risk in summary["risks"])
     if not risk_items:
         risk_items = "<li>No major automatic model-quality warning was triggered.</li>"
+    vif_rows = "".join(
+        "<tr>"
+        f"<td>{html.escape(name)}</td>"
+        f"<td>{format_number(value, 3)}</td>"
+        f"<td>{html.escape(_vif_status(value))}</td>"
+        "</tr>"
+        for name, value in summary.get("vif", [])
+    )
+    if not vif_rows:
+        vif_rows = "<tr><td colspan=\"3\">VIF requires at least one complete predictor column.</td></tr>"
     return (
         "<h2>Model Quality Checks</h2>"
         "<table><thead><tr><th>Check</th><th>Result</th></tr></thead>"
         f"<tbody>{body}</tbody></table>"
+        "<h2>Variance Inflation Factor (VIF)</h2>"
+        "<table><thead><tr><th>Predictor</th><th>VIF</th><th>Status</th></tr></thead>"
+        f"<tbody>{vif_rows}</tbody></table>"
         f"<div class=\"note\"><strong>Analyst review:</strong><ul>{risk_items}</ul></div>"
     )
+
+
+def _vif_status(value) -> str:
+    if value is None:
+        return "Not available"
+    if value >= 10:
+        return "Severe multicollinearity risk"
+    if value >= 7.5:
+        return "High multicollinearity risk"
+    if value >= 5:
+        return "Moderate multicollinearity risk"
+    return "Low"
 
 
 def residual_spatial_autocorrelation_html(summary: dict) -> str:

@@ -16,6 +16,7 @@ DEPENDENCIES = ROOT / "dependencies.py"
 METADATA = ROOT / "metadata.txt"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
+QA_MATRIX = ROOT / "QA_MANUAL_TEST_MATRIX.md"
 ALGORITHMS = ROOT / "algorithms"
 ALGORITHM_ICONS = ROOT / "icons" / "algorithms"
 
@@ -27,6 +28,8 @@ EXPECTED_GROUPS = {
     "04 | Centers, Direction and Dispersion",
     "05 | Models and Scenarios",
 }
+
+MIN_EXPECTED_ALGORITHM_COUNT = 32
 
 
 def _module_tree(path: Path) -> ast.Module:
@@ -107,6 +110,7 @@ def test_provider_imports_every_registered_algorithm() -> None:
 def test_every_algorithm_file_is_registered_once() -> None:
     catalog = _algorithm_class_catalog()
     registered = _provider_registered_algorithm_classes()
+    assert len(registered) >= MIN_EXPECTED_ALGORITHM_COUNT, "Provider algorithm count unexpectedly decreased"
     unregistered = sorted(set(catalog) - set(registered))
     unknown = sorted(set(registered) - set(catalog))
     assert not unregistered, f"Algorithm classes missing from provider: {unregistered}"
@@ -239,6 +243,77 @@ def test_release_documentation_version_is_synchronized() -> None:
     assert f"{version} -" in metadata_text, "metadata changelog should include the current version entry"
 
 
+def test_workflow_advisor_covers_core_decision_sections() -> None:
+    advisor = ALGORITHMS / "alg_workflow_advisor.py"
+    assert advisor.exists(), "Workflow Advisor algorithm should exist"
+    source = advisor.read_text(encoding="utf-8")
+    required_terms = [
+        "Planning Questions to Tool Sequences",
+        "Tool Selection Matrix",
+        "Method Assumptions and Cautions",
+        "Common Pitfalls and Safer Moves",
+        "Starter Recipes for Bundled Samples",
+        "Quality Gates",
+        "Interpretation Discipline",
+        "Data Readiness Audit",
+        "Global Moran's I",
+        "Getis-Ord Gi*",
+        "Local Moran's I",
+        "GWR; MGWR",
+        "Spatial Lag Regression",
+        "Spatial Error Regression",
+        "Model Comparison Matrix",
+        "median_land_surface_temp_c",
+        "count_target",
+        "qa_lines_directional",
+        "QA_MANUAL_TEST_MATRIX.md",
+    ]
+    missing = [term for term in required_terms if term not in source]
+    assert not missing, f"Workflow Advisor should cover core guidance terms: {missing}"
+
+
+def test_manual_qa_matrix_covers_release_workflows() -> None:
+    assert QA_MATRIX.exists(), "Manual QA matrix should exist"
+    content = QA_MATRIX.read_text(encoding="utf-8")
+    required_terms = [
+        "GeoStats Workflow Advisor",
+        "Data Readiness Audit",
+        "Global Moran's I",
+        "Getis-Ord Gi*",
+        "Linear Directional Mean",
+        "OLS Regression",
+        "Model Comparison Matrix",
+        "Release Gate",
+    ]
+    missing = [term for term in required_terms if term not in content]
+    assert not missing, f"Manual QA matrix should cover core workflows: {missing}"
+
+
+def test_professional_report_helpers_are_used_by_key_reports() -> None:
+    reporting = ROOT / "core" / "reporting.py"
+    metadata_helper = ROOT / "core" / "layer_metadata.py"
+    assert reporting.exists(), "Shared reporting helper should exist"
+    assert metadata_helper.exists(), "Layer metadata helper should exist"
+
+    key_reports = [
+        ALGORITHMS / "alg_spatial_regression.py",
+        ALGORITHMS / "alg_global_moran.py",
+        ALGORITHMS / "alg_generalized_linear_regression.py",
+    ]
+    for path in key_reports:
+        source = path.read_text(encoding="utf-8")
+        assert "analyst_guidance_html" in source, f"{path.name} should use shared analyst guidance"
+        assert "analyst_guidance_css" in source, f"{path.name} should use shared analyst guidance CSS"
+
+    output_layers = [
+        ALGORITHMS / "alg_spatial_regression.py",
+        ALGORITHMS / "alg_getis_ord.py",
+    ]
+    for path in output_layers:
+        source = path.read_text(encoding="utf-8")
+        assert "apply_output_metadata" in source, f"{path.name} should apply output metadata aliases"
+
+
 def run_all() -> None:
     test_provider_imports_every_registered_algorithm()
     test_every_algorithm_file_is_registered_once()
@@ -248,6 +323,9 @@ def run_all() -> None:
     test_html_module_is_not_shadowed_in_report_writers()
     test_direct_polyline_polygon_calls_have_multipart_guard()
     test_release_documentation_version_is_synchronized()
+    test_workflow_advisor_covers_core_decision_sections()
+    test_manual_qa_matrix_covers_release_workflows()
+    test_professional_report_helpers_are_used_by_key_reports()
     print("PROVIDER CATALOG SMOKE TESTS OK")
 
 

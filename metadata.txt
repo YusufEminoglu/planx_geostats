@@ -3,7 +3,7 @@ name=PlanX GeoStats Lab
 qgisMinimumVersion=3.28
 qgisMaximumVersion=3.99
 description=PlanX spatial analysis lab for QGIS planning workflows: data preparation, urban pattern scanning, hot spots, centers, exploratory models and scenarios.
-version=0.9.7
+version=0.9.8
 author=Yusuf Eminoglu
 email=yusuf.eminoglu@deu.edu.tr
 about=PlanX GeoStats Lab brings advanced spatial statistics tools to the QGIS Processing Toolbox with a planning-analysis workflow designed for PlanX: Setup and Diagnostics, Data Preparation and Neighborhoods, Urban Pattern Scan, Hot Spots and Spatial Outliers, Centers Direction and Dispersion, and Models and Scenarios. The model workflow includes OLS, Generalized Linear Regression, Spatial Lag Regression, Spatial Error Regression, Exploratory Regression, GWR, MGWR, model comparison and sensitivity testing. Optional GeoStats Python libraries are managed only through Processing Toolbox tools under 00 | Setup and Diagnostics: GeoStats Library Status for non-installing diagnostics and Install / Update GeoStats Libraries for explicit, user-approved pip installation. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
@@ -18,6 +18,7 @@ experimental=False
 deprecated=False
 license=GPL-3
 changelog=
+    0.9.8 - Professional analytics release: added GeoStats Workflow Advisor, manual QA matrix, shared analyst guidance/report helpers, output-layer metadata aliases, VIF diagnostics, and Model Comparison rank/score auditing.
     0.9.7 - Release QA hardening: added smoke coverage that keeps metadata, changelog, and README release verification commands synchronized on the same plugin version.
     0.9.6 - Sample guide clarity: listed every synthetic model-output QA layer explicitly and added smoke coverage that verifies the guide mentions every loadable sample and QA layer.
     0.9.5 - Sample Dataset Guide improvement: documented loading modes in the generated guide and added smoke coverage that keeps QA fixture load options synchronized with bundled GeoPackage layers.

@@ -137,6 +137,8 @@ def test_regression_quality_flags_collinearity() -> None:
     assert summary["skipped_records"] == 1
     assert summary["high_correlations"]
     assert summary["condition_number"] is not None
+    assert summary["vif"]
+    assert all(len(item) == 2 for item in summary["vif"])
 
 
 def test_incremental_autocorrelation_neighbor_diagnostics() -> None:

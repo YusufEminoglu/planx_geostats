@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.8] - 2026-05-22
+
+### Added
+- Added GeoStats Workflow Advisor, a Processing report that maps planning questions to recommended GeoStats tools, prerequisites, outputs, and follow-up checks.
+- Added method assumptions, common pitfalls, safer moves, and bundled-sample starter recipes to the Workflow Advisor report.
+- Added smoke coverage for Workflow Advisor guidance sections and a minimum provider algorithm-count guard.
+- Added a manual QA matrix covering setup, pattern analysis, geometry summaries, modeling workflows, symbology, reports, and release gates.
+- Added shared report-guidance and output-layer metadata helpers for more consistent professional reports and layer outputs.
+- Added VIF diagnostics to regression quality reporting and rank/score auditing to Model Comparison Matrix.
+
 ## [0.9.7] - 2026-05-22
 
 ### Added

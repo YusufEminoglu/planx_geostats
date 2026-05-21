@@ -32,6 +32,8 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_ols
 from ..core.analysis_diagnostics import regression_quality_html, regression_quality_summary
+from ..core.layer_metadata import apply_output_metadata
+from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 
 from ._icons import algorithm_icon
 
@@ -438,6 +440,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
         padding: 14px 18px;
         margin: 20px 0;
     }}
+    {analyst_guidance_css()}
     footer {{
         margin-top: 40px;
         border-top: 1px solid #edf2f7;
@@ -524,6 +527,27 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
 
     {regression_quality_html(model_quality)}
 
+    {analyst_guidance_html(
+        "OLS Regression",
+        "OLS estimates a single global relationship between the dependent variable and selected predictors.",
+        [
+            "Complete records are sufficient relative to the number of predictors.",
+            "VIF and condition-number checks do not indicate severe multicollinearity.",
+            "Residuals are not strongly spatially patterned and diagnostics are acceptable.",
+        ],
+        [
+            "High VIF, high condition number, or unstable coefficient signs.",
+            "Heteroskedastic or non-normal residuals that affect inference.",
+            "Residual clusters that suggest missing spatial processes or local variation.",
+        ],
+        [
+            "Model Comparison Matrix",
+            "GWR or MGWR when relationships vary across space",
+            "Spatial Lag or Spatial Error Regression when residual dependence remains",
+        ],
+        "Use OLS as the transparent baseline model. Treat coefficients as planning evidence only when diagnostics, residual maps, and domain theory agree."
+    )}
+
     <h2>Recommended Analyst Action</h2>
     <div class="note">
         Review coefficient signs, p-values, residual spatial autocorrelation, and model-quality warnings together. 
@@ -550,6 +574,15 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         feedback.pushInfo("Applying OLS standardized residuals graduated styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats OLS residual output",
+            {
+                "residual": "OLS residual: observed minus predicted dependent value",
+                "std_res": "OLS standardized residual used for diverging residual maps",
+            },
+            self.displayName(),
+        )
         
         # 7-class diverging standard deviation classes
         ranges = []

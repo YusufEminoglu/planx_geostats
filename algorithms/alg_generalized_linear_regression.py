@@ -36,6 +36,7 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.stats_engines import calculate_glr
 from ..core.weights import build_weights_matrix
+from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 
 from ._icons import algorithm_icon
 
@@ -325,6 +326,7 @@ h2 {{ color: #1a202c; font-size: 1.15rem; margin: 28px 0 12px; }}
 table {{ width: 100%; border-collapse: collapse; margin-top: 18px; }}
 th, td {{ border-bottom: 1px solid #edf2f7; padding: 10px; text-align: left; vertical-align: top; font-size: .86rem; }}
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
+{analyst_guidance_css()}
 </style>
 </head>
 <body>
@@ -347,6 +349,26 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 </table>
 <h2>Recommended Analyst Action</h2>
 <div class="next-action">{html.escape(next_action)}</div>
+{analyst_guidance_html(
+    "Generalized Linear Regression",
+    "GLR estimates one global relationship using a distribution family that matches the outcome type.",
+    [
+        "The selected family matches the dependent field: Gaussian for continuous, Logistic for binary, Poisson for counts.",
+        "Complete-record coverage is high enough for the intended planning claim.",
+        "Model-quality checks do not indicate severe multicollinearity or unstable estimates.",
+    ],
+    [
+        "Binary or count outcomes forced into the wrong model family.",
+        "Strong residual spatial autocorrelation after fitting.",
+        "High VIF, high condition number, or many skipped records.",
+    ],
+    [
+        "Model Comparison Matrix",
+        "Spatial Lag or Spatial Error Regression when residual dependence remains",
+        "GWR or MGWR when the relationship is likely spatially non-stationary",
+    ],
+    "Use GLR when the outcome type requires more than OLS. Treat results as a global baseline and verify that residuals and predictions make planning sense."
+)}
 <h2>Assumptions and Caveats</h2>
 <ul>
 <li>Gaussian models continuous outcomes, Logistic requires 0/1 binary outcomes, and Poisson requires non-negative integer counts.</li>

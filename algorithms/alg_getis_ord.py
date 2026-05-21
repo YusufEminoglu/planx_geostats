@@ -27,6 +27,7 @@ from qgis.core import (
 
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_getis_ord
+from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
 
@@ -261,6 +262,17 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         feedback.pushInfo("Applying Cold-to-Hot Hotspot symbology style...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats Getis-Ord Gi* hot spot output",
+            {
+                "gi_zscore": "Getis-Ord Gi* z-score",
+                "gi_pvalue": "Getis-Ord Gi* p-value",
+                "gi_conf": "Hot/cold confidence class from -3 cold to +3 hot",
+                "gi_nbrs": "Valid neighbors used for the local statistic",
+            },
+            self.displayName(),
+        )
 
         categories = []
         # -3: 99% Cold, -2: 95% Cold, -1: 90% Cold, 0: Not Sig, 1: 90% Hot, 2: 95% Hot, 3: 99% Hot

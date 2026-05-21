@@ -283,6 +283,7 @@ class ModelComparisonAlgorithm(QgsProcessingAlgorithm):
 
     def _write_html(self, path, dep_var, comparisons):
         usable = [item for item in comparisons if item.get("usable")]
+        self._assign_scores(usable)
         best_rmse = min(usable, key=lambda item: item["fit"]["rmse"] if item["fit"]["rmse"] is not None else float("inf"))
         residual_clean = [
             item for item in usable
@@ -303,13 +304,13 @@ class ModelComparisonAlgorithm(QgsProcessingAlgorithm):
             )
 
         rows = []
-        for item in comparisons:
+        for item in sorted(comparisons, key=lambda row: row.get("score", 10**9)):
             if not item.get("usable"):
                 rows.append(
                     "<tr class=\"unusable\">"
                     f"<td>{html.escape(item['layer_name'])}</td>"
                     "<td>Not recognized</td>"
-                    f"<td colspan=\"9\">{html.escape(item['message'])}</td>"
+                    f"<td colspan=\"11\">{html.escape(item['message'])}</td>"
                     "</tr>"
                 )
                 continue
@@ -322,6 +323,8 @@ class ModelComparisonAlgorithm(QgsProcessingAlgorithm):
                 f"<tr class=\"{row_class}\">"
                 f"<td>{html.escape(item['layer_name'])}</td>"
                 f"<td>{html.escape(item['model_name'])}</td>"
+                f"<td>{item['rank']}</td>"
+                f"<td>{format_number(item['score'], 3)}</td>"
                 f"<td>{fit['n']}</td>"
                 f"<td>{item['coverage']:.1%}</td>"
                 f"<td>{format_number(fit['r2'], 6)}</td>"
@@ -365,7 +368,7 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 <table>
 <thead>
 <tr>
-<th>Layer</th><th>Model</th><th>N</th><th>Coverage</th><th>R2</th><th>RMSE</th><th>MAE</th><th>Bias</th><th>Residual Moran's I</th><th>Residual p</th><th>Residual Status</th>
+<th>Layer</th><th>Model</th><th>Rank</th><th>Score</th><th>N</th><th>Coverage</th><th>R2</th><th>RMSE</th><th>MAE</th><th>Bias</th><th>Residual Moran's I</th><th>Residual p</th><th>Residual Status</th>
 </tr>
 </thead>
 <tbody>{''.join(rows)}</tbody>
@@ -374,6 +377,7 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 <h2>How to Read This Report</h2>
 <div class="note">
 Lower RMSE and MAE indicate better predictive fit on the records available in each output layer, but fit alone is not enough for planning decisions. A model with low error and spatially patterned residuals may still be missing a neighborhood process, boundary effect, or key explanatory variable. Prefer models that are interpretable, defensible for the planning question, and do not leave strong residual spatial structure.
+The score is a normalized audit score where lower is better. It combines RMSE rank, MAE rank, residual spatial-pattern penalty, incomplete-record penalty, and missing-diagnostic penalty.
 </div>
 
 <h2>Recommended Analyst Action</h2>
@@ -390,3 +394,27 @@ Lower RMSE and MAE indicate better predictive fit on the records available in ea
 </html>"""
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(content)
+
+    def _assign_scores(self, usable):
+        if not usable:
+            return
+        rmse_values = [item["fit"]["rmse"] for item in usable if item["fit"]["rmse"] is not None]
+        mae_values = [item["fit"]["mae"] for item in usable if item["fit"]["mae"] is not None]
+        max_rmse = max(rmse_values) if rmse_values else 1.0
+        max_mae = max(mae_values) if mae_values else 1.0
+        max_rmse = max(max_rmse, 1.0e-9)
+        max_mae = max(max_mae, 1.0e-9)
+        for item in usable:
+            fit = item["fit"]
+            residual = item["residual_spatial"]
+            rmse_component = (fit["rmse"] / max_rmse) if fit["rmse"] is not None else 1.0
+            mae_component = (fit["mae"] / max_mae) if fit["mae"] is not None else 1.0
+            residual_penalty = 0.0
+            if not residual.get("available"):
+                residual_penalty = 0.25
+            elif residual.get("p_value") is not None and residual["p_value"] < 0.05:
+                residual_penalty = 0.35
+            coverage_penalty = max(0.0, 1.0 - float(item.get("coverage", 1.0)))
+            item["score"] = float(0.45 * rmse_component + 0.25 * mae_component + residual_penalty + 0.15 * coverage_penalty)
+        for rank, item in enumerate(sorted(usable, key=lambda row: row["score"]), start=1):
+            item["rank"] = rank
