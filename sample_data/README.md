@@ -39,7 +39,7 @@ The source data was provided as `planxgeostats_sample.gpkg` and curated into an 
 | `senior_65plus_population` | Population age 65 and older. |
 | `closeness_centrality` | Median street-network closeness centrality. |
 | `betweenness_centrality` | Median street-network betweenness centrality. |
-| `street_connectivity` | Median street-network connectivity. |
+| `street_connectivity` | Median street-network connectivity; use as an ordinal network-support indicator rather than a highly continuous model variable. |
 | `median_segment_length_m` | Median street segment length in meters. |
 | `normalized_choice` | Normalized angular choice indicator. |
 | `normalized_integration` | Normalized angular integration indicator. |
@@ -61,7 +61,7 @@ The source data was provided as `planxgeostats_sample.gpkg` and curated into an 
 | `park_m2_per_capita` | Park area per capita. |
 | `neighborhood_area_m2` | Neighborhood polygon area in square meters. |
 | `building_footprint_area_m2` | Building footprint area in square meters. |
-| `building_coverage_pct` | Building coverage percentage. |
+| `building_coverage_pct` | Source-derived building coverage intensity indicator. Values are generally percentage-like but can exceed 100 in the source sample; review this field in Data Readiness Audit before formal modeling. |
 | `urban_density_class` | Source density class: Low, Moderate, High, or Very High. |
 | `median_building_height_m` | Median building height in meters. |
 | `building_volume_density_pct` | Combined 2D/3D building density percentage. |

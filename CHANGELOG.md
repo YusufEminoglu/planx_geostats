@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Expanded Data Readiness Audit with geometry QA for empty, invalid, and multipart features before contiguity, local statistics, and distance-based workflows.
 - Added a multicollinearity screen to Data Readiness Audit so high-correlation numeric field pairs are flagged before OLS, GLR, GWR, MGWR, and spatial regression workflows.
 - Added analysis-role suggestions to Data Readiness Audit so numeric fields are labeled as target/pattern variables, explanatory candidates, count/intensity indicators, or review-only fields with likely tool guidance.
+- Expanded bundled sample-data smoke tests to enforce English schema stability, numeric field types, expected value ranges, complete critical fields, and sufficient variation for analysis workflows.
 - Added Bivariate Spatial Association (Lee's L) for local cross-variable neighborhood diagnostics.
 - Added shared residual spatial autocorrelation diagnostics to GLR, GWR, Spatial Autoregression, and MGWR reports.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
