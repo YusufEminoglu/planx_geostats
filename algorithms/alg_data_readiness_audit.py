@@ -384,25 +384,37 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             {
                 "name": "Urban heat pattern scan",
                 "required": ["median_heat_island_index", "median_land_surface_temp_c"],
+                "target": "median_heat_island_index or median_land_surface_temp_c",
+                "explanatory": "Use green and built-form fields only after the pattern scan.",
                 "tools": "Global Moran, Incremental Autocorrelation, Gi*, Local Moran",
+                "sequence": "1. Run Data Readiness Audit. 2. Use Incremental Autocorrelation or Calculate Distance Band to choose scale. 3. Run Global Moran for the global signal. 4. Map Gi* and Local Moran to locate hot spots and spatial outliers.",
                 "purpose": "Find whether heat-related indicators cluster, disperse, or form local hot and cold spots.",
             },
             {
                 "name": "Green cooling and built-form model",
                 "required": ["median_land_surface_temp_c", "median_ndvi", "park_m2_per_capita", "impervious_surface_pct", "building_coverage_pct"],
+                "target": "median_land_surface_temp_c",
+                "explanatory": "median_ndvi, park_m2_per_capita, impervious_surface_pct, building_coverage_pct",
                 "tools": "OLS, GLR, GWR, MGWR, Spatial Lag, Spatial Error, Model Comparison Matrix",
+                "sequence": "1. Review multicollinearity pairs. 2. Run Exploratory Regression or OLS. 3. Compare OLS, GLR, GWR/MGWR, Spatial Lag, and Spatial Error. 4. Use Model Comparison Matrix and residual spatial diagnostics.",
                 "purpose": "Explain temperature variation using vegetation, public green access, imperviousness, and urban form.",
             },
             {
                 "name": "Accessibility and network structure",
                 "required": ["street_connectivity", "normalized_integration"],
+                "target": "normalized_integration or a planning access score",
+                "explanatory": "street_connectivity, normalized_choice, closeness_centrality, betweenness_centrality",
                 "tools": "Similarity Search, Multivariate Clustering, regression diagnostics",
+                "sequence": "1. Treat low-cardinality network fields as ordinal support indicators. 2. Use Similarity Search to compare neighborhoods. 3. Run Multivariate Clustering for typologies. 4. Model only after checking field meaning and variation.",
                 "purpose": "Compare neighborhoods by movement-network indicators and identify similar planning profiles.",
             },
             {
                 "name": "Equity and vulnerable population review",
                 "required": ["senior_65plus_population", "youth_population", "park_m2_per_capita"],
+                "target": "senior_65plus_population, youth_population, or a normalized vulnerability rate",
+                "explanatory": "park_m2_per_capita, heat, green-space, accessibility, and service fields",
                 "tools": "Gi*, Local Moran, Bivariate Lee's L, Exploratory Regression",
+                "sequence": "1. Convert raw counts to rates when denominators vary. 2. Run Gi* and Local Moran for concentration and outlier review. 3. Use Bivariate Lee's L to compare population and environmental indicators. 4. Move to regression only after rate construction is defensible.",
                 "purpose": "Audit whether vulnerable population groups align with environmental or service-access disadvantages.",
             },
         ]
@@ -534,7 +546,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 </table>
 <h2>PlanX Sample Workflow Readiness</h2>
 <table>
-<thead><tr><th>Workflow</th><th>Status</th><th>Detected fields</th><th>Missing fields</th><th>Recommended tools</th><th>Planning purpose</th></tr></thead>
+<thead><tr><th>Workflow</th><th>Status</th><th>Target</th><th>Candidate explanatory fields</th><th>Detected fields</th><th>Missing fields</th><th>Starter sequence</th><th>Planning purpose</th></tr></thead>
 <tbody>{workflow_rows}</tbody>
 </table>
 <h2>Recommended Next Action</h2>
@@ -637,9 +649,11 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             "<tr>"
             f"<td><strong>{html.escape(item['name'])}</strong></td>"
             f"<td class=\"{cls}\">{html.escape(item['status'])}</td>"
+            f"<td>{html.escape(item['target'])}</td>"
+            f"<td>{html.escape(item['explanatory'])}</td>"
             f"<td>{html.escape(present)}</td>"
             f"<td>{html.escape(missing)}</td>"
-            f"<td>{html.escape(item['tools'])}</td>"
+            f"<td><strong>{html.escape(item['tools'])}</strong><br>{html.escape(item['sequence'])}</td>"
             f"<td>{html.escape(item['purpose'])}</td>"
             "</tr>"
         )
