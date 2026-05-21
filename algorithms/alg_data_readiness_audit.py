@@ -239,6 +239,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             constant = bool(valid > 0 and unique <= 1)
             near_constant = bool(valid > 1 and std is not None and std <= 1e-9)
             readiness = self._field_readiness(total, valid, missing_pct, constant, near_constant)
+            role = self._analysis_role(name, valid, total, missing_pct, unique, std)
             summaries.append({
                 "field": name,
                 "total": total,
@@ -254,8 +255,60 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 "constant": constant,
                 "near_constant": near_constant,
                 "readiness": readiness,
+                "analysis_role": role["role"],
+                "role_reason": role["reason"],
+                "suggested_tools": role["tools"],
             })
         return summaries, aligned_values
+
+    def _analysis_role(self, name: str, valid: int, total: int, missing_pct: float, unique: int, std: Optional[float]) -> dict:
+        lower = name.lower()
+        if valid < 4 or unique <= 1 or (std is not None and std <= 1e-9):
+            return {
+                "role": "Do not model yet",
+                "reason": "The field has too little valid variation for reliable statistics.",
+                "tools": "Repair or replace the indicator before analysis.",
+            }
+
+        outcome_terms = [
+            "temp", "heat", "risk", "index", "score", "vulnerability", "access", "exposure",
+            "population", "density", "crime", "value", "price", "income", "demand",
+        ]
+        explanatory_terms = [
+            "ndvi", "park", "canopy", "impervious", "coverage", "floor", "building", "street",
+            "connectivity", "integration", "slope", "distance", "area", "ratio", "pct",
+        ]
+        count_terms = ["count", "number", "population", "household", "building", "unit"]
+
+        if any(term in lower for term in outcome_terms):
+            return {
+                "role": "Target or pattern variable",
+                "reason": "The field name suggests a planning outcome, exposure, index, score, or population measure.",
+                "tools": "Global Moran, Incremental Autocorrelation, Gi*, Local Moran, Bivariate Lee's L, OLS/GLR/GWR/MGWR.",
+            }
+        if any(term in lower for term in explanatory_terms):
+            return {
+                "role": "Candidate explanatory variable",
+                "reason": "The field name suggests a built-form, green-space, network, or environmental driver.",
+                "tools": "Exploratory Regression, OLS, GLR, GWR, MGWR, Spatial Lag, Spatial Error, Similarity Search.",
+            }
+        if any(term in lower for term in count_terms):
+            return {
+                "role": "Count or intensity variable",
+                "reason": "The field name suggests a count-like indicator; normalize it if the denominator varies spatially.",
+                "tools": "Poisson GLR, Gi*, Local Moran, rates after denominator review.",
+            }
+        if missing_pct <= 5.0 and unique >= max(10, int(valid * 0.15)):
+            return {
+                "role": "General numeric indicator",
+                "reason": "The field has enough valid values and variation for exploratory spatial screening.",
+                "tools": "Global Moran, Gi*, Local Moran, Similarity Search, clustering, or model screening.",
+            }
+        return {
+            "role": "Review before analysis",
+            "reason": "The field is usable numerically, but its meaning and distribution should be reviewed first.",
+            "tools": "Data inspection, histogram review, then targeted GeoStats tools.",
+        }
 
     def _correlation_findings(self, field_values: dict[str, list[Optional[float]]]) -> dict:
         fields = list(field_values.keys())
@@ -393,6 +446,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
 
     def _write_html(self, path: str, layer_profile: dict, field_summaries: list[dict], correlation_findings: dict, workflow_findings: list[dict], overall: dict) -> None:
         field_rows = "".join(self._field_row(item) for item in field_summaries)
+        role_rows = "".join(self._role_row(item) for item in field_summaries)
         correlation_rows = "".join(self._correlation_row(item) for item in correlation_findings["high_pairs"][:25])
         if not correlation_rows:
             correlation_rows = "<tr><td colspan=\"4\">No audited numeric field pairs exceeded the 0.85 absolute correlation warning threshold.</td></tr>"
@@ -447,6 +501,12 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <thead><tr><th>Field</th><th>Valid</th><th>Missing</th><th>Min</th><th>Max</th><th>Mean</th><th>Std. dev.</th><th>Unique</th><th>Readiness</th></tr></thead>
 <tbody>{field_rows}</tbody>
 </table>
+<h2>Analysis Role Suggestions</h2>
+<p>These suggestions combine simple field-name clues with numeric readiness checks. Treat them as analyst prompts, not automatic truth: the planning meaning of the indicator still controls the final method choice.</p>
+<table>
+<thead><tr><th>Field</th><th>Suggested role</th><th>Reason</th><th>Likely tools</th></tr></thead>
+<tbody>{role_rows}</tbody>
+</table>
 <h2>Model Multicollinearity Screen</h2>
 <p>High pairwise correlation does not automatically invalidate a model, but it can make coefficient signs, variable importance, and local model surfaces unstable. Review these pairs before OLS, GLR, GWR, MGWR, Spatial Lag, or Spatial Error modeling.</p>
 <table>
@@ -494,6 +554,21 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             f"<td><code>{html.escape(item['right'])}</code></td>"
             f"<td class=\"{cls}\">{item['correlation']:.3f}</td>"
             f"<td>{item['complete_records']}</td>"
+            "</tr>"
+        )
+
+    def _role_row(self, item: dict) -> str:
+        cls = "ok"
+        if item["analysis_role"] in ("Review before analysis", "Count or intensity variable"):
+            cls = "review"
+        elif item["analysis_role"] == "Do not model yet":
+            cls = "block"
+        return (
+            "<tr>"
+            f"<td><code>{html.escape(item['field'])}</code></td>"
+            f"<td class=\"{cls}\">{html.escape(item['analysis_role'])}</td>"
+            f"<td>{html.escape(item['role_reason'])}</td>"
+            f"<td>{html.escape(item['suggested_tools'])}</td>"
             "</tr>"
         )
 
