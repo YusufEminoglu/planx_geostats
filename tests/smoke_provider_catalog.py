@@ -249,6 +249,7 @@ def test_workflow_advisor_covers_core_decision_sections() -> None:
     source = advisor.read_text(encoding="utf-8")
     required_terms = [
         "Planning Questions to Tool Sequences",
+        "Personalized Recommendation",
         "Tool Selection Matrix",
         "Method Assumptions and Cautions",
         "Common Pitfalls and Safer Moves",
@@ -267,6 +268,10 @@ def test_workflow_advisor_covers_core_decision_sections() -> None:
         "count_target",
         "qa_lines_directional",
         "QA_MANUAL_TEST_MATRIX.md",
+        "GOAL_OPTIONS",
+        "GEOMETRY_OPTIONS",
+        "OUTCOME_OPTIONS",
+        "_personalized_recommendation",
     ]
     missing = [term for term in required_terms if term not in source]
     assert not missing, f"Workflow Advisor should cover core guidance terms: {missing}"

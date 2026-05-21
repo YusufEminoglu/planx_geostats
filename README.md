@@ -2,7 +2,7 @@
 
 PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in planning workflows. All user-facing tools live inside the Processing Toolbox, including optional-library diagnostics and the explicit library installer under **PlanX GeoStats Lab > 00 | Setup and Diagnostics**.
 
-The `GeoStats Workflow Advisor` tool provides a planning-oriented method guide with tool-selection rules, assumptions, common pitfalls, safer moves, and starter recipes for the bundled Izmir and synthetic QA samples.
+The `GeoStats Workflow Advisor` tool provides a planning-oriented method guide with user-selectable analysis goals, personalized recommended tool sequences, tool-selection rules, assumptions, common pitfalls, safer moves, and starter recipes for the bundled Izmir and synthetic QA samples.
 
 For release preparation, use `QA_MANUAL_TEST_MATRIX.md` as the manual test checklist covering setup tools, pattern statistics, geometry summaries, modeling workflows, symbology, report interpretation, and release gates.
 
@@ -41,5 +41,5 @@ py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.8
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.9
 ```

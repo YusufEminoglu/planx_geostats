@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.9] - 2026-05-22
+
+### Added
+- Added personalized Workflow Advisor inputs for analysis goal, geometry context, outcome type, and explanatory-variable availability.
+- Added a personalized recommendation section that returns a suggested tool sequence and pre-trust checks.
+
 ## [0.9.8] - 2026-05-22
 
 ### Added
