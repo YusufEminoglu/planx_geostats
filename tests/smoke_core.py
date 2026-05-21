@@ -100,6 +100,19 @@ def test_residual_spatial_autocorrelation_summary_flags_pattern() -> None:
     assert summary["neighbor_summary"]["minimum"] == 1
 
 
+def test_model_fit_summary_returns_core_metrics() -> None:
+    summary = diagnostics.model_fit_summary(
+        [10.0, 12.0, 14.0, 16.0],
+        [9.0, 13.0, 15.0, 15.0],
+        [1.0, -1.0, -1.0, 1.0],
+    )
+    assert summary["n"] == 4
+    assert np.isfinite(summary["r2"])
+    assert summary["rmse"] == 1.0
+    assert summary["mae"] == 1.0
+    assert summary["bias"] == 0.0
+
+
 def test_regression_quality_flags_collinearity() -> None:
     y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     x = np.array([
@@ -202,6 +215,7 @@ def run_all() -> None:
     test_sparse_neighbor_summary()
     test_filter_weights_to_valid_ids_restandardizes_rows()
     test_residual_spatial_autocorrelation_summary_flags_pattern()
+    test_model_fit_summary_returns_core_metrics()
     test_regression_quality_flags_collinearity()
     test_incremental_autocorrelation_neighbor_diagnostics()
     test_gwr_reports_local_support()

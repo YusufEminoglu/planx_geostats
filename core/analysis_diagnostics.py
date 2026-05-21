@@ -206,6 +206,42 @@ def residual_spatial_autocorrelation_summary(
     }
 
 
+def model_fit_summary(observed: Iterable[float], predicted: Iterable[float], residuals: Iterable[float]) -> dict:
+    """Return common model fit metrics for complete observed/predicted/residual arrays."""
+    y = np.array(list(observed), dtype=float)
+    pred = np.array(list(predicted), dtype=float)
+    resid = np.array(list(residuals), dtype=float)
+    if not (len(y) == len(pred) == len(resid)):
+        raise ValueError("Observed, predicted, and residual arrays must have the same length.")
+    finite = np.isfinite(y) & np.isfinite(pred) & np.isfinite(resid)
+    y = y[finite]
+    pred = pred[finite]
+    resid = resid[finite]
+    n = int(len(y))
+    if n == 0:
+        return {
+            "n": 0,
+            "r2": None,
+            "rmse": None,
+            "mae": None,
+            "bias": None,
+            "residual_std": None,
+            "observed_std": None,
+        }
+    ss_res = float(np.sum(resid ** 2))
+    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+    r2 = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else None
+    return {
+        "n": n,
+        "r2": float(r2) if r2 is not None else None,
+        "rmse": float(math.sqrt(np.mean(resid ** 2))),
+        "mae": float(np.mean(np.abs(resid))),
+        "bias": float(np.mean(resid)),
+        "residual_std": float(np.std(resid)),
+        "observed_std": float(np.std(y)),
+    }
+
+
 def _empty_residual_spatial_summary(message: str) -> dict:
     return {
         "available": False,

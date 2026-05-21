@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added Spatial Autoregression as a PySAL spreg-based spatial lag model with rho diagnostics, neighbor support, output audit fields, and a PlanX analyst report.
 - Added Spatial Error Regression (SEM) with lambda diagnostics, residual spatial checks, audit fields, and model interpretation guidance.
 - Added Multiscale Geographically Weighted Regression (MGWR) using PySAL mgwr with variable-specific bandwidths, local coefficient audit fields, and a scale-focused analyst report.
+- Added Model Comparison Matrix for comparing PlanX model output layers by fit metrics, coverage, bias, and residual spatial autocorrelation.
 - Added Bivariate Spatial Association (Lee's L) for local cross-variable neighborhood diagnostics.
 - Added shared residual spatial autocorrelation diagnostics to GLR, GWR, Spatial Autoregression, and MGWR reports.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.
