@@ -106,7 +106,8 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
             "scikit-learn": "Nearest-neighbor search, clustering support, and standardized multivariate workflows.",
             "libpysal": "Spatial weights, neighborhood graphs, and PySAL-compatible spatial structures.",
             "esda": "Exploratory spatial data analysis statistics such as Moran and Getis-Ord routines.",
-            "spreg": "Spatial regression utilities and diagnostics for model-oriented workflows.",
+            "spreg": "Spatial regression utilities for model-oriented workflows, including Spatial Autoregression.",
+            "mgwr": "Multiscale geographically weighted regression with variable-specific bandwidths.",
         }
         return roles.get(package, "Optional GeoStats support package.")
 

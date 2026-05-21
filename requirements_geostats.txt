@@ -1,4 +1,5 @@
 libpysal
 esda
 spreg
+mgwr
 scikit-learn

@@ -10,7 +10,7 @@ logger = logging.getLogger("PlanX GeoStats Lab")
 DEPENDENCIES_MISSING = False
 MISSING_LIBS = []
 
-for lib in ["libpysal", "esda", "spreg", "sklearn"]:
+for lib in ["libpysal", "esda", "spreg", "mgwr", "sklearn"]:
     try:
         if lib == "sklearn":
             import sklearn
@@ -20,6 +20,8 @@ for lib in ["libpysal", "esda", "spreg", "sklearn"]:
             import esda
         elif lib == "spreg":
             import spreg
+        elif lib == "mgwr":
+            import mgwr
     except ImportError:
         DEPENDENCIES_MISSING = True
         MISSING_LIBS.append(lib)

@@ -20,6 +20,7 @@ from .algorithms.alg_ripleys_k import RipleysKFunctionAlgorithm
 from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgorithm
 from .algorithms.alg_standard_distance import StandardDistanceAlgorithm
 from .algorithms.alg_gwr import GWRAlgorithm
+from .algorithms.alg_mgwr import MGWRAlgorithm
 from .algorithms.alg_exploratory_regression import ExploratoryRegressionAlgorithm
 from .algorithms.alg_generalized_linear_regression import GeneralizedLinearRegressionAlgorithm
 from .algorithms.alg_median_center import MedianCenterAlgorithm
@@ -89,4 +90,5 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(SpatialAutoregressionAlgorithm())
         self.addAlgorithm(ExploratoryRegressionAlgorithm())
         self.addAlgorithm(GWRAlgorithm())
+        self.addAlgorithm(MGWRAlgorithm())
         self.addAlgorithm(SensitivityTestAlgorithm())

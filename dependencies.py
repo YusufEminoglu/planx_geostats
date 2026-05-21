@@ -26,13 +26,14 @@ from qgis.PyQt.QtWidgets import (
 )
 
 
-PIP_PACKAGES = ["libpysal", "esda", "spreg", "scikit-learn"]
+PIP_PACKAGES = ["libpysal", "esda", "spreg", "mgwr", "scikit-learn"]
 MODULES = {
     "numpy": "numpy",
     "scikit-learn": "sklearn",
     "libpysal": "libpysal",
     "esda": "esda",
     "spreg": "spreg",
+    "mgwr": "mgwr",
 }
 
 
@@ -135,7 +136,8 @@ class GeoStatsDependencyDialog(QDialog):
         "spatial weights and neighborhood structures used by autocorrelation methods. "
         "esda provides established exploratory spatial data analysis statistics such "
         "as Moran and Getis-Ord variants. spreg supports spatial-regression oriented "
-        "diagnostics and the Spatial Autoregression tool. scikit-learn supports nearest-neighbor "
+        "diagnostics and the Spatial Autoregression tool. mgwr supports Multiscale "
+        "Geographically Weighted Regression with variable-specific bandwidths. scikit-learn supports nearest-neighbor "
         "search, clustering, and standardized multivariate analysis routines.\n\n"
         "Use 'QGIS Python pip' when QGIS already has a working Python executable and "
         "internet access. On Windows OSGeo4W installations, 'OSGeo Shell' can be useful "
@@ -402,5 +404,6 @@ class GeoStatsDependencyDialog(QDialog):
             "libpysal": "Spatial weights, neighborhood graphs, and PySAL-compatible spatial structures.",
             "esda": "Exploratory spatial data analysis statistics such as Moran and Getis-Ord routines.",
             "spreg": "Spatial regression utilities for model-oriented workflows, including Spatial Autoregression.",
+            "mgwr": "Multiscale geographically weighted regression with variable-specific bandwidths.",
         }
         return roles.get(package, "Optional GeoStats support package.")
