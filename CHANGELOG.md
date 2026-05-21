@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added optional field-level CSV export to Data Readiness Audit for spreadsheet QA logs and audit handoffs.
 - Expanded Data Readiness Audit workflow guidance with target fields, candidate explanatory fields, recommended tool sequences, and planning-purpose notes for starter analyses.
 - Added optional full JSON export to Data Readiness Audit for reproducible audit handoffs, automation, and downstream QA integration.
+- Added distribution-shape diagnostics to Data Readiness Audit, including median, quartiles, IQR, skewness, IQR outlier counts, distribution notes, and risk warnings for skewed or outlier-heavy fields.
 - Expanded bundled sample-data smoke tests to enforce English schema stability, numeric field types, expected value ranges, complete critical fields, and sufficient variation for analysis workflows.
 - Added Bivariate Spatial Association (Lee's L) for local cross-variable neighborhood diagnostics.
 - Added shared residual spatial autocorrelation diagnostics to GLR, GWR, Spatial Autoregression, and MGWR reports.

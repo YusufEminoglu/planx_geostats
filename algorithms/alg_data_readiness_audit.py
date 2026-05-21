@@ -277,6 +277,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             near_constant = bool(valid > 1 and std is not None and std <= 1e-9)
             readiness = self._field_readiness(total, valid, missing_pct, constant, near_constant)
             role = self._analysis_role(name, valid, total, missing_pct, unique, std)
+            distribution = self._distribution_profile(arr)
             summaries.append({
                 "field": name,
                 "total": total,
@@ -288,6 +289,13 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 "maximum": float(np.max(arr)) if valid else None,
                 "mean": mean,
                 "std": std,
+                "median": distribution["median"],
+                "q1": distribution["q1"],
+                "q3": distribution["q3"],
+                "iqr": distribution["iqr"],
+                "skewness": distribution["skewness"],
+                "iqr_outliers": distribution["iqr_outliers"],
+                "distribution_note": distribution["note"],
                 "unique": unique,
                 "constant": constant,
                 "near_constant": near_constant,
@@ -297,6 +305,52 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 "suggested_tools": role["tools"],
             })
         return summaries, aligned_values
+
+    def _distribution_profile(self, arr: np.ndarray) -> dict:
+        if len(arr) == 0:
+            return {
+                "median": None,
+                "q1": None,
+                "q3": None,
+                "iqr": None,
+                "skewness": None,
+                "iqr_outliers": 0,
+                "note": "No finite numeric values were available.",
+            }
+        q1 = float(np.percentile(arr, 25))
+        median = float(np.percentile(arr, 50))
+        q3 = float(np.percentile(arr, 75))
+        iqr = q3 - q1
+        if iqr > 0:
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+            outliers = int(np.sum((arr < lower) | (arr > upper)))
+        else:
+            outliers = 0
+        std = float(np.std(arr))
+        if len(arr) >= 3 and std > 0:
+            centered = (arr - float(np.mean(arr))) / std
+            skewness = float(np.mean(centered ** 3))
+        else:
+            skewness = None
+
+        if skewness is not None and abs(skewness) >= 1.5:
+            note = "Strong skew detected; review transformation, rates, or robust interpretation before modeling."
+        elif outliers > max(3, int(0.05 * len(arr))):
+            note = "Several IQR outliers detected; map and validate extreme observations before formal inference."
+        elif iqr == 0:
+            note = "Low distribution spread; this field may have limited analytical contrast."
+        else:
+            note = "No major distribution-shape warning was triggered."
+        return {
+            "median": median,
+            "q1": q1,
+            "q3": q3,
+            "iqr": float(iqr),
+            "skewness": skewness,
+            "iqr_outliers": outliers,
+            "note": note,
+        }
 
     def _analysis_role(self, name: str, valid: int, total: int, missing_pct: float, unique: int, std: Optional[float]) -> dict:
         lower = name.lower()
@@ -468,6 +522,18 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             risks.append(f"{len(review)} audited field(s) should be reviewed before formal interpretation.")
         if correlation_findings["high_pairs"]:
             risks.append(f"{len(correlation_findings['high_pairs'])} high-correlation field pair(s) may create multicollinearity in regression, GWR, MGWR, or GLR workflows.")
+        skewed = [
+            item for item in field_summaries
+            if item.get("skewness") is not None and abs(float(item["skewness"])) >= 1.5
+        ]
+        outlier_fields = [
+            item for item in field_summaries
+            if int(item.get("iqr_outliers", 0)) > max(3, int(0.05 * max(1, item.get("valid", 0))))
+        ]
+        if skewed:
+            risks.append(f"{len(skewed)} audited field(s) show strong skew; review transformation, rates, or robust interpretation before modeling.")
+        if outlier_fields:
+            risks.append(f"{len(outlier_fields)} audited field(s) contain notable IQR outlier counts; validate extremes before formal inference.")
         if not risks:
             risks.append("No major automatic readiness warning was triggered.")
         summary = (
@@ -547,7 +613,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <section class="risk"><ul>{risk_items}</ul></section>
 <h2>Numeric Field Audit</h2>
 <table>
-<thead><tr><th>Field</th><th>Valid</th><th>Missing</th><th>Min</th><th>Max</th><th>Mean</th><th>Std. dev.</th><th>Unique</th><th>Readiness</th></tr></thead>
+<thead><tr><th>Field</th><th>Valid</th><th>Missing</th><th>Min</th><th>Max</th><th>Mean</th><th>Median</th><th>Std. dev.</th><th>Skewness</th><th>IQR outliers</th><th>Unique</th><th>Readiness</th></tr></thead>
 <tbody>{field_rows}</tbody>
 </table>
 <h2>Analysis Role Suggestions</h2>
@@ -585,7 +651,14 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             "minimum",
             "maximum",
             "mean",
+            "median",
+            "q1",
+            "q3",
+            "iqr",
             "std",
+            "skewness",
+            "iqr_outliers",
+            "distribution_note",
             "unique_values",
             "readiness",
             "analysis_role",
@@ -605,7 +678,14 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
                     "minimum": self._csv_number(item["minimum"]),
                     "maximum": self._csv_number(item["maximum"]),
                     "mean": self._csv_number(item["mean"]),
+                    "median": self._csv_number(item["median"]),
+                    "q1": self._csv_number(item["q1"]),
+                    "q3": self._csv_number(item["q3"]),
+                    "iqr": self._csv_number(item["iqr"]),
                     "std": self._csv_number(item["std"]),
+                    "skewness": self._csv_number(item["skewness"]),
+                    "iqr_outliers": item["iqr_outliers"],
+                    "distribution_note": item["distribution_note"],
                     "unique_values": item["unique"],
                     "readiness": item["readiness"],
                     "analysis_role": item["analysis_role"],
@@ -667,7 +747,10 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             f"<td>{self._fmt(item['minimum'])}</td>"
             f"<td>{self._fmt(item['maximum'])}</td>"
             f"<td>{self._fmt(item['mean'])}</td>"
+            f"<td>{self._fmt(item['median'])}</td>"
             f"<td>{self._fmt(item['std'])}</td>"
+            f"<td>{self._fmt(item['skewness'])}</td>"
+            f"<td>{item['iqr_outliers']}</td>"
             f"<td>{item['unique']}</td>"
             f"<td class=\"{cls}\">{html.escape(item['readiness'])}</td>"
             "</tr>"
@@ -722,6 +805,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             actions.append("Exclude not-ready fields from formal statistics until missing values, field types, or lack of variation are resolved.")
         if overall["review"]:
             actions.append("Inspect fields marked for review in the attribute table and decide whether imputation, filtering, or a more appropriate indicator is needed.")
+        actions.append("For strongly skewed or outlier-heavy fields, inspect histograms and maps before choosing OLS, GLR, GWR, MGWR, or hot spot interpretation.")
         actions.append("Before regression or local modeling, avoid putting strongly correlated explanatory variables in the same model unless there is a clear analytical reason.")
         actions.append("Repair invalid geometries and remove or correct empty geometries before using contiguity weights, local statistics, or distance-based models.")
         actions.append("For distance-band, K-function, nearest-neighbor, GWR, MGWR, and spatial regression workflows, verify that the layer CRS uses appropriate projected map units.")
