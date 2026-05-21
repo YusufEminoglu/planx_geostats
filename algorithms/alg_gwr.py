@@ -33,9 +33,14 @@ from qgis.core import (
 from ..core.stats_engines import calculate_gwr
 from ..core.analysis_diagnostics import (
     crs_unit_warning,
+    filter_weights_to_valid_ids,
+    push_residual_spatial_diagnostics,
     regression_quality_html,
     regression_quality_summary,
+    residual_spatial_autocorrelation_html,
+    residual_spatial_autocorrelation_summary,
 )
+from ..core.weights import build_weights_matrix
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -253,6 +258,14 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
 
         feedback.pushInfo("Solving Geographically Weighted Regression...")
         results = calculate_gwr(y, X_data, coords, bandwidth, kernel_type)
+        residual_k = min(max(8, p + 2), n - 1)
+        residual_spatial = self._residual_spatial_diagnostic(
+            source,
+            valid_fids,
+            results["residuals"],
+            residual_k,
+            feedback,
+        )
 
         if feedback.isCanceled():
             return {}
@@ -349,7 +362,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
 
         # Generate GWR diagnostics report
         feedback.pushInfo("Generating global diagnostics HTML report...")
-        self.write_html_report(results, html_path, dep_var, kernel_type, bandwidth, model_quality, crs_warning, skipped)
+        self.write_html_report(results, html_path, dep_var, kernel_type, bandwidth, model_quality, crs_warning, skipped, residual_spatial)
 
         return {
             self.OUTPUT: dest_id,
@@ -357,7 +370,32 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             "HTML_REPORT_OUT": html_path
         }
 
-    def write_html_report(self, res: dict, path: str, dep: str, kernel: str, bw: float, model_quality: dict, crs_warning: str, skipped: int):
+    def _residual_spatial_diagnostic(self, source, valid_fids, residuals, k_neighbors, feedback):
+        try:
+            feedback.pushInfo(
+                f"Building KNN weights with K={k_neighbors} for GWR residual spatial autocorrelation diagnostics..."
+            )
+            neighbors, _, _, _ = build_weights_matrix(source, "knn", k_neighbors=k_neighbors, feedback=feedback)
+            filtered_neighbors, filtered_weights, filtered_ids = filter_weights_to_valid_ids(neighbors, valid_fids)
+            summary = residual_spatial_autocorrelation_summary(residuals, filtered_neighbors, filtered_weights, filtered_ids)
+            push_residual_spatial_diagnostics(feedback, summary)
+            return summary
+        except Exception as exc:
+            summary = {
+                "available": False,
+                "moran_i": None,
+                "expected_i": None,
+                "variance": None,
+                "z_score": None,
+                "p_value": None,
+                "neighbor_summary": None,
+                "status": "Not available",
+                "message": str(exc),
+            }
+            push_residual_spatial_diagnostics(feedback, summary)
+            return summary
+
+    def write_html_report(self, res: dict, path: str, dep: str, kernel: str, bw: float, model_quality: dict, crs_warning: str, skipped: int, residual_spatial: dict):
         aicc_text = "N/A" if not np.isfinite(res["aicc"]) else f"{res['aicc']:.4f}"
         local_r2 = np.array(res["local_r2"], dtype=float)
         support = np.array(res.get("local_support", []), dtype=float)
@@ -370,7 +408,9 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             f"min={int(np.nanmin(support))}, median={np.nanmedian(support):.1f}, max={int(np.nanmax(support))}"
             if len(support) else "n/a"
         )
-        if low_support:
+        if residual_spatial.get("available") and residual_spatial.get("p_value") is not None and residual_spatial["p_value"] < 0.05:
+            next_action = "Residuals retain a spatial pattern. Compare bandwidth choices, inspect missing variables, and consider MGWR or spatial regression."
+        elif low_support:
             next_action = "Increase the adaptive neighbor count or fixed bandwidth; some local regressions have weak local support."
         elif model_quality["risks"]:
             next_action = "Resolve model-quality warnings before interpreting local coefficient surfaces."
@@ -521,6 +561,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
     </div>
 
     {regression_quality_html(model_quality)}
+    {residual_spatial_autocorrelation_html(residual_spatial)}
 
     <h2>Kernel Parameter Configurations</h2>
     <table>

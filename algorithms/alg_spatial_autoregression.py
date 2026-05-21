@@ -40,8 +40,11 @@ from ..core.analysis_diagnostics import (
     neighbor_summary,
     numeric_quality_summary,
     push_diagnostics,
+    push_residual_spatial_diagnostics,
     regression_quality_html,
     regression_quality_summary,
+    residual_spatial_autocorrelation_html,
+    residual_spatial_autocorrelation_summary,
 )
 from ..core.weights import build_weights_matrix
 
@@ -287,6 +290,13 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
             std_residuals = results["residuals"] / residual_std
         else:
             std_residuals = np.zeros(n)
+        residual_spatial = residual_spatial_autocorrelation_summary(
+            results["residuals"],
+            filtered_neighbors,
+            filtered_weights,
+            valid_id_order,
+        )
+        push_residual_spatial_diagnostics(feedback, residual_spatial)
 
         feedback.pushInfo(
             "Spatial lag model fitted: "
@@ -363,6 +373,7 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
             n_summary,
             crs_warning,
             islands,
+            residual_spatial,
         )
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
@@ -480,6 +491,7 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
         n_summary,
         crs_warning,
         islands,
+        residual_spatial,
     ):
         coefficient_rows = []
         for name, coef, se, z_value, p_value in zip(
@@ -569,6 +581,7 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 
 {diagnostics_html(numeric_summary, n_summary, crs_warning)}
 {regression_quality_html(quality)}
+{residual_spatial_autocorrelation_html(residual_spatial)}
 {island_note}
 
 <h2>Coefficient Estimates</h2>

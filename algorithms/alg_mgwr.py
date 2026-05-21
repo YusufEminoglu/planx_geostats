@@ -35,10 +35,15 @@ from qgis.core import (
 
 from ..core.analysis_diagnostics import (
     crs_unit_warning,
+    filter_weights_to_valid_ids,
     format_number,
+    push_residual_spatial_diagnostics,
     regression_quality_html,
     regression_quality_summary,
+    residual_spatial_autocorrelation_html,
+    residual_spatial_autocorrelation_summary,
 )
+from ..core.weights import build_weights_matrix
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -343,6 +348,14 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             )
 
         extracted = self._extract_results(results, selector, y[:, 0], indep_fields)
+        residual_k = min(max(8, p + 2), n - 1)
+        residual_spatial = self._residual_spatial_diagnostic(
+            source,
+            valid_fids,
+            extracted["residuals"],
+            residual_k,
+            feedback,
+        )
         short_names = self._short_field_names(indep_fields)
         min_selected_bw = float(np.nanmin(extracted["bandwidths"])) if len(extracted["bandwidths"]) else None
         max_selected_bw = float(np.nanmax(extracted["bandwidths"])) if len(extracted["bandwidths"]) else None
@@ -423,6 +436,7 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             min_bw,
             max_bw,
             max_iter,
+            residual_spatial,
         )
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
@@ -523,6 +537,31 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             "tr_s": self._safe_float(getattr(results, "tr_S", None)),
             "names": ["Intercept"] + list(indep_fields),
         }
+
+    def _residual_spatial_diagnostic(self, source, valid_fids, residuals, k_neighbors, feedback):
+        try:
+            feedback.pushInfo(
+                f"Building KNN weights with K={k_neighbors} for MGWR residual spatial autocorrelation diagnostics..."
+            )
+            neighbors, _, _, _ = build_weights_matrix(source, "knn", k_neighbors=k_neighbors, feedback=feedback)
+            filtered_neighbors, filtered_weights, filtered_ids = filter_weights_to_valid_ids(neighbors, valid_fids)
+            summary = residual_spatial_autocorrelation_summary(residuals, filtered_neighbors, filtered_weights, filtered_ids)
+            push_residual_spatial_diagnostics(feedback, summary)
+            return summary
+        except Exception as exc:
+            summary = {
+                "available": False,
+                "moran_i": None,
+                "expected_i": None,
+                "variance": None,
+                "z_score": None,
+                "p_value": None,
+                "neighbor_summary": None,
+                "status": "Not available",
+                "message": str(exc),
+            }
+            push_residual_spatial_diagnostics(feedback, summary)
+            return summary
 
     def _extract_bandwidths(self, results, selector, expected_size):
         candidates = [
@@ -628,6 +667,7 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
         min_bw,
         max_bw,
         max_iter,
+        residual_spatial,
     ):
         names = results["names"]
         bandwidth_rows = []
@@ -656,7 +696,9 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             bounds_text = f"minimum={min_bw if min_bw > 0 else 'automatic'}, maximum={max_bw if max_bw > 0 else 'automatic'}"
 
         local_risk = ""
-        if model_quality["risks"]:
+        if residual_spatial.get("available") and residual_spatial.get("p_value") is not None and residual_spatial["p_value"] < 0.05:
+            local_risk = "Residuals retain a spatial pattern even after MGWR; review omitted variables, boundaries, and bandwidth settings."
+        elif model_quality["risks"]:
             local_risk = "Resolve model-quality warnings before treating local coefficient patterns as stable."
         elif len(indep_fields) > 4:
             local_risk = "Review whether the variable set is too broad; MGWR bandwidths are easier to defend with a focused model."
@@ -706,6 +748,7 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 </div>
 
 {regression_quality_html(model_quality)}
+{residual_spatial_autocorrelation_html(residual_spatial)}
 
 <h2>Bandwidth Selection</h2>
 <table>

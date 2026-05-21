@@ -96,6 +96,145 @@ def filter_weights_to_valid_ids(neighbors: dict, valid_ids: Iterable[int]) -> tu
     return filtered_neighbors, filtered_weights, id_order
 
 
+def residual_spatial_autocorrelation_summary(
+    residuals: Iterable[float],
+    neighbors: dict,
+    weights: dict,
+    id_order: Iterable[int],
+) -> dict:
+    """Calculate a compact Global Moran's I diagnostic for model residuals."""
+    ids = [int(fid) for fid in id_order]
+    arr = np.array(list(residuals), dtype=float)
+    finite_mask = np.isfinite(arr)
+    if len(ids) != len(arr):
+        return _empty_residual_spatial_summary("Residual count does not match the feature-id order.")
+    if len(arr) < 4:
+        return _empty_residual_spatial_summary("At least 4 complete residuals are required.")
+    if not np.all(finite_mask):
+        ids = [fid for fid, ok in zip(ids, finite_mask) if ok]
+        arr = arr[finite_mask]
+    if len(arr) < 4:
+        return _empty_residual_spatial_summary("At least 4 finite residuals are required.")
+
+    filtered_neighbors, filtered_weights, ids = filter_weights_to_valid_ids(neighbors, ids)
+    n_summary = neighbor_summary(filtered_neighbors, ids)
+    id_to_idx = {fid: idx for idx, fid in enumerate(ids)}
+    centered = arr - np.mean(arr)
+    sum_z2 = float(np.sum(centered ** 2))
+    if sum_z2 <= 0.0:
+        return {
+            **_empty_residual_spatial_summary("Residuals are constant; residual Moran's I is not informative."),
+            "available": True,
+            "moran_i": 0.0,
+            "expected_i": -1.0 / (len(arr) - 1),
+            "p_value": 1.0,
+            "z_score": 0.0,
+            "neighbor_summary": n_summary,
+            "status": "No residual contrast",
+        }
+
+    s0 = 0.0
+    row_sums = np.zeros(len(ids))
+    col_sums = np.zeros(len(ids))
+    numerator = 0.0
+    for i, fid in enumerate(ids):
+        for nid, weight in zip(filtered_neighbors.get(fid, []), filtered_weights.get(fid, [])):
+            if nid in id_to_idx:
+                j = id_to_idx[nid]
+                w = float(weight)
+                s0 += w
+                row_sums[i] += w
+                col_sums[j] += w
+                numerator += w * centered[i] * centered[j]
+
+    if s0 <= 0.0:
+        return {
+            **_empty_residual_spatial_summary("No valid residual-neighbor links were available."),
+            "neighbor_summary": n_summary,
+            "status": "No valid residual-neighbor links",
+        }
+
+    n = len(ids)
+    moran_i = (n / s0) * (numerator / sum_z2)
+    expected_i = -1.0 / (n - 1)
+    sum_z4 = float(np.sum(centered ** 4))
+    kurtosis_term = (n * sum_z4) / (sum_z2 ** 2) if sum_z2 > 0 else 0.0
+
+    s1 = 0.0
+    for fid in ids:
+        for nid, w_ij in zip(filtered_neighbors.get(fid, []), filtered_weights.get(fid, [])):
+            if nid in id_to_idx:
+                w_ji = 0.0
+                reverse_neighbors = filtered_neighbors.get(nid, [])
+                reverse_weights = filtered_weights.get(nid, [])
+                if fid in reverse_neighbors:
+                    w_ji = reverse_weights[reverse_neighbors.index(fid)]
+                s1 += (float(w_ij) + float(w_ji)) ** 2
+    s1 *= 0.5
+    s2 = float(np.sum((row_sums + col_sums) ** 2))
+    numerator_variance = (
+        n * ((n ** 2 - 3 * n + 3) * s1 - n * s2 + 3 * s0 ** 2)
+        - kurtosis_term * ((n ** 2 - n) * s1 - 2 * n * s2 + 6 * s0 ** 2)
+    )
+    denominator_variance = (n - 1) * (n - 2) * (n - 3) * s0 ** 2
+    variance = numerator_variance / denominator_variance - (expected_i ** 2) if denominator_variance > 0 else 0.0
+    if variance > 0:
+        z_score = (moran_i - expected_i) / math.sqrt(variance)
+        p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
+    else:
+        variance = 0.0
+        z_score = 0.0
+        p_value = 1.0
+
+    if p_value < 0.05 and moran_i > expected_i:
+        status = "Residual clustering remains"
+    elif p_value < 0.05 and moran_i < expected_i:
+        status = "Residual dispersion remains"
+    else:
+        status = "No strong residual spatial pattern"
+
+    return {
+        "available": True,
+        "moran_i": float(moran_i),
+        "expected_i": float(expected_i),
+        "variance": float(variance),
+        "z_score": float(z_score),
+        "p_value": float(max(0.0, min(1.0, p_value))),
+        "neighbor_summary": n_summary,
+        "status": status,
+        "message": "",
+    }
+
+
+def _empty_residual_spatial_summary(message: str) -> dict:
+    return {
+        "available": False,
+        "moran_i": None,
+        "expected_i": None,
+        "variance": None,
+        "z_score": None,
+        "p_value": None,
+        "neighbor_summary": None,
+        "status": "Not available",
+        "message": message,
+    }
+
+
+def push_residual_spatial_diagnostics(feedback, summary: dict) -> None:
+    if not summary.get("available"):
+        feedback.pushWarning("Residual spatial autocorrelation diagnostic was not available: " + summary.get("message", "unknown reason"))
+        return
+    feedback.pushInfo(
+        "Residual spatial autocorrelation: "
+        f"Moran's I={format_number(summary['moran_i'], 6)}, "
+        f"z={format_number(summary['z_score'], 4)}, "
+        f"p={format_number(summary['p_value'], 6)}, "
+        f"status={summary['status']}."
+    )
+    if summary.get("p_value") is not None and summary["p_value"] < 0.05:
+        feedback.pushWarning("Residuals retain a statistically notable spatial pattern. Review model specification and missing spatial processes.")
+
+
 def crs_unit_warning(source) -> Optional[str]:
     try:
         crs = source.sourceCrs()
@@ -286,4 +425,48 @@ def regression_quality_html(summary: dict) -> str:
         "<table><thead><tr><th>Check</th><th>Result</th></tr></thead>"
         f"<tbody>{body}</tbody></table>"
         f"<div class=\"note\"><strong>Analyst review:</strong><ul>{risk_items}</ul></div>"
+    )
+
+
+def residual_spatial_autocorrelation_html(summary: dict) -> str:
+    if not summary.get("available"):
+        return (
+            "<h2>Residual Spatial Autocorrelation</h2>"
+            "<div class=\"note\"><strong>Diagnostic unavailable:</strong> "
+            f"{html.escape(summary.get('message', 'No diagnostic message was provided.'))}</div>"
+        )
+    n_summary = summary.get("neighbor_summary") or {}
+    rows = [
+        ("Residual Moran's I", format_number(summary["moran_i"], 6)),
+        ("Expected I", format_number(summary["expected_i"], 6)),
+        ("z-score", format_number(summary["z_score"], 4)),
+        ("p-value", format_number(summary["p_value"], 6)),
+        ("Status", summary["status"]),
+        ("Minimum residual neighbors", str(n_summary.get("minimum", "n/a"))),
+        ("Median residual neighbors", format_number(n_summary.get("median"), 2)),
+        ("Maximum residual neighbors", str(n_summary.get("maximum", "n/a"))),
+        ("Isolated residual observations", str(n_summary.get("isolated", "n/a"))),
+    ]
+    body = "".join(
+        "<tr>"
+        f"<td class=\"metric-name\">{html.escape(label)}</td>"
+        f"<td>{html.escape(str(value))}</td>"
+        "</tr>"
+        for label, value in rows
+    )
+    if summary.get("p_value") is not None and summary["p_value"] < 0.05:
+        interpretation = (
+            "Residuals still show a spatial pattern after model fitting. This can indicate an omitted spatial process, "
+            "a scale mismatch, misspecified neighborhoods, or explanatory variables that do not capture the geography of the outcome."
+        )
+    else:
+        interpretation = (
+            "The selected residual-neighborhood graph does not show a strong global residual pattern. "
+            "Still inspect the residual map because local pockets can remain even when the global diagnostic is weak."
+        )
+    return (
+        "<h2>Residual Spatial Autocorrelation</h2>"
+        "<table><thead><tr><th>Diagnostic</th><th>Value</th></tr></thead>"
+        f"<tbody>{body}</tbody></table>"
+        f"<div class=\"note\"><strong>Analyst interpretation:</strong> {html.escape(interpretation)}</div>"
     )

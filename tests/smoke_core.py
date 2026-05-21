@@ -85,6 +85,21 @@ def test_filter_weights_to_valid_ids_restandardizes_rows() -> None:
     assert weights[40] == [1.0]
 
 
+def test_residual_spatial_autocorrelation_summary_flags_pattern() -> None:
+    neighbors = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2], 4: [5], 5: [4]}
+    weights = {0: [1.0], 1: [0.5, 0.5], 2: [0.5, 0.5], 3: [1.0], 4: [1.0], 5: [1.0]}
+    summary = diagnostics.residual_spatial_autocorrelation_summary(
+        np.array([3.0, 2.5, 2.0, 1.5, -2.0, -2.5]),
+        neighbors,
+        weights,
+        [0, 1, 2, 3, 4, 5],
+    )
+    assert summary["available"]
+    assert np.isfinite(summary["moran_i"])
+    assert 0.0 <= summary["p_value"] <= 1.0
+    assert summary["neighbor_summary"]["minimum"] == 1
+
+
 def test_regression_quality_flags_collinearity() -> None:
     y = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     x = np.array([
@@ -186,6 +201,7 @@ def run_all() -> None:
     test_general_g_non_contiguous_ids()
     test_sparse_neighbor_summary()
     test_filter_weights_to_valid_ids_restandardizes_rows()
+    test_residual_spatial_autocorrelation_summary_flags_pattern()
     test_regression_quality_flags_collinearity()
     test_incremental_autocorrelation_neighbor_diagnostics()
     test_gwr_reports_local_support()

@@ -23,10 +23,19 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterFileDestination,
+    QgsWkbTypes,
 )
 
-from ..core.analysis_diagnostics import regression_quality_html, regression_quality_summary
+from ..core.analysis_diagnostics import (
+    filter_weights_to_valid_ids,
+    push_residual_spatial_diagnostics,
+    regression_quality_html,
+    regression_quality_summary,
+    residual_spatial_autocorrelation_html,
+    residual_spatial_autocorrelation_summary,
+)
 from ..core.stats_engines import calculate_glr
+from ..core.weights import build_weights_matrix
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -180,6 +189,7 @@ class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
             f"GLR fitted using {family} family; converged={results['converged']}; "
             f"iterations={results['iterations']}; AIC={results['aic']:.4f}."
         )
+        residual_spatial = self._residual_spatial_diagnostic(source, valid_fids, results["residuals"], feedback)
 
         out_fields = source.fields()
         out_fields.append(QgsField("glr_fit", QVariant.Double, len=12, prec=6))
@@ -221,7 +231,7 @@ class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
             sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
-        self._write_html(html_path, dep_var, indep_fields, family, results, quality, skipped)
+        self._write_html(html_path, dep_var, indep_fields, family, results, quality, skipped, residual_spatial)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def _to_float(self, value):
@@ -235,7 +245,31 @@ class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
             return None
         return numeric
 
-    def _write_html(self, path, dep_var, indep_fields, family, results, quality, skipped):
+    def _residual_spatial_diagnostic(self, source, valid_fids, residuals, feedback):
+        try:
+            weight_type = "queen" if source.geometryType() == QgsWkbTypes.PolygonGeometry else "knn"
+            feedback.pushInfo(f"Building {weight_type} weights for GLR residual spatial autocorrelation diagnostics...")
+            neighbors, _, _, _ = build_weights_matrix(source, weight_type, k_neighbors=8, feedback=feedback)
+            filtered_neighbors, filtered_weights, filtered_ids = filter_weights_to_valid_ids(neighbors, valid_fids)
+            summary = residual_spatial_autocorrelation_summary(residuals, filtered_neighbors, filtered_weights, filtered_ids)
+            push_residual_spatial_diagnostics(feedback, summary)
+            return summary
+        except Exception as exc:
+            summary = {
+                "available": False,
+                "moran_i": None,
+                "expected_i": None,
+                "variance": None,
+                "z_score": None,
+                "p_value": None,
+                "neighbor_summary": None,
+                "status": "Not available",
+                "message": str(exc),
+            }
+            push_residual_spatial_diagnostics(feedback, summary)
+            return summary
+
+    def _write_html(self, path, dep_var, indep_fields, family, results, quality, skipped, residual_spatial):
         coef_rows = []
         names = ["Intercept"] + list(indep_fields)
         for name, coef, se, z_value, p_value in zip(
@@ -260,9 +294,14 @@ class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
             "logistic": "Logistic binary model",
             "poisson": "Poisson count model",
         }[family]
-        next_action = (
-            "Inspect residuals and model-quality warnings. For logistic and Poisson models, validate predictions against observed classes or counts before scenario use."
-        )
+        if residual_spatial.get("available") and residual_spatial.get("p_value") is not None and residual_spatial["p_value"] < 0.05:
+            next_action = (
+                "Residuals retain a spatial pattern. Compare this GLR with OLS, Spatial Autoregression, GWR, or MGWR, and review whether a missing spatial process or scale effect remains."
+            )
+        else:
+            next_action = (
+                "Inspect residuals and model-quality warnings. For logistic and Poisson models, validate predictions against observed classes or counts before scenario use."
+            )
         content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -294,6 +333,7 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 </div>
 {r2_block}
 {regression_quality_html(quality)}
+{residual_spatial_autocorrelation_html(residual_spatial)}
 <h2>Coefficient Estimates</h2>
 <table>
 <thead><tr><th>Variable</th><th>Coefficient</th><th>Std Error</th><th>z-statistic</th><th>p-value</th></tr></thead>
