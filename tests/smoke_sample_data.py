@@ -39,6 +39,7 @@ def run_all() -> None:
     test_izmir_sample_data()
     test_synthetic_qa_sample_data()
     test_sample_guide_load_options_match_bundled_layers()
+    test_sample_guide_html_mentions_all_loadable_layers()
     print("SAMPLE DATA SMOKE TESTS OK")
 
 
@@ -303,6 +304,22 @@ def test_sample_guide_load_options_match_bundled_layers() -> None:
 
     listed_layers = set(constants["SYNTHETIC_QA_LAYERS"])
     assert listed_layers == qa_layers, "Sample Dataset Guide synthetic layer list must match the QA fixture"
+
+
+def test_sample_guide_html_mentions_all_loadable_layers() -> None:
+    source = SAMPLE_GUIDE.read_text(encoding="utf-8")
+    constants = _sample_guide_constants()
+    required_phrases = [
+        "Loading Modes",
+        "Izmir planning sample",
+        "Synthetic QA fixture",
+        "Both datasets",
+        LAYER,
+    ]
+    required_phrases.extend(constants["SYNTHETIC_QA_LAYERS"])
+
+    missing = [phrase for phrase in required_phrases if phrase not in source]
+    assert not missing, f"Sample Dataset Guide HTML should mention every loadable layer/mode: {missing}"
 
 
 def _sample_guide_constants() -> dict[str, object]:

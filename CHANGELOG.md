@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.6] - 2026-05-22
+
+### Changed
+- Expanded the Sample Dataset Guide QA fixture table to list every model-output layer explicitly instead of using a wildcard label.
+
+### Added
+- Added smoke coverage that verifies the generated Sample Dataset Guide source mentions every loadable sample and QA layer.
+
 ## [0.9.5] - 2026-05-22
 
 ### Added

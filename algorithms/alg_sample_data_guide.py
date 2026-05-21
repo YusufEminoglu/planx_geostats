@@ -178,7 +178,12 @@ class SampleDataGuideAlgorithm(QgsProcessingAlgorithm):
             ("qa_points_grid", "Point", "ANN, Ripley's K, distance bands, KNN weights, GLR logistic/Poisson, and point-based regression smoke checks."),
             ("qa_lines_directional", "Line / multiline", "Linear Directional Mean, including multipart line handling."),
             ("qa_polygons_mini", "Polygon", "Queen/rook contiguity and compact local-statistics checks."),
-            ("qa_*_model_output", "Point model outputs", "Model Comparison Matrix detection for OLS, GLR, GWR, SAR, SEM, and MGWR outputs."),
+            ("qa_ols_model_output", "Point model output", "Model Comparison Matrix detection for OLS residual and standardized-residual fields."),
+            ("qa_glr_model_output", "Point model output", "Model Comparison Matrix detection for GLR fitted, residual, and used-record fields."),
+            ("qa_gwr_model_output", "Point model output", "Model Comparison Matrix detection for GWR predicted and residual fields."),
+            ("qa_sar_model_output", "Point model output", "Model Comparison Matrix detection for SAR predicted, residual, used-record, and standardized-residual fields."),
+            ("qa_sem_model_output", "Point model output", "Model Comparison Matrix detection for SEM predicted, residual, used-record, and standardized-residual fields."),
+            ("qa_mgwr_model_output", "Point model output", "Model Comparison Matrix detection for MGWR predicted, residual, used-record, and standardized-residual fields."),
         ]
         rows = "".join(
             "<tr>"
@@ -227,7 +232,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <thead><tr><th>Mode</th><th>Loaded layers</th><th>Use when</th></tr></thead>
 <tbody>
 <tr><td><strong>Izmir planning sample</strong></td><td><code>{self.LAYER_NAME}</code></td><td>You want the default planning demo and regular manual workflow checks.</td></tr>
-<tr><td><strong>Synthetic QA fixture</strong></td><td><code>qa_points_grid</code>, <code>qa_lines_directional</code>, <code>qa_polygons_mini</code>, and model-output QA layers.</td><td>You want compact developer QA layers for edge-case testing.</td></tr>
+<tr><td><strong>Synthetic QA fixture</strong></td><td><code>qa_points_grid</code>, <code>qa_lines_directional</code>, <code>qa_polygons_mini</code>, and exact model-output QA layers.</td><td>You want compact developer QA layers for edge-case testing.</td></tr>
 <tr><td><strong>Both datasets</strong></td><td>All bundled planning and QA layers.</td><td>You are preparing a full manual regression pass before release.</td></tr>
 </tbody>
 </table>
