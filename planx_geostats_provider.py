@@ -37,6 +37,7 @@ from .algorithms.alg_sensitivity_test import SensitivityTestAlgorithm
 from .algorithms.alg_library_status import GeoStatsLibraryStatusAlgorithm
 from .algorithms.alg_install_libraries import InstallGeoStatsLibrariesAlgorithm
 from .algorithms.alg_sample_data_guide import SampleDataGuideAlgorithm
+from .algorithms.alg_data_readiness_audit import DataReadinessAuditAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -61,6 +62,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(GeoStatsLibraryStatusAlgorithm())
         self.addAlgorithm(InstallGeoStatsLibrariesAlgorithm())
         self.addAlgorithm(SampleDataGuideAlgorithm())
+        self.addAlgorithm(DataReadinessAuditAlgorithm())
 
         # 01 | Data Preparation and Neighborhoods
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
