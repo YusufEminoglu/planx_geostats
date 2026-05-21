@@ -7,6 +7,7 @@ import math
 import os
 import tempfile
 import csv
+import json
 from typing import Optional
 
 import numpy as np
@@ -30,6 +31,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
     FIELDS = "FIELDS"
     HTML_REPORT = "HTML_REPORT"
     FIELD_AUDIT_CSV = "FIELD_AUDIT_CSV"
+    AUDIT_JSON = "AUDIT_JSON"
     SUMMARY = "SUMMARY"
 
     def name(self) -> str:
@@ -91,8 +93,17 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 optional=True,
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.AUDIT_JSON,
+                "Output full audit JSON (optional)",
+                fileFilter="JSON files (*.json)",
+                optional=True,
+            )
+        )
         self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "Data readiness audit report"))
         self.addOutput(QgsProcessingOutputString("FIELD_AUDIT_CSV_OUT", "Field audit CSV path"))
+        self.addOutput(QgsProcessingOutputString("AUDIT_JSON_OUT", "Full audit JSON path"))
         self.addOutput(QgsProcessingOutputString(self.SUMMARY, "Audit summary"))
 
     def processAlgorithm(self, parameters, context, feedback):
@@ -117,6 +128,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
         if not html_path:
             html_path = os.path.join(tempfile.gettempdir(), "planx_geostats_data_readiness_audit.html")
         csv_path = self.parameterAsFileOutput(parameters, self.FIELD_AUDIT_CSV, context)
+        json_path = self.parameterAsFileOutput(parameters, self.AUDIT_JSON, context)
 
         feedback.pushInfo(f"Auditing {len(audit_fields)} numeric field(s) for GeoStats readiness.")
         layer_profile = self._layer_profile(source)
@@ -131,15 +143,21 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
         if csv_path:
             self._write_field_audit_csv(csv_path, field_summaries)
             feedback.pushInfo(f"Field audit CSV written: {csv_path}")
+        if json_path:
+            self._write_audit_json(json_path, layer_profile, field_summaries, correlation_findings, workflow_findings, overall)
+            feedback.pushInfo(f"Full audit JSON written: {json_path}")
 
         outputs = {
             self.HTML_REPORT: html_path,
             "HTML_REPORT_OUT": html_path,
             "FIELD_AUDIT_CSV_OUT": csv_path or "",
+            "AUDIT_JSON_OUT": json_path or "",
             self.SUMMARY: overall["summary"],
         }
         if csv_path:
             outputs[self.FIELD_AUDIT_CSV] = csv_path
+        if json_path:
+            outputs[self.AUDIT_JSON] = json_path
         return outputs
 
     def _numeric_field_names(self, source) -> list[str]:
@@ -594,6 +612,46 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
                     "role_reason": item["role_reason"],
                     "suggested_tools": item["suggested_tools"],
                 })
+
+    def _write_audit_json(
+        self,
+        path: str,
+        layer_profile: dict,
+        field_summaries: list[dict],
+        correlation_findings: dict,
+        workflow_findings: list[dict],
+        overall: dict,
+    ) -> None:
+        payload = {
+            "schema": "planx_geostats_data_readiness_audit",
+            "schema_version": "1.0",
+            "provider": "PlanX GeoStats Lab",
+            "summary": overall["summary"],
+            "layer_profile": layer_profile,
+            "risks": overall["risks"],
+            "field_audit": field_summaries,
+            "correlation_findings": correlation_findings,
+            "workflow_guidance": workflow_findings,
+            "recommended_next_actions": self._next_actions(overall),
+        }
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(self._json_ready(payload), handle, ensure_ascii=False, indent=2)
+
+    def _json_ready(self, value):
+        if isinstance(value, dict):
+            return {str(key): self._json_ready(val) for key, val in value.items()}
+        if isinstance(value, list):
+            return [self._json_ready(item) for item in value]
+        if isinstance(value, tuple):
+            return [self._json_ready(item) for item in value]
+        if isinstance(value, np.integer):
+            return int(value)
+        if isinstance(value, np.floating):
+            number = float(value)
+            return number if math.isfinite(number) else None
+        if isinstance(value, float):
+            return value if math.isfinite(value) else None
+        return value
 
     def _field_row(self, item: dict) -> str:
         cls = "ok"
