@@ -6,6 +6,7 @@ import html
 import math
 import os
 import tempfile
+from typing import Optional
 
 import numpy as np
 
@@ -108,12 +109,13 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
         feedback.pushInfo(f"Auditing {len(audit_fields)} numeric field(s) for GeoStats readiness.")
         layer_profile = self._layer_profile(source)
         layer_profile.update(self._geometry_diagnostics(source, feedback))
-        field_summaries = self._field_summaries(source, audit_fields, feedback)
+        field_summaries, field_values = self._field_summaries(source, audit_fields, feedback)
+        correlation_findings = self._correlation_findings(field_values)
         workflow_findings = self._workflow_findings({item["field"] for item in field_summaries})
-        overall = self._overall_assessment(layer_profile, field_summaries)
+        overall = self._overall_assessment(layer_profile, field_summaries, correlation_findings)
 
         self._push_feedback(feedback, layer_profile, field_summaries, overall)
-        self._write_html(html_path, layer_profile, field_summaries, workflow_findings, overall)
+        self._write_html(html_path, layer_profile, field_summaries, correlation_findings, workflow_findings, overall)
 
         return {
             self.HTML_REPORT: html_path,
@@ -193,9 +195,10 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             "validity_checked_count": int(max(0, checked_validity)),
         }
 
-    def _field_summaries(self, source, field_names: list[str], feedback) -> list[dict]:
+    def _field_summaries(self, source, field_names: list[str], feedback) -> tuple[list[dict], dict[str, list[Optional[float]]]]:
         total = int(source.featureCount())
         values = {name: [] for name in field_names}
+        aligned_values = {name: [] for name in field_names}
         missing = {name: 0 for name in field_names}
         non_finite = {name: 0 for name in field_names}
 
@@ -206,16 +209,20 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 raw = feature.attribute(name)
                 if raw is None or raw == QVariant() or str(raw) == "NULL":
                     missing[name] += 1
+                    aligned_values[name].append(None)
                     continue
                 try:
                     value = float(raw)
                 except (TypeError, ValueError):
                     missing[name] += 1
+                    aligned_values[name].append(None)
                     continue
                 if not math.isfinite(value):
                     non_finite[name] += 1
+                    aligned_values[name].append(None)
                     continue
                 values[name].append(value)
+                aligned_values[name].append(value)
             if total:
                 feedback.setProgress(int(100 * idx / total))
 
@@ -248,7 +255,46 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 "near_constant": near_constant,
                 "readiness": readiness,
             })
-        return summaries
+        return summaries, aligned_values
+
+    def _correlation_findings(self, field_values: dict[str, list[Optional[float]]]) -> dict:
+        fields = list(field_values.keys())
+        pairs = []
+        max_abs_correlation = 0.0
+        for i, left in enumerate(fields):
+            for right in fields[i + 1:]:
+                x_vals = []
+                y_vals = []
+                for x, y in zip(field_values[left], field_values[right]):
+                    if x is None or y is None:
+                        continue
+                    x_vals.append(float(x))
+                    y_vals.append(float(y))
+                if len(x_vals) < 4:
+                    continue
+                x_arr = np.array(x_vals, dtype=float)
+                y_arr = np.array(y_vals, dtype=float)
+                if float(np.std(x_arr)) <= 1e-9 or float(np.std(y_arr)) <= 1e-9:
+                    continue
+                corr = float(np.corrcoef(x_arr, y_arr)[0, 1])
+                if not math.isfinite(corr):
+                    continue
+                abs_corr = abs(corr)
+                max_abs_correlation = max(max_abs_correlation, abs_corr)
+                if abs_corr >= 0.85:
+                    pairs.append({
+                        "left": left,
+                        "right": right,
+                        "correlation": corr,
+                        "abs_correlation": abs_corr,
+                        "complete_records": len(x_vals),
+                    })
+        pairs.sort(key=lambda item: item["abs_correlation"], reverse=True)
+        return {
+            "max_abs_correlation": max_abs_correlation,
+            "high_pairs": pairs,
+            "audited_pair_count": int(len(fields) * (len(fields) - 1) / 2),
+        }
 
     def _field_readiness(self, total: int, valid: int, missing_pct: float, constant: bool, near_constant: bool) -> str:
         if valid < 4:
@@ -301,7 +347,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             findings.append({**workflow, "present": present, "missing": missing, "status": status})
         return findings
 
-    def _overall_assessment(self, layer_profile: dict, field_summaries: list[dict]) -> dict:
+    def _overall_assessment(self, layer_profile: dict, field_summaries: list[dict], correlation_findings: dict) -> dict:
         ready = [item for item in field_summaries if item["readiness"] == "Ready for GeoStats workflows"]
         review = [item for item in field_summaries if item["readiness"].startswith("Review")]
         blocked = [item for item in field_summaries if item["readiness"].startswith("Not ready")]
@@ -318,6 +364,8 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             risks.append(f"{len(blocked)} audited field(s) are not ready because of insufficient valid data or no variation.")
         if review:
             risks.append(f"{len(review)} audited field(s) should be reviewed before formal interpretation.")
+        if correlation_findings["high_pairs"]:
+            risks.append(f"{len(correlation_findings['high_pairs'])} high-correlation field pair(s) may create multicollinearity in regression, GWR, MGWR, or GLR workflows.")
         if not risks:
             risks.append("No major automatic readiness warning was triggered.")
         summary = (
@@ -343,8 +391,11 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             if item["readiness"] != "Ready for GeoStats workflows":
                 feedback.pushInfo(f"{item['field']}: {item['readiness']}.")
 
-    def _write_html(self, path: str, layer_profile: dict, field_summaries: list[dict], workflow_findings: list[dict], overall: dict) -> None:
+    def _write_html(self, path: str, layer_profile: dict, field_summaries: list[dict], correlation_findings: dict, workflow_findings: list[dict], overall: dict) -> None:
         field_rows = "".join(self._field_row(item) for item in field_summaries)
+        correlation_rows = "".join(self._correlation_row(item) for item in correlation_findings["high_pairs"][:25])
+        if not correlation_rows:
+            correlation_rows = "<tr><td colspan=\"4\">No audited numeric field pairs exceeded the 0.85 absolute correlation warning threshold.</td></tr>"
         workflow_rows = "".join(self._workflow_row(item) for item in workflow_findings)
         risk_items = "".join(f"<li>{html.escape(risk)}</li>" for risk in overall["risks"])
         next_actions = self._next_actions(overall)
@@ -396,6 +447,12 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <thead><tr><th>Field</th><th>Valid</th><th>Missing</th><th>Min</th><th>Max</th><th>Mean</th><th>Std. dev.</th><th>Unique</th><th>Readiness</th></tr></thead>
 <tbody>{field_rows}</tbody>
 </table>
+<h2>Model Multicollinearity Screen</h2>
+<p>High pairwise correlation does not automatically invalidate a model, but it can make coefficient signs, variable importance, and local model surfaces unstable. Review these pairs before OLS, GLR, GWR, MGWR, Spatial Lag, or Spatial Error modeling.</p>
+<table>
+<thead><tr><th>Field A</th><th>Field B</th><th>Correlation</th><th>Complete records</th></tr></thead>
+<tbody>{correlation_rows}</tbody>
+</table>
 <h2>PlanX Sample Workflow Readiness</h2>
 <table>
 <thead><tr><th>Workflow</th><th>Status</th><th>Detected fields</th><th>Missing fields</th><th>Recommended tools</th><th>Planning purpose</th></tr></thead>
@@ -429,6 +486,17 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             "</tr>"
         )
 
+    def _correlation_row(self, item: dict) -> str:
+        cls = "block" if item["abs_correlation"] >= 0.95 else "review"
+        return (
+            "<tr>"
+            f"<td><code>{html.escape(item['left'])}</code></td>"
+            f"<td><code>{html.escape(item['right'])}</code></td>"
+            f"<td class=\"{cls}\">{item['correlation']:.3f}</td>"
+            f"<td>{item['complete_records']}</td>"
+            "</tr>"
+        )
+
     def _workflow_row(self, item: dict) -> str:
         cls = "ok" if item["status"] == "Ready" else "review" if item["status"] == "Partially ready" else "block"
         present = ", ".join(item["present"]) or "None"
@@ -450,6 +518,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             actions.append("Exclude not-ready fields from formal statistics until missing values, field types, or lack of variation are resolved.")
         if overall["review"]:
             actions.append("Inspect fields marked for review in the attribute table and decide whether imputation, filtering, or a more appropriate indicator is needed.")
+        actions.append("Before regression or local modeling, avoid putting strongly correlated explanatory variables in the same model unless there is a clear analytical reason.")
         actions.append("Repair invalid geometries and remove or correct empty geometries before using contiguity weights, local statistics, or distance-based models.")
         actions.append("For distance-band, K-function, nearest-neighbor, GWR, MGWR, and spatial regression workflows, verify that the layer CRS uses appropriate projected map units.")
         actions.append("Run Calculate Distance Band or Incremental Autocorrelation before finalizing a distance threshold for global or local spatial statistics.")
