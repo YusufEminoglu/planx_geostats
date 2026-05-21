@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import struct
+import ast
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +15,7 @@ import importlib.util
 ROOT = Path(__file__).resolve().parents[1]
 SAMPLE = ROOT / "sample_data" / "planx_geostats_izmir_neighborhoods.gpkg"
 SYNTHETIC_QA = ROOT / "sample_data" / "planx_geostats_synthetic_qa.gpkg"
+SAMPLE_GUIDE = ROOT / "algorithms" / "alg_sample_data_guide.py"
 LAYER = "planx_geostats_izmir_neighborhoods"
 
 
@@ -36,6 +38,7 @@ def quote_identifier(value: str, allowed: set[str]) -> str:
 def run_all() -> None:
     test_izmir_sample_data()
     test_synthetic_qa_sample_data()
+    test_sample_guide_load_options_match_bundled_layers()
     print("SAMPLE DATA SMOKE TESTS OK")
 
 
@@ -278,6 +281,41 @@ def test_synthetic_qa_sample_data() -> None:
         assert mean_length > 0.0
     finally:
         con.close()
+
+
+def test_sample_guide_load_options_match_bundled_layers() -> None:
+    constants = _sample_guide_constants()
+    assert constants["LOAD_OPTIONS"] == [
+        "Izmir planning sample",
+        "Synthetic QA fixture",
+        "Both datasets",
+    ]
+    assert constants["LAYER_NAME"] == LAYER
+
+    con = sqlite3.connect(SYNTHETIC_QA)
+    try:
+        qa_layers = {
+            row[0]
+            for row in con.execute("select table_name from gpkg_contents where data_type = 'features'")
+        }
+    finally:
+        con.close()
+
+    listed_layers = set(constants["SYNTHETIC_QA_LAYERS"])
+    assert listed_layers == qa_layers, "Sample Dataset Guide synthetic layer list must match the QA fixture"
+
+
+def _sample_guide_constants() -> dict[str, object]:
+    tree = ast.parse(SAMPLE_GUIDE.read_text(encoding="utf-8"), filename=str(SAMPLE_GUIDE))
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "SampleDataGuideAlgorithm":
+            constants = {}
+            for child in node.body:
+                if isinstance(child, ast.Assign) and len(child.targets) == 1 and isinstance(child.targets[0], ast.Name):
+                    if child.targets[0].id in {"LOAD_OPTIONS", "LAYER_NAME", "SYNTHETIC_QA_LAYERS"}:
+                        constants[child.targets[0].id] = ast.literal_eval(child.value)
+            return constants
+    raise AssertionError("SampleDataGuideAlgorithm class was not found")
 
 
 def _read_gpkg_wkb(blob: bytes) -> bytes:

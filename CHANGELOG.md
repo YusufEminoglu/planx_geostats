@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.5] - 2026-05-22
+
+### Added
+- Added smoke coverage that keeps the Sample Dataset Guide load options synchronized with the bundled synthetic QA GeoPackage layers.
+- Added an explicit loading-modes section to the Sample Dataset Guide HTML report.
+
 ## [0.9.4] - 2026-05-22
 
 ### Added

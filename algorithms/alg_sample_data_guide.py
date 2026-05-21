@@ -222,6 +222,15 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <section class="summary">This curated sample dataset contains Izmir neighborhood polygons with English planning, climate, green-space, network, population, and built-form indicators. Use it as the default development and QA dataset for PlanX GeoStats workflows.</section>
 <h2>Sample Path</h2>
 <div class="path">{html.escape(sample_path)}</div>
+<h2>Loading Modes</h2>
+<table>
+<thead><tr><th>Mode</th><th>Loaded layers</th><th>Use when</th></tr></thead>
+<tbody>
+<tr><td><strong>Izmir planning sample</strong></td><td><code>{self.LAYER_NAME}</code></td><td>You want the default planning demo and regular manual workflow checks.</td></tr>
+<tr><td><strong>Synthetic QA fixture</strong></td><td><code>qa_points_grid</code>, <code>qa_lines_directional</code>, <code>qa_polygons_mini</code>, and model-output QA layers.</td><td>You want compact developer QA layers for edge-case testing.</td></tr>
+<tr><td><strong>Both datasets</strong></td><td>All bundled planning and QA layers.</td><td>You are preparing a full manual regression pass before release.</td></tr>
+</tbody>
+</table>
 <h2>Synthetic QA Fixture</h2>
 <p>The synthetic QA GeoPackage is a small developer and manual-testing fixture. It complements the Izmir planning demo with point, line, polygon, and minimal model-output layers for runtime edge cases that are hard to cover with a single polygon sample.</p>
 <div class="path">{html.escape(synthetic_qa_path)}</div>
