@@ -2,6 +2,10 @@
 
 PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in planning workflows. It keeps the analytical tools inside the Processing Toolbox, while the built-in **PlanX GeoStats Lab > GeoStats Libraries** helper and toolbar action manage optional Python libraries used by advanced workflows.
 
+## Sample Data
+
+The plugin includes `sample_data/planx_geostats_izmir_neighborhoods.gpkg`, a compact English-schema GeoPackage with 237 Izmir neighborhood polygons and planning indicators for heat, vegetation, population, parks, street-network structure, building form, and model QA. Use this dataset as the default development and manual testing fixture for PlanX GeoStats workflows.
+
 ## Tool Groups
 
 - `01 | Data Preparation and Neighborhoods`: tools for preparing attribute exports and choosing neighborhood distance parameters before a statistical workflow begins.
@@ -26,6 +30,7 @@ Run the QGIS-independent smoke tests before packaging:
 
 ```powershell
 py -3 planx_geostats\tests\smoke_core.py
+py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
 ```
