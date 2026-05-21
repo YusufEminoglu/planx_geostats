@@ -28,6 +28,9 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_local_moran
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -54,6 +57,9 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_hotspots_outliers"
+
+    def icon(self):
+        return algorithm_icon("local_moran_lisa")
 
     def createInstance(self):
         return LocalMoranAlgorithm()

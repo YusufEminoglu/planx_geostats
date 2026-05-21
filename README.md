@@ -1,10 +1,12 @@
 # PlanX GeoStats Lab
 
-PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in planning workflows. It keeps the analytical tools inside the Processing Toolbox, while the built-in **PlanX GeoStats Lab > GeoStats Libraries** helper and toolbar action manage optional Python libraries used by advanced workflows.
+PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in planning workflows. All user-facing tools live inside the Processing Toolbox, including optional-library diagnostics and the explicit library installer under **PlanX GeoStats Lab > 00 | Setup and Diagnostics**.
 
 ## Sample Data
 
 The plugin includes `sample_data/planx_geostats_izmir_neighborhoods.gpkg`, a compact English-schema GeoPackage with 237 Izmir neighborhood polygons and planning indicators for heat, vegetation, population, parks, street-network structure, building form, and model QA. Use this dataset as the default development and manual testing fixture for PlanX GeoStats workflows. The sample smoke test protects the English schema, critical numeric field types, expected value ranges, and analysis-ready variation. In QGIS, run `PlanX GeoStats Lab > 00 | Setup and Diagnostics > Sample Dataset Guide` to load the layer and open a short workflow guide, then run `Data Readiness Audit` to review geometry validity, field completeness, CRS risk, constant indicators, distribution shape, outlier burden, multicollinearity risk, suggested analysis roles, starter workflow sequences, and recommended analysis paths before launching the statistical tools. The audit can also export a field-level CSV for spreadsheet QA logs and a full JSON package for reproducible audit handoffs.
+
+The plugin also includes `sample_data/planx_geostats_synthetic_qa.gpkg`, a small deterministic QA fixture with point, line, polygon, and minimal model-output layers. It complements the Izmir planning sample by exercising QGIS runtime branches for KNN weights, multipart line handling, model-comparison schemas, report generation, and binary/count model fields. The Sample Dataset Guide can load the Izmir planning sample, the synthetic QA fixture, or both datasets into the current QGIS project.
 
 ## Tool Groups
 
@@ -17,13 +19,13 @@ The plugin includes `sample_data/planx_geostats_izmir_neighborhoods.gpkg`, a com
 
 ## GeoStats Libraries Guide
 
-Open **PlanX GeoStats Lab > GeoStats Libraries** from the QGIS menu when an advanced method reports that optional Python libraries are missing. The helper checks the active QGIS Python environment, shows which packages are available, explains what each package contributes, previews the exact pip command, and runs installation only after explicit confirmation.
+Open Processing Toolbox and run **PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status** when an advanced method reports that optional Python libraries are missing. The status tool checks the active QGIS Python environment, shows which packages are available, explains what each package contributes, and previews the exact pip command.
 
-The helper intentionally does not install packages silently. QGIS plugins run inside QGIS's own Python process, so installing into a system Python, Anaconda environment, or IDE interpreter will not help unless QGIS is using that same interpreter. The command preview is therefore part of the workflow: it lets the user confirm that the executable path belongs to QGIS before changing the environment.
+To install from the Toolbox, run **Install / Update GeoStats Libraries**, choose `QGIS Python pip` or `OSGeo Shell`, and review the Processing log. With the confirmation checkbox disabled, the tool prints a preview command and stops; with the checkbox enabled, it runs pip and streams the install log. The installer never runs silently.
+
+QGIS plugins run inside QGIS's own Python process, so installing into a system Python, Anaconda environment, or IDE interpreter will not help unless QGIS is using that same interpreter. The command preview is therefore part of the workflow: it lets the user confirm that the executable path belongs to QGIS before changing the environment.
 
 After installation, restart QGIS completely. Newly installed Python modules may not be visible to already-loaded Processing providers until the application starts a fresh Python process.
-
-If the menu action is not visible in a QGIS profile, open Processing Toolbox and use `PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status` to inspect the detected Python paths. To install from the Toolbox, run `Install / Update GeoStats Libraries`, choose `QGIS Python pip` or `OSGeo Shell`, and review the Processing log. With the confirmation checkbox disabled, the tool prints a preview command and stops; with the checkbox enabled, it runs pip and streams the install log. The installer never runs silently.
 
 ## Developer Validation
 
@@ -32,6 +34,8 @@ Run the QGIS-independent smoke tests before packaging:
 ```powershell
 py -3 planx_geostats\tests\smoke_core.py
 py -3 planx_geostats\tests\smoke_sample_data.py
+py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.4
 ```

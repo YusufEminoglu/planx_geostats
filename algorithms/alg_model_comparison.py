@@ -29,6 +29,9 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.weights import build_weights_matrix
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -99,6 +102,9 @@ class ModelComparisonAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_model_scenario"
+
+    def icon(self):
+        return algorithm_icon("model_comparison_matrix")
 
     def createInstance(self):
         return ModelComparisonAlgorithm()

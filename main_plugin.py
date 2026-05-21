@@ -1,64 +1,34 @@
 # -*- coding: utf-8 -*-
 """PlanX GeoStats Lab spatial statistics suite for QGIS.
 
-Registers the PlanX GeoStats Lab provider and its GeoStats Libraries helper.
-Analysis algorithms appear under the Processing Toolbox.
+Registers the PlanX GeoStats Lab provider. All user-facing tools appear under
+the Processing Toolbox, including setup and dependency diagnostics.
 """
 from __future__ import annotations
 
-import os
 from typing import Optional
 
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsApplication
 
-from .dependencies import GeoStatsDependencyDialog
 from .planx_geostats_provider import PlanXGeoStatsProvider
 
 
 class PlanXGeoStatsPlugin:
-    MENU_NAME = "&PlanX GeoStats Lab"
-    LIBRARIES_MENU_PATH = "PlanX GeoStats Lab > GeoStats Libraries"
+    DIAGNOSTICS_PATH = "PlanX GeoStats Lab > 00 | Setup and Diagnostics"
 
     def __init__(self, iface):
         self.iface = iface
-        self.plugin_dir = os.path.dirname(__file__)
         self.provider: Optional[PlanXGeoStatsProvider] = None
-        self.dependencies_action: Optional[QAction] = None
-        self.dependencies_dialog: Optional[GeoStatsDependencyDialog] = None
 
     def initGui(self) -> None:
         self.provider = PlanXGeoStatsProvider()
         QgsApplication.processingRegistry().addProvider(self.provider)
-
-        icon = QIcon(os.path.join(self.plugin_dir, "icons", "icon.png"))
-        self.dependencies_action = QAction(icon, "GeoStats Libraries", self.iface.mainWindow())
-        self.dependencies_action.triggered.connect(self.open_dependencies)
-        self.iface.addPluginToMenu(self.MENU_NAME, self.dependencies_action)
-        self.iface.addToolBarIcon(self.dependencies_action)
         self._warn_if_dependencies_missing()
 
     def unload(self) -> None:
         if self.provider is not None:
             QgsApplication.processingRegistry().removeProvider(self.provider)
             self.provider = None
-        if self.dependencies_action is not None:
-            self.iface.removePluginMenu(self.MENU_NAME, self.dependencies_action)
-            self.iface.removeToolBarIcon(self.dependencies_action)
-            self.dependencies_action = None
-        self.dependencies_dialog = None
-
-    def open_dependencies(self) -> None:
-        if self.dependencies_dialog is None:
-            self.dependencies_dialog = GeoStatsDependencyDialog(
-                self.plugin_dir,
-                self.iface.mainWindow(),
-            )
-        self.dependencies_dialog.refresh_status()
-        self.dependencies_dialog.show()
-        self.dependencies_dialog.raise_()
-        self.dependencies_dialog.activateWindow()
 
     def _warn_if_dependencies_missing(self) -> None:
         try:
@@ -71,5 +41,5 @@ class PlanXGeoStatsPlugin:
         self.iface.messageBar().pushWarning(
             "PlanX GeoStats Lab",
             f"Optional GeoStats libraries are missing: {missing}. "
-            f"Open {self.LIBRARIES_MENU_PATH} to review and install them.",
+            f"Run {self.DIAGNOSTICS_PATH} tools to review and install them.",
         )

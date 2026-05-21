@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import math
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -25,6 +24,9 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_standard_distance
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -45,6 +47,9 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_center_direction_spread"
+
+    def icon(self):
+        return algorithm_icon("standard_distance")
 
     def createInstance(self):
         return StandardDistanceAlgorithm()

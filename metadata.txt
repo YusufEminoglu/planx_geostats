@@ -3,10 +3,10 @@ name=PlanX GeoStats Lab
 qgisMinimumVersion=3.28
 qgisMaximumVersion=3.99
 description=PlanX spatial analysis lab for QGIS planning workflows: data preparation, urban pattern scanning, hot spots, centers, exploratory models and scenarios.
-version=0.9.0
+version=0.9.4
 author=Yusuf Eminoglu
 email=yusuf.eminoglu@deu.edu.tr
-about=PlanX GeoStats Lab brings advanced spatial statistics tools to the QGIS Processing Toolbox with a planning-analysis workflow designed for PlanX: Setup and Diagnostics, Data Preparation and Neighborhoods, Urban Pattern Scan, Hot Spots and Spatial Outliers, Centers Direction and Dispersion, and Models and Scenarios. The model workflow includes OLS, Generalized Linear Regression, Spatial Lag Regression, Spatial Error Regression, Exploratory Regression, GWR, MGWR, model comparison and sensitivity testing. Optional GeoStats Python libraries are managed by the built-in GeoStats Libraries helper under the PlanX GeoStats Lab menu and toolbar action; the Processing Toolbox also includes GeoStats Library Status for non-installing diagnostics and Install / Update GeoStats Libraries for explicit, user-approved pip installation. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
+about=PlanX GeoStats Lab brings advanced spatial statistics tools to the QGIS Processing Toolbox with a planning-analysis workflow designed for PlanX: Setup and Diagnostics, Data Preparation and Neighborhoods, Urban Pattern Scan, Hot Spots and Spatial Outliers, Centers Direction and Dispersion, and Models and Scenarios. The model workflow includes OLS, Generalized Linear Regression, Spatial Lag Regression, Spatial Error Regression, Exploratory Regression, GWR, MGWR, model comparison and sensitivity testing. Optional GeoStats Python libraries are managed only through Processing Toolbox tools under 00 | Setup and Diagnostics: GeoStats Library Status for non-installing diagnostics and Install / Update GeoStats Libraries for explicit, user-approved pip installation. Developed with feedback from educational workflows at Dokuz Eylul University, Department of City and Regional Planning.
 tracker=https://github.com/YusufEminoglu/planx_geostats/issues
 repository=https://github.com/YusufEminoglu/planx_geostats
 homepage=https://github.com/YusufEminoglu/planx_geostats
@@ -18,7 +18,11 @@ experimental=False
 deprecated=False
 license=GPL-3
 changelog=
-    0.9.0 - Renamed to PlanX GeoStats Lab; reorganized tools into English PlanX planning workflow groups; added Exploratory Regression; added GeoStats Library Status diagnostics; dependency installer moved to built-in GeoStats Libraries helper with detailed guidance.
+    0.9.4 - Deep QA expansion: added a separate synthetic QA GeoPackage for point, line, polygon, and model-output runtime checks; added a Sample Dataset Guide load selector for planning and QA fixtures; expanded smoke tests for sample coverage, HTML report module shadowing, multipart geometry guards, and QGIS spatial-index API compatibility.
+    0.9.3 - Runtime fixes for QGIS 3.40: fixed Incremental Spatial Autocorrelation HTML report generation and updated KNN spatial weights to use the current QgsSpatialIndex.nearestNeighbor API with a legacy fallback.
+    0.9.2 - Hub security scan fix: removed developer-only tests and hidden git metadata from release zip packages while keeping source smoke tests in the repository; no runtime GeoStats behavior changed.
+    0.9.1 - Processing-only cleanup: removed the separate GeoStats Libraries menu/toolbar dialog, kept library status and installation under 00 | Setup and Diagnostics, added distinct PNG icons for every algorithm, corrected Poisson GLR likelihood/AIC, and expanded smoke-test coverage.
+    0.9.0 - Renamed to PlanX GeoStats Lab; reorganized tools into English PlanX planning workflow groups; added Exploratory Regression; added GeoStats Library Status diagnostics; dependency diagnostics and installer are available only under 00 | Setup and Diagnostics with detailed guidance.
     0.8.0 - Linear Directional Mean; Attribute Randomization Sensitivity Test (Monte Carlo).
     0.7.0 - Multivariate Clustering (K-Means); Export Feature Attributes to CSV/ASCII.
     0.6.0 - Similarity Search; Calculate Distance Band from Neighbor Count.

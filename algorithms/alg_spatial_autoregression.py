@@ -48,6 +48,9 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.weights import build_weights_matrix
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -80,6 +83,9 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
     def groupId(self) -> str:
         return "planx_model_scenario"
 
+    def icon(self):
+        return algorithm_icon("spatial_autoregression")
+
     def createInstance(self):
         return SpatialAutoregressionAlgorithm()
 
@@ -95,7 +101,8 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
             "report summarizes coefficient estimates, spatial rho, model fit, weight "
             "support, and analyst caveats.\n\n"
             "This method requires libpysal and spreg in the active QGIS Python "
-            "environment. Open PlanX GeoStats Lab > GeoStats Libraries if the "
+            "environment. Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > "
+            "GeoStats Library Status or Install / Update GeoStats Libraries if the "
             "dependencies are missing."
         )
 
@@ -384,8 +391,9 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
         except Exception as exc:
             raise QgsProcessingException(
                 "Spatial Autoregression requires optional libraries libpysal and spreg. "
-                "Open PlanX GeoStats Lab > GeoStats Libraries to review the active QGIS Python "
-                "environment and install or update GeoStats libraries with explicit approval. "
+                "Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status "
+                "to review the active QGIS Python environment, or Install / Update GeoStats "
+                "Libraries to install with explicit approval. "
                 f"Import error: {exc}"
             )
         return libpysal, ML_Lag
@@ -448,10 +456,15 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
         p_values = np.full(size, np.nan)
         for idx, item in enumerate(list(z_stat)[:size]):
             try:
-                z_values[idx] = float(item[0])
-                p_values[idx] = float(item[1])
-            except Exception:
+                z_value = float(item[0])
+                p_value = float(item[1])
+            except (TypeError, ValueError, IndexError):
+                z_value = np.nan
+                p_value = np.nan
+            if not (np.isfinite(z_value) and np.isfinite(p_value)):
                 continue
+            z_values[idx] = z_value
+            p_values[idx] = p_value
         return z_values, p_values
 
     def _safe_float(self, value):

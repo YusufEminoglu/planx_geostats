@@ -11,7 +11,6 @@ from qgis.core import (
     QgsProject,
     QgsFeature,
     QgsField,
-    QgsFields,
     QgsSymbol,
     QgsRendererCategory,
     QgsCategorizedSymbolRenderer,
@@ -26,6 +25,9 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_kmeans
+
+from ._icons import algorithm_icon
+
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -51,6 +53,9 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_hotspots_outliers"
+
+    def icon(self):
+        return algorithm_icon("multivariate_clustering")
 
     def createInstance(self):
         return MultivariateClusteringAlgorithm()

@@ -26,6 +26,9 @@ from qgis.core import (
 )
 
 
+from ._icons import algorithm_icon
+
+
 class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELDS = "FIELDS"
@@ -45,6 +48,9 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_setup_diagnostics"
+
+    def icon(self):
+        return algorithm_icon("data_readiness_audit")
 
     def createInstance(self):
         return DataReadinessAuditAlgorithm()
@@ -164,10 +170,11 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
         names = []
         for field in source.fields():
             try:
-                if field.isNumeric():
-                    names.append(field.name())
-            except Exception:
-                continue
+                is_numeric = field.isNumeric()
+            except (AttributeError, TypeError, RuntimeError):
+                is_numeric = False
+            if is_numeric:
+                names.append(field.name())
         return names
 
     def _layer_profile(self, source) -> dict:
@@ -179,14 +186,16 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             crs_authid = crs.authid() or "Unknown"
             crs_description = crs.description() or "Unknown"
             geographic = bool(crs.isGeographic())
-        except Exception:
-            pass
+        except (AttributeError, TypeError, RuntimeError):
+            crs_authid = "Unknown"
+            crs_description = "Unknown"
+            geographic = False
 
         geometry_label = "Unknown"
         try:
             geometry_label = QgsWkbTypes.displayString(source.wkbType())
-        except Exception:
-            pass
+        except (AttributeError, TypeError, RuntimeError):
+            geometry_label = "Unknown"
 
         return {
             "feature_count": int(source.featureCount()),
@@ -212,15 +221,16 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 empty += 1
                 continue
             try:
-                if geom.isMultipart():
-                    multipart += 1
-            except Exception:
-                pass
+                is_multipart = geom.isMultipart()
+            except (AttributeError, TypeError, RuntimeError):
+                is_multipart = False
+            if is_multipart:
+                multipart += 1
             try:
                 checked_validity += 1
                 if not geom.isGeosValid():
                     invalid += 1
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError):
                 checked_validity -= 1
             if total:
                 feedback.setProgress(int(25 * idx / total))

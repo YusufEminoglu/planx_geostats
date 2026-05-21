@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.4] - 2026-05-22
+
+### Added
+- Added `planx_geostats_synthetic_qa.gpkg`, a separate deterministic QA fixture with point, line, polygon, and minimal model-output layers.
+- Added synthetic QA sample smoke checks for layer presence, geometry types, feature counts, model-output fields, binary fields, and count fields.
+- Added synthetic QA core-engine smoke checks for ANN, Ripley's K, GLR logistic/Poisson, and Linear Directional Mean.
+- Added static smoke coverage for multipart guards around direct `asPolyline()` / `asPolygon()` geometry conversions.
+- Added a Sample Dataset Guide load selector for the Izmir planning sample, the synthetic QA fixture, or both datasets.
+
+### Changed
+- Expanded the Sample Dataset Guide and sample-data README to document both the Izmir planning sample and the synthetic QA fixture.
+- Removed several unused runtime imports detected during deep QA cleanup.
+- Hardened release code paths so the packaged plugin scans with no Bandit findings in local validation.
+- Updated release validation workflow for version `0.9.4`.
+
+## [0.9.3] - 2026-05-21
+
+### Fixed
+- Fixed Incremental Spatial Autocorrelation HTML report generation on QGIS 3.40 by avoiding `html` module shadowing.
+- Fixed KNN spatial weight generation on QGIS 3.40 by using the current `QgsSpatialIndex.nearestNeighbor` API with a legacy fallback.
+
+### Added
+- Added smoke coverage for QGIS spatial-index API compatibility and HTML module shadowing in report writers.
+
+## [0.9.2] - 2026-05-21
+
+### Changed
+- Removed developer-only `tests/` files from release zip packages so QGIS Hub security scanning only evaluates runtime plugin code.
+- Removed hidden `.gitignore` metadata from release zip packages; it remains in the source repository only.
+- Added release-zip verification to the developer validation workflow.
+
+### Fixed
+- Resolved the QGIS Hub Bandit block caused by source-only SQLite smoke-test SQL strings being included in the uploaded plugin zip.
+- Cleaned several low-risk Hub quality warnings, including unused imports, import ordering, unused local variables, and whitespace style issues.
+- Replaced a runtime `assert` in the library installer with an explicit Processing exception.
+
+## [0.9.1] - 2026-05-21
+
+### Added
+- Added a QGIS-independent provider catalog smoke test to protect algorithm registration, unique Processing ids, display names, and workflow group coverage.
+- Expanded core smoke coverage for GLR family validation and Poisson likelihood accounting.
+- Added a plugin-local `.gitignore` for Python caches, IDE files, OS files, and QGIS backup artifacts.
+- Added simple, distinct PNG icons for every Processing algorithm and wired each algorithm to its own icon.
+
+### Fixed
+- Corrected Poisson GLR log-likelihood and AIC calculation to include the count factorial term.
+
+### Changed
+- Kept optional-library status and installation workflows only under `00 | Setup and Diagnostics`; removed the separate GeoStats Libraries menu/toolbar UI.
+
+### Removed
+- Removed the unused dependency dialog UI now that setup workflows are Processing-only.
+
 ## [0.9.0] - 2026-05-20
 
 ### Changed

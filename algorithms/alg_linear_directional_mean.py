@@ -23,6 +23,9 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_linear_directional_mean
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -41,6 +44,9 @@ class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_center_direction_spread"
+
+    def icon(self):
+        return algorithm_icon("linear_directional_mean")
 
     def createInstance(self):
         return LinearDirectionalMeanAlgorithm()

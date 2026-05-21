@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import importlib.util
+import math
+import sys
+import types
 from pathlib import Path
 
 import numpy as np
@@ -21,6 +24,13 @@ def load_module(name: str, relative_path: str):
 
 stats = load_module("stats_engines", "core/stats_engines.py")
 diagnostics = load_module("analysis_diagnostics", "core/analysis_diagnostics.py")
+sys.modules.setdefault("qgis", types.ModuleType("qgis"))
+sys.modules.setdefault("qgis.core", types.ModuleType("qgis.core"))
+qgis_core = sys.modules["qgis.core"]
+for _name in ["QgsFeature", "QgsVectorLayer", "QgsSpatialIndex", "QgsRectangle", "QgsFeedback"]:
+    if not hasattr(qgis_core, _name):
+        setattr(qgis_core, _name, type(_name, (), {}))
+weights_core = load_module("weights_core", "core/weights.py")
 
 
 def assert_finite_tuple(values, expected_len: int) -> None:
@@ -191,6 +201,29 @@ def test_glr_families_return_fitted_values() -> None:
     poisson = stats.calculate_glr(np.array([0.0, 1.0, 1.0, 3.0, 5.0, 8.0]), x, "poisson")
     assert len(poisson["fitted"]) == len(x)
     assert np.all(poisson["fitted"] >= 0.0)
+    expected_log_likelihood = float(np.sum(
+        np.array([0.0, 1.0, 1.0, 3.0, 5.0, 8.0]) * np.log(poisson["fitted"])
+        - poisson["fitted"]
+        - np.array([math.lgamma(value + 1.0) for value in [0.0, 1.0, 1.0, 3.0, 5.0, 8.0]])
+    ))
+    assert abs(poisson["log_likelihood"] - expected_log_likelihood) < 1e-9
+
+
+def test_glr_rejects_invalid_family_values() -> None:
+    x = np.array([[0.0], [1.0], [2.0], [3.0], [4.0]])
+    try:
+        stats.calculate_glr(np.array([0.0, 1.0, 1.5, 2.0, 3.0]), x, "logistic")
+    except ValueError as exc:
+        assert "binary" in str(exc)
+    else:
+        raise AssertionError("Logistic GLR should reject non-binary dependent values")
+
+    try:
+        stats.calculate_glr(np.array([0.0, 1.0, 1.5, 2.0, 3.0]), x, "poisson")
+    except ValueError as exc:
+        assert "count" in str(exc)
+    else:
+        raise AssertionError("Poisson GLR should reject non-integer count values")
 
 
 def test_bivariate_lee_l_returns_classes() -> None:
@@ -208,6 +241,24 @@ def test_bivariate_lee_l_returns_classes() -> None:
     assert len(classes) == 4
 
 
+def test_spatial_index_nearest_neighbor_adapter_prefers_qgis_3_api() -> None:
+    class FakeIndex:
+        def nearestNeighbor(self, _point, count):
+            return list(range(count))
+
+    nearest = weights_core.nearest_neighbor_ids(FakeIndex(), object(), 4)
+    assert nearest == [0, 1, 2, 3]
+
+
+def test_spatial_index_nearest_neighbor_adapter_supports_legacy_plural_api() -> None:
+    class FakeIndex:
+        def nearestNeighbors(self, _point, count):
+            return list(range(count))
+
+    nearest = weights_core.nearest_neighbor_ids(FakeIndex(), object(), 3)
+    assert nearest == [0, 1, 2]
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -221,7 +272,10 @@ def run_all() -> None:
     test_gwr_reports_local_support()
     test_ripleys_k_returns_l_diagnostics()
     test_glr_families_return_fitted_values()
+    test_glr_rejects_invalid_family_values()
     test_bivariate_lee_l_returns_classes()
+    test_spatial_index_nearest_neighbor_adapter_prefers_qgis_3_api()
+    test_spatial_index_nearest_neighbor_adapter_supports_legacy_plural_api()
     print("CORE SMOKE TESTS OK")
 
 

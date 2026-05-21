@@ -30,6 +30,9 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -51,6 +54,9 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_model_scenario"
+
+    def icon(self):
+        return algorithm_icon("sensitivity_test")
 
     def createInstance(self):
         return SensitivityTestAlgorithm()
@@ -292,7 +298,7 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
         obs_x = ((obs_i - hist_min) / (hist_max - hist_min)) * svg_w
         obs_x = max(0, min(obs_x, svg_w))
 
-        html = f"""<!DOCTYPE html>
+        content = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -454,4 +460,4 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
 </html>
 """
         with open(path, "w", encoding="utf-8") as f:
-            f.write(html)
+            f.write(content)

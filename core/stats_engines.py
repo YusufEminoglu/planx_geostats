@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import importlib.util
 from typing import Optional
 
 import numpy as np
@@ -11,14 +12,7 @@ import numpy as np
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 # Try importing PySAL modules
-HAS_PYQ = False
-try:
-    from esda.g import Gi_Local
-    from esda.moran import Moran_Local
-    import libpysal
-    HAS_PYQ = True
-except ImportError:
-    pass
+HAS_PYQ = all(importlib.util.find_spec(name) is not None for name in ("esda", "libpysal"))
 
 
 def calculate_getis_ord(
@@ -448,8 +442,8 @@ def calculate_ols(
             r2_aux = 1.0 - (ss_aux_res / g_tot)
             bp_stat = n * r2_aux
             bp_p = _chi2_sf_approx(bp_stat, df=p)
-        except Exception:
-            pass
+        except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+            bp_stat, bp_p = 0.0, 1.0
 
     # --- DIAGNOSTIC 3: Moran's I on Residuals ---
     id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
@@ -764,8 +758,8 @@ def calculate_gwr(
             tss_i = np.sum(w * (y - y_w_mean) ** 2)
             rss_i = np.sum(w * (res_i ** 2))
             local_r2[i] = 1.0 - (rss_i / tss_i) if tss_i > 0 else 1.0
-        except Exception:
-            pass
+        except (np.linalg.LinAlgError, ValueError, FloatingPointError):
+            local_r2[i] = np.nan
 
     residuals = y - y_pred
     rss = np.sum(residuals ** 2)
@@ -798,8 +792,8 @@ def calculate_gwr(
             xtwx_inv = np.linalg.pinv(xtw @ X)
             s_i = (X[i] @ xtwx_inv) @ xtw
             tr_S += s_i[i]
-        except Exception:
-            pass
+        except (np.linalg.LinAlgError, ValueError, FloatingPointError, IndexError):
+            tr_S += 0.0
 
     if tr_S <= 0:
         tr_S = float(p + 1)
@@ -1403,7 +1397,7 @@ def calculate_exploratory_regression(
             try:
                 xtx_inv = np.linalg.pinv(X_design.T @ X_design)
                 beta = xtx_inv @ X_design.T @ y
-            except Exception:
+            except (np.linalg.LinAlgError, ValueError, FloatingPointError):
                 continue
 
             y_pred = X_design @ beta
@@ -1560,7 +1554,8 @@ def calculate_glr(
         se = np.sqrt(np.maximum(0.0, np.diagonal(cov)))
         z_stats = np.divide(beta, se, out=np.zeros_like(beta), where=se > 0)
         p_values = 2.0 * (1.0 - 0.5 * (1.0 + np.vectorize(math.erf)(np.abs(z_stats) / math.sqrt(2.0))))
-        log_likelihood = float(np.sum(y * np.log(mu) - mu))
+        log_factorial = np.array([math.lgamma(float(value) + 1.0) for value in y], dtype=float)
+        log_likelihood = float(np.sum(y * np.log(mu) - mu - log_factorial))
         aic = -2.0 * log_likelihood + 2.0 * (p + 1)
         residuals = y - mu
         return {

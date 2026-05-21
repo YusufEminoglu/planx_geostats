@@ -22,6 +22,9 @@ from qgis.core import (
 from ..core.analysis_diagnostics import crs_unit_warning
 from ..core.stats_engines import calculate_ripleys_k
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -44,6 +47,9 @@ class RipleysKFunctionAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_pattern_scan"
+
+    def icon(self):
+        return algorithm_icon("ripleys_k_function")
 
     def createInstance(self):
         return RipleysKFunctionAlgorithm()

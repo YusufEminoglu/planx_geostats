@@ -33,6 +33,9 @@ from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_ols
 from ..core.analysis_diagnostics import regression_quality_html, regression_quality_summary
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -58,6 +61,9 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_model_scenario"
+
+    def icon(self):
+        return algorithm_icon("ols_regression")
 
     def createInstance(self):
         return SpatialRegressionAlgorithm()

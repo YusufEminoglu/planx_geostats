@@ -37,6 +37,9 @@ from ..core.analysis_diagnostics import (
 from ..core.stats_engines import calculate_glr
 from ..core.weights import build_weights_matrix
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -66,6 +69,9 @@ class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_model_scenario"
+
+    def icon(self):
+        return algorithm_icon("generalized_linear_regression")
 
     def createInstance(self):
         return GeneralizedLinearRegressionAlgorithm()

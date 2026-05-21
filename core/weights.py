@@ -24,6 +24,13 @@ except ImportError:
     logger.warning("libpysal is not available. Using native fallback weights.")
 
 
+def nearest_neighbor_ids(spatial_index, point, count: int) -> list[int]:
+    """Return nearest feature ids across QGIS API naming variants."""
+    if hasattr(spatial_index, "nearestNeighbor"):
+        return list(spatial_index.nearestNeighbor(point, count))
+    return list(spatial_index.nearestNeighbors(point, count))
+
+
 def build_weights_matrix(
     layer: QgsVectorLayer,
     weight_type: str,
@@ -106,8 +113,8 @@ def build_weights_matrix(
 
         elif weight_type.lower() == 'knn':
             centroid = geom.centroid().asPoint()
-            # Query k + 1 because nearestNeighbors includes the feature itself
-            nearest = spatial_index.nearestNeighbors(centroid, k_neighbors + 1)
+            # Query k + 1 because QGIS nearest-neighbor results include the feature itself.
+            nearest = nearest_neighbor_ids(spatial_index, centroid, k_neighbors + 1)
             f_neighs = [nid for nid in nearest if nid != fid][:k_neighbors]
 
         elif weight_type.lower() == 'distance':

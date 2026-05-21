@@ -30,6 +30,9 @@ from ..core.analysis_diagnostics import neighbor_summary, numeric_quality_summar
 from ..core.stats_engines import calculate_bivariate_lee_l
 from ..core.weights import build_weights_matrix
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -57,6 +60,9 @@ class BivariateLeeLAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_hotspots_outliers"
+
+    def icon(self):
+        return algorithm_icon("bivariate_spatial_association_lees_l")
 
     def createInstance(self):
         return BivariateLeeLAlgorithm()

@@ -45,6 +45,9 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.weights import build_weights_matrix
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -96,6 +99,9 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
     def groupId(self) -> str:
         return "planx_model_scenario"
 
+    def icon(self):
+        return algorithm_icon("multiscale_geographically_weighted_regression")
+
     def createInstance(self):
         return MGWRAlgorithm()
 
@@ -113,7 +119,8 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             "fit, input diagnostics, model-quality warnings, interpretation guidance, "
             "and caveats.\n\n"
             "This tool requires the optional mgwr package in the active QGIS Python "
-            "environment. Open PlanX GeoStats Lab > GeoStats Libraries if the "
+            "environment. Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > "
+            "GeoStats Library Status or Install / Update GeoStats Libraries if the "
             "dependency is missing."
         )
 
@@ -447,8 +454,9 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
         except Exception as exc:
             raise QgsProcessingException(
                 "Multiscale Geographically Weighted Regression requires the optional mgwr package. "
-                "Open PlanX GeoStats Lab > GeoStats Libraries to review the active QGIS Python "
-                "environment and install or update GeoStats libraries with explicit approval. "
+                "Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status "
+                "to review the active QGIS Python environment, or Install / Update GeoStats "
+                "Libraries to install with explicit approval. "
                 f"Import error: {exc}"
             )
         return Sel_BW, MGWR
@@ -572,12 +580,15 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
         for candidate in candidates:
             if candidate is None:
                 continue
+            arr = None
             try:
                 if isinstance(candidate, (list, tuple)) and candidate and isinstance(candidate[0], (list, tuple, np.ndarray)):
                     arr = np.asarray(candidate[0], dtype=float).flatten()
                 else:
                     arr = np.asarray(candidate, dtype=float).flatten()
-            except Exception:
+            except (TypeError, ValueError):
+                arr = None
+            if arr is None:
                 continue
             if arr.size >= expected_size:
                 return arr[:expected_size]

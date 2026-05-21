@@ -42,6 +42,9 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.weights import build_weights_matrix
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -69,6 +72,9 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_model_scenario"
+
+    def icon(self):
+        return algorithm_icon("gwr_regression")
 
     def createInstance(self):
         return GWRAlgorithm()
@@ -228,7 +234,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             except (ValueError, TypeError):
                 skipped += 1
                 continue
-            
+
             feedback.setProgress(int(20 * (idx / total)))
 
         n = len(dep_vals)
@@ -277,7 +283,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
         out_fields.append(QgsField("residual", QVariant.Double, len=12, prec=6))
         out_fields.append(QgsField("local_r2", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("gwr_nbrs", QVariant.Int))
-        
+
         # Intercept and beta fields
         out_fields.append(QgsField("coef_int", QVariant.Double, len=12, prec=6))
         out_fields.append(QgsField("se_int", QVariant.Double, len=12, prec=6))
@@ -330,7 +336,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                 out_feat.setAttribute("residual", float(residuals[idx]))
                 out_feat.setAttribute("local_r2", float(local_r2[idx]))
                 out_feat.setAttribute("gwr_nbrs", int(local_support[idx]))
-                
+
                 # Intercept
                 out_feat.setAttribute("coef_int", float(local_beta[idx, 0]))
                 out_feat.setAttribute("se_int", float(local_se[idx, 0]))

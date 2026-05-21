@@ -8,7 +8,6 @@ import tempfile
 import html
 import numpy as np
 
-from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -21,6 +20,9 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_average_nearest_neighbor
 from ..core.analysis_diagnostics import crs_unit_warning
+
+from ._icons import algorithm_icon
+
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -41,6 +43,9 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_pattern_scan"
+
+    def icon(self):
+        return algorithm_icon("average_nearest_neighbor")
 
     def createInstance(self):
         return AverageNearestNeighborAlgorithm()

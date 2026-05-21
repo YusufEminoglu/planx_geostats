@@ -23,6 +23,9 @@ from qgis.core import (
 from ..core.stats_engines import calculate_incremental_autocorrelation
 from ..core.analysis_diagnostics import crs_unit_warning, numeric_quality_summary, push_diagnostics
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -45,6 +48,9 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_pattern_scan"
+
+    def icon(self):
+        return algorithm_icon("incremental_spatial_autocorrelation")
 
     def createInstance(self):
         return IncrementalAutocorrelationAlgorithm()
@@ -249,7 +255,7 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
             next_action = "Do not rely on a single peak; compare several distance bands and review the study-area scale."
         crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>" if crs_warning else ""
 
-        html = f"""<!DOCTYPE html>
+        content = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -320,4 +326,4 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
 </body>
 </html>"""
         with open(path, "w", encoding="utf-8") as f:
-            f.write(html)
+            f.write(content)

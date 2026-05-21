@@ -24,6 +24,8 @@ from ..dependencies import (
 )
 
 
+from ._icons import algorithm_icon
+
 class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
     HTML_REPORT = "HTML_REPORT"
 
@@ -39,6 +41,9 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
     def groupId(self) -> str:
         return "planx_setup_diagnostics"
 
+    def icon(self):
+        return algorithm_icon("geostats_library_status")
+
     def createInstance(self):
         return GeoStatsLibraryStatusAlgorithm()
 
@@ -48,8 +53,8 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
             "by PlanX GeoStats Lab. The report checks the active QGIS Python "
             "environment, explains which packages are available, and prints the exact "
             "pip command that can be reviewed or copied.\n\n"
-            "This tool does not install anything. Use it when the menu helper is not "
-            "visible, when documenting a QGIS profile, or when sending a dependency "
+            "This tool does not install anything. Use it when documenting a QGIS "
+            "profile, checking the active Python environment, or sending a dependency "
             "status report before troubleshooting."
         )
 
@@ -97,7 +102,7 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
         try:
             program, args = build_qgis_python_pip_command(list(PIP_PACKAGES))
         except RuntimeError:
-            return "Open PlanX GeoStats Lab > GeoStats Libraries and use OSGeo Shell mode."
+            return "Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > Install / Update GeoStats Libraries and use OSGeo Shell mode."
         return format_command(program, args)
 
     def _package_role(self, package: str) -> str:
@@ -129,7 +134,7 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
             summary = (
                 "Missing optional libraries: "
                 + html.escape(", ".join(missing))
-                + ". Use PlanX GeoStats Lab > GeoStats Libraries or the Processing installer for guided installation."
+                + ". Use PlanX GeoStats Lab > 00 | Setup and Diagnostics > Install / Update GeoStats Libraries for guided installation."
             )
         else:
             summary = "All checked optional GeoStats libraries are available in the active QGIS Python environment."
@@ -160,8 +165,8 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 Python executable selected for pip: <strong>{html.escape(qgis_python or 'Not found')}</strong></p>
 <div class="summary">{summary}</div>
 <h2>How to install the missing libraries</h2>
-<p><strong>Recommended path:</strong> open <strong>PlanX GeoStats Lab &gt; GeoStats Libraries</strong>, review the command preview, then press <strong>Install Missing / Update Libraries</strong>. This runs the command only after your confirmation and streams the install log inside QGIS.</p>
-<p><strong>Toolbox fallback:</strong> if the menu action is not visible, run <strong>PlanX GeoStats Lab &gt; 00 | Setup and Diagnostics &gt; Install / Update GeoStats Libraries</strong> from Processing Toolbox, select an installation mode, enable the approval checkbox, and run the tool.</p>
+<p><strong>Recommended path:</strong> run <strong>PlanX GeoStats Lab &gt; 00 | Setup and Diagnostics &gt; Install / Update GeoStats Libraries</strong>, review the command preview, enable the approval checkbox, and run the tool. This runs pip only after your confirmation and streams the install log inside QGIS.</p>
+<p><strong>Status check:</strong> run <strong>PlanX GeoStats Lab &gt; 00 | Setup and Diagnostics &gt; GeoStats Library Status</strong> first when you only need a non-installing environment report.</p>
 <p><strong>Manual path:</strong> copy the command below into OSGeo Shell or a terminal that belongs to the same QGIS installation. Do not use the QGIS application executable directly with <code>-m pip</code>; pip must be run by Python.</p>
 <p>Detected OSGeo Shell: <strong>{html.escape(osgeo_shell or 'Not found')}</strong></p>
 <div class="command">{html.escape(command)}</div>

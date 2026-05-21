@@ -19,6 +19,9 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_distance_band_stats
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -38,6 +41,9 @@ class CalculateDistanceBandAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_prepare_neighbors"
+
+    def icon(self):
+        return algorithm_icon("calculate_distance_band")
 
     def createInstance(self):
         return CalculateDistanceBandAlgorithm()

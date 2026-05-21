@@ -32,6 +32,9 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -54,6 +57,9 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_pattern_scan"
+
+    def icon(self):
+        return algorithm_icon("global_moran_autocorrelation")
 
     def createInstance(self):
         return GlobalMoranAlgorithm()
@@ -248,7 +254,6 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
                     "Given the z-score of {:.2f}, there is a less than 5% likelihood that this "
                     "clustered pattern could be the result of random chance."
                 ).format(z)
-                status_class = "clustered"
                 status_color = "#e31a1c"
             else:
                 pattern = "Dispersed"
@@ -256,7 +261,6 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
                     "Given the z-score of {:.2f}, there is a less than 5% likelihood that this "
                     "dispersed pattern could be the result of random chance."
                 ).format(z)
-                status_class = "dispersed"
                 status_color = "#1f78b4"
         else:
             pattern = "Random"
@@ -264,7 +268,6 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
                 "Given the z-score of {:.2f}, the spatial pattern of features "
                 "appears to be the result of random chance (no significant autocorrelation)."
             ).format(z)
-            status_class = "random"
             status_color = "#718096"
 
         if p < 0.01:

@@ -28,6 +28,9 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_getis_ord
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -54,6 +57,9 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_hotspots_outliers"
+
+    def icon(self):
+        return algorithm_icon("getis_ord_gi")
 
     def createInstance(self):
         return GetisOrdAlgorithm()
@@ -141,7 +147,7 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
             raise QgsProcessingException(f"Target field '{field_name}' must be numeric.")
 
         feedback.pushInfo("Generating spatial weights matrix...")
-        
+
         # Build weights matrix
         neighbors, weights, id_order, _ = build_weights_matrix(
             source,
@@ -262,10 +268,10 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
             (-3, '#2166ac', 'Cold Spot - 99% Confidence'),
             (-2, '#67a9cf', 'Cold Spot - 95% Confidence'),
             (-1, '#d1e5f0', 'Cold Spot - 90% Confidence'),
-            (0,  '#f7f7f7', 'Not Significant'),
-            (1,  '#fddbc7', 'Hot Spot - 90% Confidence'),
-            (2,  '#f4a582', 'Hot Spot - 95% Confidence'),
-            (3,  '#b2182b', 'Hot Spot - 99% Confidence')
+            (0, '#f7f7f7', 'Not Significant'),
+            (1, '#fddbc7', 'Hot Spot - 90% Confidence'),
+            (2, '#f4a582', 'Hot Spot - 95% Confidence'),
+            (3, '#b2182b', 'Hot Spot - 99% Confidence')
         ]
 
         for val, color_hex, label in style_definitions:

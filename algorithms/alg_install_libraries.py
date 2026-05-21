@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import os
-import subprocess
+# Subprocess is limited to this explicit, user-approved setup algorithm.
+import subprocess  # nosec B404
 import sys
 import time
 from typing import List, Tuple
@@ -26,6 +27,8 @@ from ..dependencies import (
 )
 
 
+from ._icons import algorithm_icon
+
 class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
     INSTALL_MODE = "INSTALL_MODE"
     CONFIRM = "CONFIRM"
@@ -44,6 +47,9 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_setup_diagnostics"
+
+    def icon(self):
+        return algorithm_icon("install_geostats_libraries")
 
     def createInstance(self):
         return InstallGeoStatsLibrariesAlgorithm()
@@ -147,7 +153,8 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
         return packages or list(PIP_PACKAGES)
 
     def _run_process(self, program: str, args: List[str], feedback) -> int:
-        process = subprocess.Popen(
+        # Command arguments are built from plugin constants after explicit user approval.
+        process = subprocess.Popen(  # nosec B603
             [program] + args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -155,7 +162,8 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
             encoding="utf-8",
             errors="replace",
         )
-        assert process.stdout is not None
+        if process.stdout is None:
+            raise QgsProcessingException("Could not capture the installation process output.")
         while True:
             if feedback.isCanceled():
                 process.terminate()

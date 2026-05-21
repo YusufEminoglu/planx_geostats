@@ -71,3 +71,17 @@ The source data was provided as `planxgeostats_sample.gpkg` and curated into an 
 - Keep this sample small enough for normal Processing tests and manual QA. If a new algorithm is computationally expensive, use a subset or a temporary filtered layer during development.
 - Keep all sample-facing field names, report examples, and documentation in English.
 - Prefer this dataset when testing PlanX GeoStats report language, diagnostics, and model-comparison workflows.
+
+## Synthetic QA Fixture
+
+`planx_geostats_synthetic_qa.gpkg`
+
+- CRS: EPSG:3857
+- Purpose: compact runtime QA fixture for geometry types and output schemas not covered by the Izmir polygon planning sample.
+- Layers:
+  - `qa_points_grid`: 25 point features with continuous, binary, and count fields for ANN, Ripley's K, distance-band, autocorrelation, GLR, and regression smoke checks.
+  - `qa_lines_directional`: 6 line/multiline features for Linear Directional Mean and multipart line handling.
+  - `qa_polygons_mini`: 9 compact polygons for queen/rook contiguity and small local-statistics checks.
+  - `qa_ols_model_output`, `qa_glr_model_output`, `qa_gwr_model_output`, `qa_sar_model_output`, `qa_sem_model_output`, `qa_mgwr_model_output`: minimal model-output layers for Model Comparison Matrix detection and report QA.
+
+Keep this fixture deterministic and intentionally small. It is not intended to represent a real planning geography; it exists to exercise QGIS Processing runtime branches, API compatibility, geometry handling, and report generation.

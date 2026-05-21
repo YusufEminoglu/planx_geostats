@@ -14,8 +14,10 @@ from qgis.core import (
     QgsProcessingParameterEnum,
     QgsProcessingParameterBoolean,
     QgsProcessingParameterFileDestination,
-    QgsProcessingOutputFile
 )
+
+from ._icons import algorithm_icon
+
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -38,6 +40,9 @@ class ExportAttributesAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_prepare_neighbors"
+
+    def icon(self):
+        return algorithm_icon("export_attributes_to_ascii")
 
     def createInstance(self):
         return ExportAttributesAlgorithm()

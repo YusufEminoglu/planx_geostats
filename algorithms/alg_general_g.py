@@ -30,6 +30,9 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 
+from ._icons import algorithm_icon
+
+
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
@@ -50,6 +53,9 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
 
     def groupId(self) -> str:
         return "planx_pattern_scan"
+
+    def icon(self):
+        return algorithm_icon("general_g_autocorrelation")
 
     def createInstance(self):
         return GeneralGAlgorithm()
