@@ -4,7 +4,7 @@ PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in plann
 
 ## Sample Data
 
-The plugin includes `sample_data/planx_geostats_izmir_neighborhoods.gpkg`, a compact English-schema GeoPackage with 237 Izmir neighborhood polygons and planning indicators for heat, vegetation, population, parks, street-network structure, building form, and model QA. Use this dataset as the default development and manual testing fixture for PlanX GeoStats workflows.
+The plugin includes `sample_data/planx_geostats_izmir_neighborhoods.gpkg`, a compact English-schema GeoPackage with 237 Izmir neighborhood polygons and planning indicators for heat, vegetation, population, parks, street-network structure, building form, and model QA. Use this dataset as the default development and manual testing fixture for PlanX GeoStats workflows. In QGIS, run `PlanX GeoStats Lab > 00 | Setup and Diagnostics > Sample Dataset Guide` to load the layer and open a short workflow guide.
 
 ## Tool Groups
 
