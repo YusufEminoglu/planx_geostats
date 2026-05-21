@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added curated English-schema Izmir neighborhood sample GeoPackage for development, demos, manual QA, and regression workflow testing.
 - Added Sample Dataset Guide to load the bundled sample layer from the Processing Toolbox and explain recommended workflows.
 - Added Data Readiness Audit under setup diagnostics to review CRS risk, numeric field completeness, constant indicators, sample workflow readiness, and recommended next actions before formal analysis.
+- Expanded Data Readiness Audit with geometry QA for empty, invalid, and multipart features before contiguity, local statistics, and distance-based workflows.
 - Added Bivariate Spatial Association (Lee's L) for local cross-variable neighborhood diagnostics.
 - Added shared residual spatial autocorrelation diagnostics to GLR, GWR, Spatial Autoregression, and MGWR reports.
 - Added QGIS-independent core smoke tests for the main statistics engines and diagnostics helpers.

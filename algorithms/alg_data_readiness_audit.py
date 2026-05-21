@@ -107,6 +107,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
 
         feedback.pushInfo(f"Auditing {len(audit_fields)} numeric field(s) for GeoStats readiness.")
         layer_profile = self._layer_profile(source)
+        layer_profile.update(self._geometry_diagnostics(source, feedback))
         field_summaries = self._field_summaries(source, audit_fields, feedback)
         workflow_findings = self._workflow_findings({item["field"] for item in field_summaries})
         overall = self._overall_assessment(layer_profile, field_summaries)
@@ -155,6 +156,41 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             "crs_authid": crs_authid,
             "crs_description": crs_description,
             "is_geographic": geographic,
+        }
+
+    def _geometry_diagnostics(self, source, feedback) -> dict:
+        total = int(source.featureCount())
+        empty = 0
+        invalid = 0
+        multipart = 0
+        checked_validity = 0
+
+        for idx, feature in enumerate(source.getFeatures()):
+            if feedback.isCanceled():
+                break
+            geom = feature.geometry()
+            if geom is None or geom.isEmpty():
+                empty += 1
+                continue
+            try:
+                if geom.isMultipart():
+                    multipart += 1
+            except Exception:
+                pass
+            try:
+                checked_validity += 1
+                if not geom.isGeosValid():
+                    invalid += 1
+            except Exception:
+                checked_validity -= 1
+            if total:
+                feedback.setProgress(int(25 * idx / total))
+
+        return {
+            "empty_geometry_count": int(empty),
+            "invalid_geometry_count": int(invalid),
+            "multipart_geometry_count": int(multipart),
+            "validity_checked_count": int(max(0, checked_validity)),
         }
 
     def _field_summaries(self, source, field_names: list[str], feedback) -> list[dict]:
@@ -274,6 +310,10 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
             risks.append("The layer uses a geographic CRS. Reproject before distance-band, K-function, GWR, MGWR, or nearest-neighbor workflows.")
         if layer_profile["feature_count"] < 30:
             risks.append("The layer has a small feature count; global and model statistics may be unstable.")
+        if layer_profile.get("empty_geometry_count", 0) > 0:
+            risks.append(f"{layer_profile['empty_geometry_count']} feature(s) have empty geometry and may be skipped or distort spatial weights.")
+        if layer_profile.get("invalid_geometry_count", 0) > 0:
+            risks.append(f"{layer_profile['invalid_geometry_count']} feature(s) have invalid geometry. Repair geometries before contiguity, distance, or local statistics.")
         if blocked:
             risks.append(f"{len(blocked)} audited field(s) are not ready because of insufficient valid data or no variation.")
         if review:
@@ -288,6 +328,12 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
 
     def _push_feedback(self, feedback, layer_profile: dict, field_summaries: list[dict], overall: dict) -> None:
         feedback.pushInfo("Data readiness summary: " + overall["summary"])
+        feedback.pushInfo(
+            "Geometry diagnostics: "
+            f"{layer_profile.get('empty_geometry_count', 0)} empty, "
+            f"{layer_profile.get('invalid_geometry_count', 0)} invalid, "
+            f"{layer_profile.get('multipart_geometry_count', 0)} multipart feature(s)."
+        )
         if layer_profile["is_geographic"]:
             feedback.pushWarning("The input CRS is geographic. Distance-based GeoStats tools should use a suitable projected CRS.")
         for risk in overall["risks"]:
@@ -336,6 +382,9 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <tr><td>Feature count</td><td>{layer_profile["feature_count"]}</td></tr>
 <tr><td>Field count</td><td>{layer_profile["field_count"]}</td></tr>
 <tr><td>Geometry</td><td>{html.escape(layer_profile["geometry"])}</td></tr>
+<tr><td>Empty geometries</td><td>{layer_profile.get("empty_geometry_count", 0)}</td></tr>
+<tr><td>Invalid geometries</td><td>{layer_profile.get("invalid_geometry_count", 0)} of {layer_profile.get("validity_checked_count", 0)} checked</td></tr>
+<tr><td>Multipart features</td><td>{layer_profile.get("multipart_geometry_count", 0)}</td></tr>
 <tr><td>CRS</td><td>{html.escape(layer_profile["crs_authid"])} - {html.escape(layer_profile["crs_description"])}</td></tr>
 <tr><td>Distance-analysis note</td><td>{html.escape(self._crs_note(layer_profile))}</td></tr>
 </tbody>
@@ -401,6 +450,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             actions.append("Exclude not-ready fields from formal statistics until missing values, field types, or lack of variation are resolved.")
         if overall["review"]:
             actions.append("Inspect fields marked for review in the attribute table and decide whether imputation, filtering, or a more appropriate indicator is needed.")
+        actions.append("Repair invalid geometries and remove or correct empty geometries before using contiguity weights, local statistics, or distance-based models.")
         actions.append("For distance-band, K-function, nearest-neighbor, GWR, MGWR, and spatial regression workflows, verify that the layer CRS uses appropriate projected map units.")
         actions.append("Run Calculate Distance Band or Incremental Autocorrelation before finalizing a distance threshold for global or local spatial statistics.")
         actions.append("Use this report as the first audit artifact in the analysis folder before exporting final HTML reports from the statistical tools.")
