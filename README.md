@@ -37,5 +37,5 @@ py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.6
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.7
 ```

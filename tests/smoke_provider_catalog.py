@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import re
 import struct
 import zlib
 from pathlib import Path
@@ -12,6 +13,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / "planx_geostats_provider.py"
 MAIN_PLUGIN = ROOT / "main_plugin.py"
 DEPENDENCIES = ROOT / "dependencies.py"
+METADATA = ROOT / "metadata.txt"
+CHANGELOG = ROOT / "CHANGELOG.md"
+README = ROOT / "README.md"
 ALGORITHMS = ROOT / "algorithms"
 ALGORITHM_ICONS = ROOT / "icons" / "algorithms"
 
@@ -218,6 +222,23 @@ def test_direct_polyline_polygon_calls_have_multipart_guard() -> None:
     assert not offenders, f"Direct geometry conversion calls need multipart guards: {offenders}"
 
 
+def test_release_documentation_version_is_synchronized() -> None:
+    metadata_text = METADATA.read_text(encoding="utf-8")
+    version_line = next(
+        (line for line in metadata_text.splitlines() if line.startswith("version=")),
+        "",
+    )
+    assert version_line, "metadata.txt must define a plugin version"
+    version = version_line.split("=", 1)[1].strip()
+
+    changelog_text = CHANGELOG.read_text(encoding="utf-8")
+    readme_text = README.read_text(encoding="utf-8")
+    assert f"## [{version}]" in changelog_text, "CHANGELOG.md top release should match metadata version"
+    assert re.fullmatch(r"\d+\.\d+\.\d+", version), "metadata version should use semantic version format"
+    assert f"--version {version}" in readme_text, "README release verification command should match metadata version"
+    assert f"{version} -" in metadata_text, "metadata changelog should include the current version entry"
+
+
 def run_all() -> None:
     test_provider_imports_every_registered_algorithm()
     test_every_algorithm_file_is_registered_once()
@@ -226,6 +247,7 @@ def run_all() -> None:
     test_plugin_ui_surface_stays_processing_only()
     test_html_module_is_not_shadowed_in_report_writers()
     test_direct_polyline_polygon_calls_have_multipart_guard()
+    test_release_documentation_version_is_synchronized()
     print("PROVIDER CATALOG SMOKE TESTS OK")
 
 

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.7] - 2026-05-22
+
+### Added
+- Added smoke coverage that keeps `metadata.txt`, `CHANGELOG.md`, and the README release verification command synchronized on the same plugin version.
+
 ## [0.9.6] - 2026-05-22
 
 ### Changed
