@@ -8,7 +8,7 @@ PlanX GeoStats Lab is a QGIS Processing provider for spatial statistics in plann
 - `02 | Urban Pattern Scan`: global pattern tools that help planners understand whether a point or polygon distribution is clustered, dispersed, or spatially autocorrelated across the study area.
 - `03 | Hot Spots and Spatial Outliers`: local pattern tools for finding statistically meaningful concentrations, cold spots, cluster/outlier classes, and feature similarity groups.
 - `04 | Centers, Direction and Dispersion`: geographic distribution tools for mean/median centers, central features, standard distance, directional ellipses, and linear directional trends.
-- `05 | Models and Scenarios`: OLS regression, generalized linear regression, spatial autoregression, exploratory regression, GWR, MGWR, and sensitivity tools for testing explanatory variables, spatial dependence, multiscale local relationships, and scenario robustness.
+- `05 | Models and Scenarios`: OLS regression, generalized linear regression, spatial lag/error regression, exploratory regression, GWR, MGWR, and sensitivity tools for testing explanatory variables, spatial dependence, multiscale local relationships, and scenario robustness.
 
 ## GeoStats Libraries Guide
 
