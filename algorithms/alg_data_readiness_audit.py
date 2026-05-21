@@ -6,6 +6,7 @@ import html
 import math
 import os
 import tempfile
+import csv
 from typing import Optional
 
 import numpy as np
@@ -28,6 +29,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELDS = "FIELDS"
     HTML_REPORT = "HTML_REPORT"
+    FIELD_AUDIT_CSV = "FIELD_AUDIT_CSV"
     SUMMARY = "SUMMARY"
 
     def name(self) -> str:
@@ -81,7 +83,16 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 optional=True,
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.FIELD_AUDIT_CSV,
+                "Output field audit CSV (optional)",
+                fileFilter="CSV files (*.csv)",
+                optional=True,
+            )
+        )
         self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "Data readiness audit report"))
+        self.addOutput(QgsProcessingOutputString("FIELD_AUDIT_CSV_OUT", "Field audit CSV path"))
         self.addOutput(QgsProcessingOutputString(self.SUMMARY, "Audit summary"))
 
     def processAlgorithm(self, parameters, context, feedback):
@@ -105,6 +116,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
         html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
         if not html_path:
             html_path = os.path.join(tempfile.gettempdir(), "planx_geostats_data_readiness_audit.html")
+        csv_path = self.parameterAsFileOutput(parameters, self.FIELD_AUDIT_CSV, context)
 
         feedback.pushInfo(f"Auditing {len(audit_fields)} numeric field(s) for GeoStats readiness.")
         layer_profile = self._layer_profile(source)
@@ -116,12 +128,19 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
 
         self._push_feedback(feedback, layer_profile, field_summaries, overall)
         self._write_html(html_path, layer_profile, field_summaries, correlation_findings, workflow_findings, overall)
+        if csv_path:
+            self._write_field_audit_csv(csv_path, field_summaries)
+            feedback.pushInfo(f"Field audit CSV written: {csv_path}")
 
-        return {
+        outputs = {
             self.HTML_REPORT: html_path,
             "HTML_REPORT_OUT": html_path,
+            "FIELD_AUDIT_CSV_OUT": csv_path or "",
             self.SUMMARY: overall["summary"],
         }
+        if csv_path:
+            outputs[self.FIELD_AUDIT_CSV] = csv_path
+        return outputs
 
     def _numeric_field_names(self, source) -> list[str]:
         names = []
@@ -526,6 +545,44 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(content)
 
+    def _write_field_audit_csv(self, path: str, field_summaries: list[dict]) -> None:
+        headers = [
+            "field",
+            "total_features",
+            "valid_numeric",
+            "missing_or_invalid",
+            "missing_pct",
+            "minimum",
+            "maximum",
+            "mean",
+            "std",
+            "unique_values",
+            "readiness",
+            "analysis_role",
+            "role_reason",
+            "suggested_tools",
+        ]
+        with open(path, "w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=headers)
+            writer.writeheader()
+            for item in field_summaries:
+                writer.writerow({
+                    "field": item["field"],
+                    "total_features": item["total"],
+                    "valid_numeric": item["valid"],
+                    "missing_or_invalid": item["missing"] + item["non_finite"],
+                    "missing_pct": f"{item['missing_pct']:.6f}",
+                    "minimum": self._csv_number(item["minimum"]),
+                    "maximum": self._csv_number(item["maximum"]),
+                    "mean": self._csv_number(item["mean"]),
+                    "std": self._csv_number(item["std"]),
+                    "unique_values": item["unique"],
+                    "readiness": item["readiness"],
+                    "analysis_role": item["analysis_role"],
+                    "role_reason": item["role_reason"],
+                    "suggested_tools": item["suggested_tools"],
+                })
+
     def _field_row(self, item: dict) -> str:
         cls = "ok"
         if item["readiness"].startswith("Review"):
@@ -614,3 +671,13 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             return f"{float(value):.6g}"
         except Exception:
             return "n/a"
+
+    def _csv_number(self, value) -> str:
+        if value is None:
+            return ""
+        try:
+            if not math.isfinite(float(value)):
+                return ""
+            return f"{float(value):.12g}"
+        except Exception:
+            return ""
