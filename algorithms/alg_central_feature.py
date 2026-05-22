@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     QgsFeature,
     QgsField,
+    QgsProject,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -19,6 +20,8 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_central_feature
+from ..core.layer_metadata import apply_output_metadata
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -30,6 +33,10 @@ class CentralFeatureAlgorithm(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     WEIGHT_FIELD = "WEIGHT_FIELD"
     OUTPUT = "OUTPUT"
+
+    def __init__(self):
+        super().__init__()
+        self.out_layer_id = None
 
     def name(self) -> str:
         return "central_feature"
@@ -102,10 +109,12 @@ class CentralFeatureAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 continue
 
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
             features_list.append(f)
@@ -146,6 +155,7 @@ class CentralFeatureAlgorithm(QgsProcessingAlgorithm):
             source.wkbType(),
             source.sourceCrs()
         )
+        self.out_layer_id = dest_id
 
         # Calculate total distance for the central feature
         coords = np.column_stack((x_arr, y_arr))
@@ -169,3 +179,20 @@ class CentralFeatureAlgorithm(QgsProcessingAlgorithm):
         )
 
         return {self.OUTPUT: dest_id}
+
+    def postProcessAlgorithm(self, context, feedback):
+        if self.out_layer_id is None:
+            return {}
+        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        if not layer:
+            return {}
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats central feature output",
+            {
+                "is_central": "1 for the selected central feature",
+                "total_distance": "Total weighted distance from this feature to all valid input features",
+            },
+            self.displayName(),
+        )
+        return {}

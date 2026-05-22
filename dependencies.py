@@ -18,6 +18,26 @@ MODULES = {
 }
 
 
+def optional_dependency_error(tool_name: str, packages: List[str], import_error: Exception) -> str:
+    """Return consistent Processing guidance for optional GeoStats library failures."""
+    package_list = ", ".join(packages)
+    preview = ""
+    try:
+        program, args = build_qgis_python_pip_command(list(packages))
+        preview = f" Preview command: {format_command(program, args)}."
+    except Exception:
+        preview = ""
+    return (
+        f"{tool_name} requires optional Python package(s): {package_list}. "
+        "Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status "
+        "to inspect the active QGIS Python environment, or run Install / Update GeoStats "
+        "Libraries from the same toolbox group with explicit approval. "
+        "Restart QGIS after installing packages because already-loaded Processing providers "
+        "may not see newly installed modules."
+        f"{preview} Import error: {import_error}"
+    )
+
+
 def resolve_qgis_python_executable() -> Optional[str]:
     """Return a Python executable that belongs to the running QGIS install."""
     executable = sys.executable

@@ -27,6 +27,7 @@ from ..core.analysis_diagnostics import (
     model_fit_summary,
     residual_spatial_autocorrelation_summary,
 )
+from ..core.model_audit import assign_model_scores, model_recommendation
 from ..core.weights import build_weights_matrix
 
 from ._icons import algorithm_icon
@@ -283,25 +284,8 @@ class ModelComparisonAlgorithm(QgsProcessingAlgorithm):
 
     def _write_html(self, path, dep_var, comparisons):
         usable = [item for item in comparisons if item.get("usable")]
-        self._assign_scores(usable)
-        best_rmse = min(usable, key=lambda item: item["fit"]["rmse"] if item["fit"]["rmse"] is not None else float("inf"))
-        residual_clean = [
-            item for item in usable
-            if item["residual_spatial"].get("available")
-            and item["residual_spatial"].get("p_value") is not None
-            and item["residual_spatial"]["p_value"] >= 0.05
-        ]
-        if residual_clean:
-            recommended = min(residual_clean, key=lambda item: item["fit"]["rmse"] if item["fit"]["rmse"] is not None else float("inf"))
-            recommendation = (
-                f"{recommended['layer_name']} has the lowest RMSE among models without a strong global residual spatial pattern. "
-                "Review assumptions and coefficient meaning before selecting it."
-            )
-        else:
-            recommendation = (
-                f"{best_rmse['layer_name']} has the lowest RMSE, but every comparable model either retains residual spatial structure "
-                "or lacks a residual diagnostic. Treat the comparison as unresolved and inspect residual maps."
-            )
+        assign_model_scores(usable)
+        recommendation = model_recommendation(comparisons)
 
         rows = []
         for item in sorted(comparisons, key=lambda row: row.get("score", 10**9)):
@@ -394,27 +378,3 @@ The score is a normalized audit score where lower is better. It combines RMSE ra
 </html>"""
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(content)
-
-    def _assign_scores(self, usable):
-        if not usable:
-            return
-        rmse_values = [item["fit"]["rmse"] for item in usable if item["fit"]["rmse"] is not None]
-        mae_values = [item["fit"]["mae"] for item in usable if item["fit"]["mae"] is not None]
-        max_rmse = max(rmse_values) if rmse_values else 1.0
-        max_mae = max(mae_values) if mae_values else 1.0
-        max_rmse = max(max_rmse, 1.0e-9)
-        max_mae = max(max_mae, 1.0e-9)
-        for item in usable:
-            fit = item["fit"]
-            residual = item["residual_spatial"]
-            rmse_component = (fit["rmse"] / max_rmse) if fit["rmse"] is not None else 1.0
-            mae_component = (fit["mae"] / max_mae) if fit["mae"] is not None else 1.0
-            residual_penalty = 0.0
-            if not residual.get("available"):
-                residual_penalty = 0.25
-            elif residual.get("p_value") is not None and residual["p_value"] < 0.05:
-                residual_penalty = 0.35
-            coverage_penalty = max(0.0, 1.0 - float(item.get("coverage", 1.0)))
-            item["score"] = float(0.45 * rmse_component + 0.25 * mae_component + residual_penalty + 0.15 * coverage_penalty)
-        for rank, item in enumerate(sorted(usable, key=lambda row: row["score"]), start=1):
-            item["rank"] = rank

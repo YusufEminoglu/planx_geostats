@@ -16,6 +16,7 @@ from qgis.core import (
     QgsProcessingParameterFileDestination,
 )
 
+from ..core.weights import geometry_centroid_point
 from ._icons import algorithm_icon
 
 
@@ -148,8 +149,8 @@ class ExportAttributesAlgorithm(QgsProcessingAlgorithm):
                 # Add coordinates
                 if include_coords:
                     geom = feature.geometry()
-                    if not geom.isEmpty():
-                        centroid = geom.centroid().asPoint()
+                    centroid = geometry_centroid_point(geom)
+                    if centroid is not None:
                         row.extend([centroid.x(), centroid.y()])
                     else:
                         row.extend([None, None])

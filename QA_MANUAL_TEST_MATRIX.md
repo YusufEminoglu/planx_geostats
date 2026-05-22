@@ -33,6 +33,7 @@ Use this matrix before a public upload when changes affect algorithms, reports, 
 | Central Feature | Izmir sample | optional population weight | Existing feature marked as central with total distance. | Invalid weight handling or missing source attributes. |
 | Standard Distance / Directional Distribution | Izmir sample | optional weight | Circle/ellipse output and stable geometry. | Invalid polygon output or no CRS preservation. |
 | Linear Directional Mean | synthetic `qa_lines_directional` | default | Handles single and multipart lines. | Multipart line crash or zero-length trend line. |
+| Center/direction output metadata | Izmir and synthetic QA outputs | open result attribute table | Field aliases explain center coordinates, distance/radius, rotation, line count, skipped geometries, and invalid weights. | Output fields are cryptic or missing metadata after post-processing. |
 
 ## Modeling Tools
 
@@ -47,6 +48,16 @@ Use this matrix before a public upload when changes affect algorithms, reports, 
 | Model Comparison Matrix | synthetic model-output layers | `observed_y` | Ranking score, RMSE/MAE/bias, coverage, residual Moran, recommendation. | No rank/score, no residual warning, fails on mixed model outputs. |
 | Sensitivity Test | Izmir sample | temp field, multiple simulations | Randomization p-value and neighborhood diagnostics. | Simulation count ignored or report missing caveats. |
 
+## Report Decision Engines
+
+| Area | Fixture | Expected result | Red flags |
+|---|---|---|---|
+| Workflow Advisor recommendation engine | QGIS-independent smoke test and default Processing run | Goal, geometry, outcome type, and predictor availability produce a personalized sequence, sample suggestions, and combination warnings. | Recommendation logic duplicated back into the algorithm class or missing warnings for mismatched geometry/outcome choices. |
+| Model Comparison audit engine | synthetic model-output layers | Score/rank penalizes residual spatial pattern, missing residual diagnostics, and incomplete coverage; recommendation prefers a defensible clean-residual candidate. | Lowest RMSE is always recommended without residual review or ranks are missing. |
+| Sensitivity interpretation engine | Izmir sample and sparse synthetic neighborhood scenario | Robust/sensitive verdict, next action, and sensitivity cautions reflect empirical p-value and neighbor graph risk. | Isolated or very dense graphs are treated as fully reliable. |
+| Global Moran interpretation engine | Izmir sample and synthetic smoke cases | Clustered/dispersed/random labels, evidence strength, and next action prioritize neighborhood graph quality before local follow-up. | Significant global result is interpreted as site-specific evidence without Local Moran/Gi* follow-up. |
+| Local pattern class-summary engine | Izmir sample hot spot and LISA outputs | Processing log summarizes hot/cold, cluster/outlier, and dominant class counts; output aliases explain `gi_*` and `lisa_*` fields. | Local tools write styled layers but give no class summary or field metadata. |
+
 ## Release Gate
 
 Run these after the manual matrix:
@@ -55,6 +66,7 @@ Run these after the manual matrix:
 py -3 planx_geostats\tests\smoke_core.py
 py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 planx_geostats\tests\smoke_provider_catalog.py
+py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 ```
 

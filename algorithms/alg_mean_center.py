@@ -12,6 +12,7 @@ from qgis.core import (
     QgsFields,
     QgsPointXY,
     QgsGeometry,
+    QgsProject,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -23,6 +24,8 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_mean_center, calculate_central_feature
+from ..core.layer_metadata import apply_output_metadata
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -35,6 +38,10 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
     WEIGHT_FIELD = "WEIGHT_FIELD"
     MODE = "MODE"
     OUTPUT = "OUTPUT"
+
+    def __init__(self):
+        super().__init__()
+        self.out_layer_id = None
 
     def name(self) -> str:
         return "mean_center"
@@ -128,11 +135,14 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped_geometry += 1
                 continue
 
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                skipped_geometry += 1
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
 
@@ -192,6 +202,7 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
             out_geom_type,
             source.sourceCrs()
         )
+        self.out_layer_id = dest_id
 
         feedback.pushInfo("Calculating geographic center...")
         if mode_idx == 0:
@@ -216,3 +227,24 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
 
         feedback.setProgress(100)
         return {self.OUTPUT: dest_id}
+
+    def postProcessAlgorithm(self, context, feedback):
+        if self.out_layer_id is None:
+            return {}
+        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        if not layer:
+            return {}
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats mean center output",
+            {
+                "mean_x": "Mean center X coordinate",
+                "mean_y": "Mean center Y coordinate",
+                "total_w": "Total weight used in the mean center calculation",
+                "input_n": "Number of valid input features used",
+                "skip_geom": "Input features skipped because geometry was empty",
+                "bad_w": "Input features with null or invalid weight values",
+            },
+            self.displayName(),
+        )
+        return {}

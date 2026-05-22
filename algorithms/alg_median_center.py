@@ -12,6 +12,7 @@ from qgis.core import (
     QgsFields,
     QgsPointXY,
     QgsGeometry,
+    QgsProject,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -22,6 +23,8 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_median_center
+from ..core.layer_metadata import apply_output_metadata
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -33,6 +36,10 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     WEIGHT_FIELD = "WEIGHT_FIELD"
     OUTPUT = "OUTPUT"
+
+    def __init__(self):
+        super().__init__()
+        self.out_layer_id = None
 
     def name(self) -> str:
         return "median_center"
@@ -109,10 +116,12 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 continue
 
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
 
@@ -152,6 +161,7 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
             QgsWkbTypes.Point,
             source.sourceCrs()
         )
+        self.out_layer_id = dest_id
 
         out_feat = QgsFeature()
         out_feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(med_x, med_y)))
@@ -164,3 +174,21 @@ class MedianCenterAlgorithm(QgsProcessingAlgorithm):
         feedback.setProgress(100)
 
         return {self.OUTPUT: dest_id}
+
+    def postProcessAlgorithm(self, context, feedback):
+        if self.out_layer_id is None:
+            return {}
+        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        if not layer:
+            return {}
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats median center output",
+            {
+                "median_x": "Median center X coordinate",
+                "median_y": "Median center Y coordinate",
+                "total_dist": "Total weighted distance minimized by the median center",
+            },
+            self.displayName(),
+        )
+        return {}

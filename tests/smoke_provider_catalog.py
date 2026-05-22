@@ -17,6 +17,8 @@ METADATA = ROOT / "metadata.txt"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
 QA_MATRIX = ROOT / "QA_MANUAL_TEST_MATRIX.md"
+RELEASE_ZIP_VERIFIER = ROOT.parent / "packaging" / "verify_release_zip.py"
+RELEASE_ZIP_VERIFIER_TEST = ROOT.parent / "packaging" / "test_verify_release_zip.py"
 ALGORITHMS = ROOT / "algorithms"
 ALGORITHM_ICONS = ROOT / "icons" / "algorithms"
 
@@ -245,8 +247,10 @@ def test_release_documentation_version_is_synchronized() -> None:
 
 def test_workflow_advisor_covers_core_decision_sections() -> None:
     advisor = ALGORITHMS / "alg_workflow_advisor.py"
+    advisor_core = ROOT / "core" / "workflow_advisor.py"
     assert advisor.exists(), "Workflow Advisor algorithm should exist"
-    source = advisor.read_text(encoding="utf-8")
+    assert advisor_core.exists(), "Workflow Advisor core recommendation helper should exist"
+    source = advisor.read_text(encoding="utf-8") + "\n" + advisor_core.read_text(encoding="utf-8")
     required_terms = [
         "Planning Questions to Tool Sequences",
         "Personalized Recommendation",
@@ -271,10 +275,204 @@ def test_workflow_advisor_covers_core_decision_sections() -> None:
         "GOAL_OPTIONS",
         "GEOMETRY_OPTIONS",
         "OUTCOME_OPTIONS",
-        "_personalized_recommendation",
+        "personalized_recommendation",
+        "Bundled sample fields or layers to try",
+        "Combination warnings",
+        "median_ndvi",
+        "qa_ols_model_output",
     ]
     missing = [term for term in required_terms if term not in source]
     assert not missing, f"Workflow Advisor should cover core guidance terms: {missing}"
+
+
+def test_model_comparison_uses_core_audit_helper() -> None:
+    algorithm = ALGORITHMS / "alg_model_comparison.py"
+    audit_core = ROOT / "core" / "model_audit.py"
+    assert audit_core.exists(), "Model comparison scoring helper should exist"
+
+    algorithm_source = algorithm.read_text(encoding="utf-8")
+    core_source = audit_core.read_text(encoding="utf-8")
+    assert "from ..core.model_audit import assign_model_scores, model_recommendation" in algorithm_source
+    assert "def _assign_scores" not in algorithm_source, "Scoring should stay in the QGIS-independent core helper"
+    required_terms = [
+        "assign_model_scores",
+        "residual_pattern_penalty",
+        "model_recommendation",
+        "without a strong global residual spatial pattern",
+        "missing-diagnostic penalty",
+    ]
+    missing = [term for term in required_terms if term not in core_source + "\n" + algorithm_source]
+    assert not missing, f"Model audit helper should cover scoring/report terms: {missing}"
+
+
+def test_sensitivity_test_uses_core_audit_helper() -> None:
+    algorithm = ALGORITHMS / "alg_sensitivity_test.py"
+    audit_core = ROOT / "core" / "sensitivity_audit.py"
+    assert audit_core.exists(), "Sensitivity test interpretation helper should exist"
+
+    algorithm_source = algorithm.read_text(encoding="utf-8")
+    core_source = audit_core.read_text(encoding="utf-8")
+    assert "from ..core.sensitivity_audit import sensitivity_verdict" in algorithm_source
+    required_terms = [
+        "sensitivity_verdict",
+        "sensitivity_next_action",
+        "Sensitivity Cautions",
+        "isolated observations",
+        "Very dense neighborhood graph",
+    ]
+    missing = [term for term in required_terms if term not in core_source + "\n" + algorithm_source]
+    assert not missing, f"Sensitivity audit helper should cover interpretation terms: {missing}"
+
+
+def test_global_moran_uses_core_interpretation_helper() -> None:
+    algorithm = ALGORITHMS / "alg_global_moran.py"
+    audit_core = ROOT / "core" / "spatial_autocorrelation_audit.py"
+    assert audit_core.exists(), "Global Moran interpretation helper should exist"
+
+    algorithm_source = algorithm.read_text(encoding="utf-8")
+    core_source = audit_core.read_text(encoding="utf-8")
+    assert "from ..core.spatial_autocorrelation_audit import global_moran_interpretation" in algorithm_source
+    required_terms = [
+        "global_moran_interpretation",
+        "evidence_strength",
+        "global_moran_next_action",
+        "Clustered",
+        "Dispersed",
+        "Local Moran's I or Gi*",
+    ]
+    missing = [term for term in required_terms if term not in core_source + "\n" + algorithm_source]
+    assert not missing, f"Global Moran interpretation helper should cover report terms: {missing}"
+
+
+def test_local_pattern_tools_use_core_summary_and_metadata_helpers() -> None:
+    audit_core = ROOT / "core" / "local_pattern_audit.py"
+    getis = ALGORITHMS / "alg_getis_ord.py"
+    lisa = ALGORITHMS / "alg_local_moran.py"
+    assert audit_core.exists(), "Local pattern class-summary helper should exist"
+
+    combined = (
+        audit_core.read_text(encoding="utf-8")
+        + "\n"
+        + getis.read_text(encoding="utf-8")
+        + "\n"
+        + lisa.read_text(encoding="utf-8")
+    )
+    required_terms = [
+        "getis_ord_class_summary",
+        "local_moran_class_summary",
+        "Gi* classified",
+        "Local Moran classified",
+        "apply_output_metadata",
+        "PlanX GeoStats Local Moran cluster and outlier output",
+    ]
+    missing = [term for term in required_terms if term not in combined]
+    assert not missing, f"Local pattern tools should use class summaries and metadata helpers: {missing}"
+
+
+def test_cluster_similarity_outputs_apply_metadata_aliases() -> None:
+    clustering = ALGORITHMS / "alg_multivariate_clustering.py"
+    similarity = ALGORITHMS / "alg_similarity_search.py"
+    checks = {
+        clustering: [
+            "apply_output_metadata",
+            "PlanX GeoStats multivariate clustering output",
+            "cluster_id",
+            "clust_size",
+            "clust_dist",
+        ],
+        similarity: [
+            "apply_output_metadata",
+            "PlanX GeoStats similarity search output",
+            "is_target",
+            "sim_index",
+            "sim_rank",
+            "sim_pct",
+            "sim_tier",
+        ],
+    }
+    for path, required_terms in checks.items():
+        source = path.read_text(encoding="utf-8")
+        missing = [term for term in required_terms if term not in source]
+        assert not missing, f"{path.name} should apply metadata aliases to analytical output fields: {missing}"
+
+
+def test_model_output_layers_apply_metadata_aliases() -> None:
+    checks = {
+        ALGORITHMS / "alg_gwr.py": [
+            "PlanX GeoStats GWR local model output",
+            "y_predicted",
+            "local_r2",
+            "gwr_nbrs",
+        ],
+        ALGORITHMS / "alg_mgwr.py": [
+            "PlanX GeoStats MGWR multiscale local model output",
+            "mgwr_pred",
+            "mgwr_std",
+            "mgwr_used",
+        ],
+        ALGORITHMS / "alg_spatial_autoregression.py": [
+            "PlanX GeoStats spatial lag regression output",
+            "sar_pred",
+            "sar_stdres",
+            "sar_used",
+        ],
+        ALGORITHMS / "alg_spatial_error_regression.py": [
+            "PlanX GeoStats spatial error regression output",
+            "sem_pred",
+            "sem_stdres",
+            "sem_used",
+        ],
+    }
+    for path, required_terms in checks.items():
+        source = path.read_text(encoding="utf-8")
+        assert "apply_output_metadata" in source, f"{path.name} should apply output metadata aliases"
+        missing = [term for term in required_terms if term not in source]
+        assert not missing, f"{path.name} should document model output fields with aliases: {missing}"
+
+
+def test_center_direction_outputs_apply_metadata_aliases() -> None:
+    checks = {
+        ALGORITHMS / "alg_mean_center.py": [
+            "PlanX GeoStats mean center output",
+            "mean_x",
+            "total_w",
+            "skip_geom",
+        ],
+        ALGORITHMS / "alg_median_center.py": [
+            "PlanX GeoStats median center output",
+            "median_x",
+            "total_dist",
+        ],
+        ALGORITHMS / "alg_standard_distance.py": [
+            "PlanX GeoStats standard distance output",
+            "std_dist",
+            "radius",
+            "input_n",
+        ],
+        ALGORITHMS / "alg_sde.py": [
+            "PlanX GeoStats directional distribution output",
+            "rotation",
+            "semi_major",
+            "semi_minor",
+        ],
+        ALGORITHMS / "alg_linear_directional_mean.py": [
+            "PlanX GeoStats linear directional mean output",
+            "mean_angle",
+            "mean_length",
+            "line_count",
+        ],
+        ALGORITHMS / "alg_central_feature.py": [
+            "PlanX GeoStats central feature output",
+            "is_central",
+            "total_distance",
+        ],
+    }
+    for path, required_terms in checks.items():
+        source = path.read_text(encoding="utf-8")
+        assert "postProcessAlgorithm" in source, f"{path.name} should apply metadata in post-processing"
+        assert "apply_output_metadata" in source, f"{path.name} should apply output metadata aliases"
+        missing = [term for term in required_terms if term not in source]
+        assert not missing, f"{path.name} should document center/direction output fields with aliases: {missing}"
 
 
 def test_manual_qa_matrix_covers_release_workflows() -> None:
@@ -286,12 +484,75 @@ def test_manual_qa_matrix_covers_release_workflows() -> None:
         "Global Moran's I",
         "Getis-Ord Gi*",
         "Linear Directional Mean",
+        "Center/direction output metadata",
         "OLS Regression",
         "Model Comparison Matrix",
+        "Report Decision Engines",
+        "Workflow Advisor recommendation engine",
+        "Model Comparison audit engine",
+        "Sensitivity interpretation engine",
+        "Global Moran interpretation engine",
+        "Local pattern class-summary engine",
         "Release Gate",
     ]
     missing = [term for term in required_terms if term not in content]
     assert not missing, f"Manual QA matrix should cover core workflows: {missing}"
+
+
+def test_readme_documents_core_decision_helpers_and_release_zip_gate() -> None:
+    content = README.read_text(encoding="utf-8")
+    required_terms = [
+        "QGIS-independent core helpers",
+        "workflow advising",
+        "model-comparison scoring",
+        "Monte Carlo sensitivity interpretation",
+        "Global Moran's I report interpretation",
+        "developer-only paths are absent",
+        "algorithm icons are present",
+        "Processing-only",
+    ]
+    missing = [term for term in required_terms if term not in content]
+    assert not missing, f"README should document decision-helper and release-zip gates: {missing}"
+
+
+def test_optional_dependency_failures_use_shared_guidance() -> None:
+    dependency_helper = ROOT / "dependencies.py"
+    assert "def optional_dependency_error" in dependency_helper.read_text(encoding="utf-8")
+    checks = {
+        ALGORITHMS / "alg_mgwr.py": ["optional_dependency_error", "Multiscale Geographically Weighted Regression", "mgwr"],
+        ALGORITHMS / "alg_spatial_autoregression.py": ["optional_dependency_error", "Spatial Autoregression", "libpysal", "spreg"],
+        ALGORITHMS / "alg_spatial_error_regression.py": ["optional_dependency_error", "Spatial Error Regression", "libpysal", "spreg"],
+    }
+    for path, required_terms in checks.items():
+        source = path.read_text(encoding="utf-8")
+        missing = [term for term in required_terms if term not in source]
+        assert not missing, f"{path.name} should use shared optional dependency guidance: {missing}"
+
+
+def test_release_zip_verifier_guards_geostats_packaging_contract() -> None:
+    assert RELEASE_ZIP_VERIFIER.exists(), "Release zip verifier should exist"
+    assert RELEASE_ZIP_VERIFIER_TEST.exists(), "Release zip verifier smoke test should exist"
+    content = RELEASE_ZIP_VERIFIER.read_text(encoding="utf-8")
+    test_content = RELEASE_ZIP_VERIFIER_TEST.read_text(encoding="utf-8")
+    required_terms = [
+        "MIN_ALGORITHM_ICON_COUNT",
+        "icons/algorithms",
+        "metadata icon is missing from zip",
+        "Forbidden development path in zip",
+        "Unexpected non-Processing UI hook",
+        "addPluginToMenu",
+        "addToolBarIcon",
+    ]
+    missing = [term for term in required_terms if term not in content]
+    assert not missing, f"Release zip verifier should guard packaging contract: {missing}"
+    test_terms = [
+        "test_valid_processing_zip_passes",
+        "test_processing_zip_rejects_ui_hooks_and_missing_algorithm_icons",
+        "test_non_processing_zip_allows_toolbar_style_plugin",
+        "test_forbidden_source_artifacts_are_rejected",
+    ]
+    missing_tests = [term for term in test_terms if term not in test_content]
+    assert not missing_tests, f"Release zip verifier smoke tests should cover key scenarios: {missing_tests}"
 
 
 def test_professional_report_helpers_are_used_by_key_reports() -> None:
@@ -329,7 +590,17 @@ def run_all() -> None:
     test_direct_polyline_polygon_calls_have_multipart_guard()
     test_release_documentation_version_is_synchronized()
     test_workflow_advisor_covers_core_decision_sections()
+    test_model_comparison_uses_core_audit_helper()
+    test_sensitivity_test_uses_core_audit_helper()
+    test_global_moran_uses_core_interpretation_helper()
+    test_local_pattern_tools_use_core_summary_and_metadata_helpers()
+    test_cluster_similarity_outputs_apply_metadata_aliases()
+    test_model_output_layers_apply_metadata_aliases()
+    test_center_direction_outputs_apply_metadata_aliases()
     test_manual_qa_matrix_covers_release_workflows()
+    test_readme_documents_core_decision_helpers_and_release_zip_gate()
+    test_optional_dependency_failures_use_shared_guidance()
+    test_release_zip_verifier_guards_geostats_packaging_contract()
     test_professional_report_helpers_are_used_by_key_reports()
     print("PROVIDER CATALOG SMOKE TESTS OK")
 

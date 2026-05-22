@@ -13,6 +13,7 @@ from qgis.core import (
     QgsFields,
     QgsPointXY,
     QgsGeometry,
+    QgsProject,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -22,6 +23,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_linear_directional_mean
+from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
 
@@ -32,6 +34,10 @@ logger = logging.getLogger("PlanX GeoStats Lab")
 class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
+
+    def __init__(self):
+        super().__init__()
+        self.out_layer_id = None
 
     def name(self) -> str:
         return "linear_directional_mean"
@@ -90,7 +96,7 @@ class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty() or geom.type() != QgsWkbTypes.LineGeometry:
+            if geom is None or geom.isEmpty() or geom.type() != QgsWkbTypes.LineGeometry:
                 continue
 
             # Get the first polyline part
@@ -153,6 +159,7 @@ class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
             QgsWkbTypes.LineString,
             source.sourceCrs()
         )
+        self.out_layer_id = dest_id
 
         out_feat = QgsFeature()
         out_feat.setGeometry(QgsGeometry.fromPolylineXY([pt_start, pt_end]))
@@ -167,3 +174,23 @@ class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
         feedback.setProgress(100)
 
         return {self.OUTPUT: dest_id}
+
+    def postProcessAlgorithm(self, context, feedback):
+        if self.out_layer_id is None:
+            return {}
+        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        if not layer:
+            return {}
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats linear directional mean output",
+            {
+                "mean_angle": "Mean line direction angle in degrees",
+                "mean_length": "Mean input line length used for the trend line",
+                "center_x": "Trend line center X coordinate",
+                "center_y": "Trend line center Y coordinate",
+                "line_count": "Number of valid line features used",
+            },
+            self.displayName(),
+        )
+        return {}

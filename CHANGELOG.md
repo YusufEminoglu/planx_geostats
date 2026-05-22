@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.10] - 2026-05-22
+
+### Changed
+- Completed beta stabilization for the PlanX GeoStats Lab Processing provider.
+- Centralized optional dependency error guidance for MGWR, Spatial Lag Regression, and Spatial Error Regression so missing-library failures point users to GeoStats Library Status and the explicit installer workflow.
+- Hardened output-layer metadata handling so field descriptions are retained as custom layer properties even when a provider cannot apply field aliases.
+- Hardened centroid and geometry handling across distance, center, distribution, pattern, GWR, MGWR, and export workflows so missing, empty, invalid, or provider-problem geometries are skipped safely instead of crashing the algorithm.
+
+### Added
+- Added QGIS-independent smoke coverage for dependency guidance, metadata resilience, null/empty geometry handling, and centroid failure handling.
+- Added release-gate coverage to keep core decision helpers, output metadata contracts, manual QA documentation, and package verification aligned.
+
 ## [0.9.9] - 2026-05-22
 
 ### Added

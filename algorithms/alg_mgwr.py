@@ -43,7 +43,9 @@ from ..core.analysis_diagnostics import (
     residual_spatial_autocorrelation_html,
     residual_spatial_autocorrelation_summary,
 )
-from ..core.weights import build_weights_matrix
+from ..dependencies import optional_dependency_error
+from ..core.layer_metadata import apply_output_metadata
+from ..core.weights import build_weights_matrix, geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -271,7 +273,10 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             if dep_value is None or any(value is None for value in exp_values):
                 skipped += 1
                 continue
-            point = geometry.centroid().asPoint()
+            point = geometry_centroid_point(geometry)
+            if point is None:
+                skipped += 1
+                continue
             y_values.append(dep_value)
             x_rows.append(exp_values)
             coords.append([point.x(), point.y()])
@@ -452,13 +457,11 @@ class MGWRAlgorithm(QgsProcessingAlgorithm):
             from mgwr.gwr import MGWR
             from mgwr.sel_bw import Sel_BW
         except Exception as exc:
-            raise QgsProcessingException(
-                "Multiscale Geographically Weighted Regression requires the optional mgwr package. "
-                "Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status "
-                "to review the active QGIS Python environment, or Install / Update GeoStats "
-                "Libraries to install with explicit approval. "
-                f"Import error: {exc}"
-            )
+            raise QgsProcessingException(optional_dependency_error(
+                "Multiscale Geographically Weighted Regression",
+                ["mgwr"],
+                exc,
+            ))
         return Sel_BW, MGWR
 
     def _to_float(self, value):
@@ -820,6 +823,22 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
             return {}
 
         feedback.pushInfo("Applying MGWR standardized residual styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats MGWR multiscale local model output",
+            {
+                "mgwr_pred": "MGWR predicted dependent-variable value",
+                "mgwr_resid": "Observed minus predicted MGWR residual",
+                "mgwr_std": "Standardized MGWR residual used for diverging residual maps",
+                "mgwr_minbw": "Minimum selected MGWR bandwidth across model terms",
+                "mgwr_maxbw": "Maximum selected MGWR bandwidth across model terms",
+                "mgwr_used": "1 when the feature was used in the fitted model, otherwise 0",
+                "mg_b0": "MGWR intercept coefficient",
+                "mg_se0": "MGWR intercept standard error",
+                "mg_t0": "MGWR intercept t statistic",
+            },
+            self.displayName(),
+        )
         ranges = []
         range_definitions = [
             (-9999.0, -2.5, "#2166ac", "< -2.5 Std Residual"),

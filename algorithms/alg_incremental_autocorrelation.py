@@ -22,6 +22,7 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_incremental_autocorrelation
 from ..core.analysis_diagnostics import crs_unit_warning, numeric_quality_summary, push_diagnostics
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -151,7 +152,7 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped += 1
                 continue
             val = f.attribute(field_idx)
@@ -163,7 +164,10 @@ class IncrementalAutocorrelationAlgorithm(QgsProcessingAlgorithm):
             except (ValueError, TypeError):
                 skipped += 1
                 continue
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                skipped += 1
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
             values.append(val_f)

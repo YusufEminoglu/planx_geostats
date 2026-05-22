@@ -25,6 +25,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_kmeans
+from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
 
@@ -251,6 +252,16 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         feedback.pushInfo("Applying Multivariate Clustering categorized styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats multivariate clustering output",
+            {
+                "cluster_id": "K-means cluster identifier",
+                "clust_size": "Number of complete records assigned to this cluster",
+                "clust_dist": "Standardized distance from the feature profile to its cluster centroid",
+            },
+            self.displayName(),
+        )
 
         # Distinct premium colors for clusters (categorical/qualitative)
         palette = [

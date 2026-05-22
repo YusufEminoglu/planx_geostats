@@ -6,6 +6,8 @@ The `GeoStats Workflow Advisor` tool provides a planning-oriented method guide w
 
 For release preparation, use `QA_MANUAL_TEST_MATRIX.md` as the manual test checklist covering setup tools, pattern statistics, geometry summaries, modeling workflows, symbology, report interpretation, and release gates.
 
+The main report decision logic is intentionally kept in QGIS-independent core helpers so it can be smoke-tested without launching QGIS. Current guarded helpers cover workflow advising, model-comparison scoring, Monte Carlo sensitivity interpretation, and Global Moran's I report interpretation.
+
 ## Sample Data
 
 The plugin includes `sample_data/planx_geostats_izmir_neighborhoods.gpkg`, a compact English-schema GeoPackage with 237 Izmir neighborhood polygons and planning indicators for heat, vegetation, population, parks, street-network structure, building form, and model QA. Use this dataset as the default development and manual testing fixture for PlanX GeoStats workflows. The sample smoke test protects the English schema, critical numeric field types, expected value ranges, and analysis-ready variation. In QGIS, run `PlanX GeoStats Lab > 00 | Setup and Diagnostics > Sample Dataset Guide` to load the layer and open a short workflow guide, then run `Data Readiness Audit` to review geometry validity, field completeness, CRS risk, constant indicators, distribution shape, outlier burden, multicollinearity risk, suggested analysis roles, starter workflow sequences, and recommended analysis paths before launching the statistical tools. The audit can also export a field-level CSV for spreadsheet QA logs and a full JSON package for reproducible audit handoffs.
@@ -39,7 +41,10 @@ Run the QGIS-independent smoke tests before packaging:
 py -3 planx_geostats\tests\smoke_core.py
 py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 planx_geostats\tests\smoke_provider_catalog.py
+py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.9
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.10
 ```
+
+The release zip verifier also checks that developer-only paths are absent, algorithm icons are present, metadata points to a packaged icon, and the plugin remains Processing-only without menu or toolbar UI hooks.

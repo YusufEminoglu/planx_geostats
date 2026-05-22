@@ -29,6 +29,7 @@ from ..core.analysis_diagnostics import (
     numeric_quality_summary,
     push_diagnostics,
 )
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -140,7 +141,7 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 continue
 
             val = f.attribute(field_idx)
@@ -158,7 +159,10 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
                 continue
 
             fid = f.id()
-            centroids[fid] = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                continue
+            centroids[fid] = centroid
             id_order.append(fid)
             values[fid] = val_f
 

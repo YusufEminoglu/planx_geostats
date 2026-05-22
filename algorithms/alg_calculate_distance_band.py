@@ -18,6 +18,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_distance_band_stats
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -113,10 +114,12 @@ class CalculateDistanceBandAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 continue
 
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
             feedback.setProgress(int(40 * (idx / total)))

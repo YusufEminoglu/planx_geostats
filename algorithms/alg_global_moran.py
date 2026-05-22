@@ -32,6 +32,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.spatial_autocorrelation_audit import global_moran_interpretation
 
 from ._icons import algorithm_icon
 
@@ -244,50 +245,12 @@ class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
         crs_warning: str,
         weight_type: str,
     ):
-        # Interpretation logic
-        sig_threshold = 0.05
-        is_significant = p < sig_threshold
-
-        if is_significant:
-            if z > 0:
-                pattern = "Clustered"
-                desc = (
-                    "Given the z-score of {:.2f}, there is a less than 5% likelihood that this "
-                    "clustered pattern could be the result of random chance."
-                ).format(z)
-                status_color = "#e31a1c"
-            else:
-                pattern = "Dispersed"
-                desc = (
-                    "Given the z-score of {:.2f}, there is a less than 5% likelihood that this "
-                    "dispersed pattern could be the result of random chance."
-                ).format(z)
-                status_color = "#1f78b4"
-        else:
-            pattern = "Random"
-            desc = (
-                "Given the z-score of {:.2f}, the spatial pattern of features "
-                "appears to be the result of random chance (no significant autocorrelation)."
-            ).format(z)
-            status_color = "#718096"
-
-        if p < 0.01:
-            confidence = "very strong"
-        elif p < 0.05:
-            confidence = "strong"
-        elif p < 0.10:
-            confidence = "suggestive but not conventionally significant"
-        else:
-            confidence = "weak"
-
-        if neighborhood_summary["isolated"] > 0:
-            next_action = "Increase the distance band or choose KNN weights before using this result for planning decisions."
-        elif neighborhood_summary["all_connected"]:
-            next_action = "Try a smaller threshold or a data-driven distance band to avoid masking local structure."
-        elif is_significant:
-            next_action = "Follow up with Local Moran's I or Gi* to locate the neighborhoods driving this global pattern."
-        else:
-            next_action = "Review scale, zoning geography, and candidate distance bands before concluding that the process is spatially random."
+        interpretation = global_moran_interpretation(z, p, neighborhood_summary)
+        pattern = interpretation["pattern"]
+        desc = interpretation["description"]
+        status_color = interpretation["color"]
+        confidence = interpretation["confidence"]
+        next_action = interpretation["next_action"]
 
         html_content = f"""<!DOCTYPE html>
 <html>

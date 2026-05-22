@@ -46,6 +46,8 @@ from ..core.analysis_diagnostics import (
     residual_spatial_autocorrelation_html,
     residual_spatial_autocorrelation_summary,
 )
+from ..dependencies import optional_dependency_error
+from ..core.layer_metadata import apply_output_metadata
 from ..core.weights import build_weights_matrix
 
 from ._icons import algorithm_icon
@@ -381,13 +383,11 @@ class SpatialErrorRegressionAlgorithm(QgsProcessingAlgorithm):
             import libpysal
             from spreg import ML_Error
         except Exception as exc:
-            raise QgsProcessingException(
-                "Spatial Error Regression requires optional libraries libpysal and spreg. "
-                "Run PlanX GeoStats Lab > 00 | Setup and Diagnostics > GeoStats Library Status "
-                "to review the active QGIS Python environment, or Install / Update GeoStats "
-                "Libraries to install with explicit approval. "
-                f"Import error: {exc}"
-            )
+            raise QgsProcessingException(optional_dependency_error(
+                "Spatial Error Regression",
+                ["libpysal", "spreg"],
+                exc,
+            ))
         return libpysal, ML_Error
 
     def _to_float(self, value):
@@ -635,6 +635,18 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
             return {}
 
         feedback.pushInfo("Applying spatial error regression standardized residual styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats spatial error regression output",
+            {
+                "sem_pred": "Spatial error regression predicted dependent-variable value",
+                "sem_resid": "Observed minus predicted spatial error residual",
+                "sem_stdres": "Standardized spatial error residual used for diverging residual maps",
+                "sem_nbrs": "Valid neighbors used in the spatial error weights graph",
+                "sem_used": "1 when the feature was used in the fitted model, otherwise 0",
+            },
+            self.displayName(),
+        )
         ranges = []
         range_definitions = [
             (-9999.0, -2.5, "#2166ac", "< -2.5 Std Residual"),

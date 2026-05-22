@@ -29,6 +29,7 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_similarity_search
+from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
 
@@ -292,6 +293,18 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         feedback.pushInfo("Applying Similarity Search graduated styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats similarity search output",
+            {
+                "is_target": "1 when the feature matched the target expression, otherwise 0",
+                "sim_index": "Standardized profile distance to the target profile; lower means more similar",
+                "sim_rank": "Candidate similarity rank where 1 is the closest non-target feature",
+                "sim_pct": "Similarity percentile among candidate features",
+                "sim_tier": "Similarity tier label for target, top, high, moderate, or low similarity",
+            },
+            self.displayName(),
+        )
 
         # Graduated symbol renderer on sim_rank (Top similarity)
         # Ranks: Target is 0, top candidates are 1..10, etc.

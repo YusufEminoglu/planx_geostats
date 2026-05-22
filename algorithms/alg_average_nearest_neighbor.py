@@ -20,6 +20,7 @@ from qgis.core import (
 
 from ..core.stats_engines import calculate_average_nearest_neighbor
 from ..core.analysis_diagnostics import crs_unit_warning
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -119,11 +120,14 @@ class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped += 1
                 continue
 
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                skipped += 1
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
             feedback.setProgress(int(40 * (idx / total)))

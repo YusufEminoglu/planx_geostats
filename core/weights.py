@@ -31,6 +31,27 @@ def nearest_neighbor_ids(spatial_index, point, count: int) -> list[int]:
     return list(spatial_index.nearestNeighbors(point, count))
 
 
+def geometry_is_missing_or_empty(geometry) -> bool:
+    """Return True for absent or empty QGIS geometries across provider variants."""
+    try:
+        return geometry is None or geometry.isEmpty()
+    except (AttributeError, RuntimeError, TypeError):
+        return True
+
+
+def geometry_centroid_point(geometry):
+    """Return a geometry centroid point, or None when a provider cannot produce one."""
+    if geometry_is_missing_or_empty(geometry):
+        return None
+    try:
+        centroid = geometry.centroid()
+        if geometry_is_missing_or_empty(centroid):
+            return None
+        return centroid.asPoint()
+    except (AttributeError, RuntimeError, TypeError, ValueError):
+        return None
+
+
 def build_weights_matrix(
     layer: QgsVectorLayer,
     weight_type: str,
@@ -81,7 +102,7 @@ def build_weights_matrix(
         feature = features_dict[fid]
         geom = feature.geometry()
 
-        if geom.isEmpty():
+        if geometry_is_missing_or_empty(geom):
             neighbors[fid] = []
             continue
 
@@ -94,8 +115,11 @@ def build_weights_matrix(
             for cid in candidates:
                 if cid == fid:
                     continue
+                candidate_geom = features_dict[cid].geometry()
+                if geometry_is_missing_or_empty(candidate_geom):
+                    continue
                 # If they share at least one vertex or edge
-                if geom.intersects(features_dict[cid].geometry()):
+                if geom.intersects(candidate_geom):
                     f_neighs.append(cid)
 
         elif weight_type.lower() == 'rook':
@@ -105,20 +129,29 @@ def build_weights_matrix(
             for cid in candidates:
                 if cid == fid:
                     continue
+                candidate_geom = features_dict[cid].geometry()
+                if geometry_is_missing_or_empty(candidate_geom):
+                    continue
                 # Check actual intersection geometry
-                inter = geom.intersection(features_dict[cid].geometry())
+                inter = geom.intersection(candidate_geom)
                 # Dimension >= 1 means they share a boundary line/curve, not just a vertex
-                if not inter.isEmpty() and inter.dimension() >= 1:
+                if not geometry_is_missing_or_empty(inter) and inter.dimension() >= 1:
                     f_neighs.append(cid)
 
         elif weight_type.lower() == 'knn':
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                neighbors[fid] = []
+                continue
             # Query k + 1 because QGIS nearest-neighbor results include the feature itself.
             nearest = nearest_neighbor_ids(spatial_index, centroid, k_neighbors + 1)
             f_neighs = [nid for nid in nearest if nid != fid][:k_neighbors]
 
         elif weight_type.lower() == 'distance':
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                neighbors[fid] = []
+                continue
             # Bounding box of size 2D x 2D around the centroid
             bbox = QgsRectangle(
                 centroid.x() - distance_band,
@@ -130,7 +163,12 @@ def build_weights_matrix(
             for cid in candidates:
                 if cid == fid:
                     continue
-                other_centroid = features_dict[cid].geometry().centroid().asPoint()
+                candidate_geom = features_dict[cid].geometry()
+                if geometry_is_missing_or_empty(candidate_geom):
+                    continue
+                other_centroid = geometry_centroid_point(candidate_geom)
+                if other_centroid is None:
+                    continue
                 dist = centroid.distance(other_centroid)
                 if dist <= distance_band:
                     f_neighs.append(cid)

@@ -40,7 +40,8 @@ from ..core.analysis_diagnostics import (
     residual_spatial_autocorrelation_html,
     residual_spatial_autocorrelation_summary,
 )
-from ..core.weights import build_weights_matrix
+from ..core.layer_metadata import apply_output_metadata
+from ..core.weights import build_weights_matrix, geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -199,7 +200,7 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped += 1
                 continue
 
@@ -228,7 +229,10 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             try:
                 dep_vals.append(float(y_val))
                 indep_vals.append(f_indeps)
-                pt = geom.centroid().asPoint()
+                pt = geometry_centroid_point(geom)
+                if pt is None:
+                    skipped += 1
+                    continue
                 coords_list.append([pt.x(), pt.y()])
                 valid_fids.append(f.id())
             except (ValueError, TypeError):
@@ -630,6 +634,21 @@ class GWRAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         feedback.pushInfo("Applying GWR local R-squared graduated styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats GWR local model output",
+            {
+                "y_observed": "Observed dependent-variable value used by GWR",
+                "y_predicted": "GWR predicted dependent-variable value",
+                "residual": "Observed minus predicted GWR residual",
+                "local_r2": "Local coefficient of determination for the GWR kernel",
+                "gwr_nbrs": "Local kernel support count used for this feature",
+                "coef_int": "Local intercept coefficient",
+                "se_int": "Local intercept standard error",
+                "t_int": "Local intercept t statistic",
+            },
+            self.displayName(),
+        )
 
         # Graduated style on local_r2 showing localized model performance
         ranges = []

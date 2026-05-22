@@ -29,6 +29,8 @@ from ..core.analysis_diagnostics import (
     numeric_quality_summary,
     push_diagnostics,
 )
+from ..core.sensitivity_audit import sensitivity_verdict
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -151,7 +153,7 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped += 1
                 continue
 
@@ -166,7 +168,11 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
                 continue
 
             fid = f.id()
-            centroids[fid] = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                skipped += 1
+                continue
+            centroids[fid] = centroid
             id_order.append(fid)
             values[fid] = val_f
             feedback.setProgress(int(15 * (idx / total)))
@@ -245,29 +251,12 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
         p5 = r["percentile_5"]
         p95 = r["percentile_95"]
 
-        is_sig = emp_p < 0.05
-        if is_sig:
-            verdict = "ROBUST - Statistically Significant"
-            verdict_color = "#2b9348"
-            verdict_desc = (
-                f"The observed Moran's I ({obs_i:.6f}) is statistically significant "
-                f"(empirical p = {emp_p:.4f}). This spatial pattern is highly unlikely to be "
-                f"the result of random chance and the analysis is considered robust."
-            )
-        else:
-            verdict = "SENSITIVE - Not Statistically Significant"
-            verdict_color = "#d62728"
-            verdict_desc = (
-                f"The observed Moran's I ({obs_i:.6f}) falls within the range of values "
-                f"expected under random spatial arrangement (empirical p = {emp_p:.4f}). "
-                f"The spatial pattern may be sensitive to the specific arrangement of values."
-            )
-        if neighborhood_summary["isolated"] > 0:
-            next_action = "Increase the distance band or use a data-driven threshold before relying on this robustness result."
-        elif is_sig:
-            next_action = "Treat the spatial pattern as robust enough for follow-up local analysis, then map where the pattern is concentrated."
-        else:
-            next_action = "Revisit variable choice, study area, and neighborhood definition before using this pattern as planning evidence."
+        interpretation = sensitivity_verdict(r, neighborhood_summary)
+        verdict = interpretation["verdict"]
+        verdict_color = interpretation["color"]
+        verdict_desc = interpretation["description"]
+        next_action = interpretation["next_action"]
+        caution_items = "".join(f"<li>{html.escape(item)}</li>" for item in interpretation["cautions"])
 
         # Simple ASCII histogram of simulated values
         sim_vals = r["simulated_values"]
@@ -449,6 +438,9 @@ class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
 
     <h2>Recommended Next Action</h2>
     <div class="next-action">{html.escape(next_action)}</div>
+
+    <h2>Sensitivity Cautions</h2>
+    <ul>{caution_items}</ul>
 
     {caveats_html("Attribute Randomization Sensitivity Test", neighborhood_summary, numeric_summary)}
 

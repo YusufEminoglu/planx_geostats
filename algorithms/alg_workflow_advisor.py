@@ -15,6 +15,12 @@ from qgis.core import (
     QgsProcessingParameterFileDestination,
 )
 
+from ..core.workflow_advisor import (
+    GEOMETRY_OPTIONS as WORKFLOW_GEOMETRY_OPTIONS,
+    GOAL_OPTIONS as WORKFLOW_GOAL_OPTIONS,
+    OUTCOME_OPTIONS as WORKFLOW_OUTCOME_OPTIONS,
+    personalized_recommendation,
+)
 from ._icons import algorithm_icon
 
 
@@ -26,16 +32,9 @@ class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
     HTML_REPORT = "HTML_REPORT"
     RECOMMENDATION = "RECOMMENDATION"
 
-    GOAL_OPTIONS = [
-        "Explore spatial pattern",
-        "Map hot spots or outliers",
-        "Choose a distance band",
-        "Summarize center, spread, or direction",
-        "Build an explanatory model",
-        "Compare candidate models",
-    ]
-    GEOMETRY_OPTIONS = ["Point", "Line", "Polygon or area"]
-    OUTCOME_OPTIONS = ["No outcome field", "Continuous numeric", "Binary 0/1", "Count"]
+    GOAL_OPTIONS = WORKFLOW_GOAL_OPTIONS
+    GEOMETRY_OPTIONS = WORKFLOW_GEOMETRY_OPTIONS
+    OUTCOME_OPTIONS = WORKFLOW_OUTCOME_OPTIONS
 
     def name(self) -> str:
         return "geostats_workflow_advisor"
@@ -116,7 +115,7 @@ class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
         geometry = self.parameterAsEnum(parameters, self.GEOMETRY_CONTEXT, context)
         outcome = self.parameterAsEnum(parameters, self.OUTCOME_TYPE, context)
         has_explanatory = self.parameterAsBoolean(parameters, self.HAS_EXPLANATORY, context)
-        recommendation = self._personalized_recommendation(goal, geometry, outcome, has_explanatory)
+        recommendation = personalized_recommendation(goal, geometry, outcome, has_explanatory)
 
         feedback.pushInfo("Writing PlanX GeoStats workflow advisor...")
         feedback.pushInfo("Recommended workflow: " + recommendation["summary"])
@@ -241,6 +240,13 @@ class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
         )
         recommendation_steps = "".join(f"<li>{html.escape(step)}</li>" for step in recommendation["steps"])
         recommendation_checks = "".join(f"<li>{html.escape(check)}</li>" for check in recommendation["checks"])
+        recommendation_samples = "".join(f"<li>{html.escape(sample)}</li>" for sample in recommendation["samples"])
+        recommendation_warnings = "".join(f"<li>{html.escape(warning)}</li>" for warning in recommendation["warnings"])
+        warning_block = (
+            "<h3>Combination warnings</h3><ul>" + recommendation_warnings + "</ul>"
+            if recommendation_warnings
+            else "<h3>Combination warnings</h3><p>No major mismatch was detected for this advisor selection.</p>"
+        )
         content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -270,6 +276,10 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <table>
 <thead><tr><th>Recommended sequence</th><th>Checks before trusting it</th></tr></thead>
 <tbody><tr><td><ol>{recommendation_steps}</ol></td><td><ul>{recommendation_checks}</ul></td></tr></tbody>
+</table>
+<table>
+<thead><tr><th>Bundled sample fields or layers to try</th><th>Warnings for this combination</th></tr></thead>
+<tbody><tr><td><ul>{recommendation_samples}</ul></td><td>{warning_block}</td></tr></tbody>
 </table>
 <h2>Planning Questions to Tool Sequences</h2>
 <table>
@@ -336,47 +346,3 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
             f"<td>{html.escape(third)}</td>"
             "</tr>"
         )
-
-    def _personalized_recommendation(self, goal: int, geometry: int, outcome: int, has_explanatory: bool) -> dict:
-        goal_label = self.GOAL_OPTIONS[goal] if 0 <= goal < len(self.GOAL_OPTIONS) else self.GOAL_OPTIONS[0]
-        geometry_label = self.GEOMETRY_OPTIONS[geometry] if 0 <= geometry < len(self.GEOMETRY_OPTIONS) else self.GEOMETRY_OPTIONS[2]
-        outcome_label = self.OUTCOME_OPTIONS[outcome] if 0 <= outcome < len(self.OUTCOME_OPTIONS) else self.OUTCOME_OPTIONS[1]
-
-        if goal == 2:
-            steps = ["Data Readiness Audit", "Calculate Distance Band", "Incremental Spatial Autocorrelation", "Sensitivity Test"]
-            summary = "Start with distance-band selection before running local or global spatial statistics."
-        elif goal == 3 and geometry == 1:
-            steps = ["Data Readiness Audit", "Linear Directional Mean", "Directional Distribution if converted to representative points"]
-            summary = "Use line-specific directional tools first, then summarize converted point/centroid patterns if needed."
-        elif goal == 3:
-            steps = ["Data Readiness Audit", "Mean Center", "Median Center", "Standard Distance", "Directional Distribution"]
-            summary = "Use descriptive geography tools to summarize center, spread, and directional tendency."
-        elif goal == 4 or has_explanatory:
-            if outcome == 2:
-                first_model = "Generalized Linear Regression with Logistic family"
-            elif outcome == 3:
-                first_model = "Generalized Linear Regression with Poisson family"
-            else:
-                first_model = "OLS Regression"
-            steps = ["Data Readiness Audit", first_model, "Residual spatial autocorrelation review", "GWR or MGWR", "Spatial Lag or Spatial Error Regression", "Model Comparison Matrix"]
-            summary = f"Build a transparent global baseline for a {outcome_label.lower()} outcome, then compare spatial alternatives."
-        elif goal == 5:
-            steps = ["Data Readiness Audit", "Run at least two candidate model tools", "Model Comparison Matrix", "Residual map review", "Document final model rationale"]
-            summary = "Compare candidate model outputs with fit, coverage, residual spatial pattern, and planning interpretability."
-        elif goal == 1:
-            steps = ["Data Readiness Audit", "Calculate Distance Band", "Getis-Ord Gi*", "Local Moran's I", "Bivariate Lee's L if comparing two variables"]
-            summary = "Use local statistics to locate hot spots, cold spots, and spatial outliers."
-        elif geometry == 0 and outcome == 0:
-            steps = ["Data Readiness Audit", "Average Nearest Neighbor", "Ripley's K"]
-            summary = "Use point-pattern tools because no analysis field is available."
-        else:
-            steps = ["Data Readiness Audit", "Calculate Distance Band", "Global Moran's I", "Incremental Spatial Autocorrelation", "Getis-Ord Gi* or Local Moran's I"]
-            summary = "Screen the global pattern first, then move to local statistics if spatial structure is present."
-
-        checks = [
-            f"Geometry context: {geometry_label}.",
-            f"Outcome field type: {outcome_label}.",
-            "Use a projected CRS for distance-based tools.",
-            "Review skipped records, neighborhood support, and residual diagnostics before presenting results.",
-        ]
-        return {"summary": summary, "steps": steps, "checks": checks, "goal": goal_label}

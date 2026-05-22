@@ -28,6 +28,7 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_getis_ord
 from ..core.layer_metadata import apply_output_metadata
+from ..core.local_pattern_audit import getis_ord_class_summary
 
 from ._icons import algorithm_icon
 
@@ -189,6 +190,8 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
             valid_id_order,
             star=True
         )
+        class_summary = getis_ord_class_summary(conf_bins)
+        feedback.pushInfo(class_summary["message"])
 
         if feedback.isCanceled():
             return {}

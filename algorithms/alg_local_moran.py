@@ -27,6 +27,8 @@ from qgis.core import (
 
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_local_moran
+from ..core.layer_metadata import apply_output_metadata
+from ..core.local_pattern_audit import local_moran_class_summary
 
 from ._icons import algorithm_icon
 
@@ -188,6 +190,8 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
             weights,
             valid_id_order
         )
+        class_summary = local_moran_class_summary(quadrants)
+        feedback.pushInfo(class_summary["message"])
 
         if feedback.isCanceled():
             return {}
@@ -263,6 +267,18 @@ class LocalMoranAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         feedback.pushInfo("Applying LISA cluster analysis styling...")
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats Local Moran cluster and outlier output",
+            {
+                "lisa_i": "Anselin Local Moran's I statistic",
+                "lisa_z": "Local Moran z-score",
+                "lisa_p": "Local Moran p-value",
+                "quadrant": "LISA class: HH, LL, HL, LH, or Not Significant",
+                "lisa_nbrs": "Valid neighbors used for the local statistic",
+            },
+            self.displayName(),
+        )
         categories = []
         # HH: Red, LL: Blue, HL: Pink, LH: Light Blue, Not Significant: Gray
         style_definitions = [

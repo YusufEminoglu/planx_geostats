@@ -21,6 +21,7 @@ from qgis.core import (
 
 from ..core.analysis_diagnostics import crs_unit_warning
 from ..core.stats_engines import calculate_ripleys_k
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -145,10 +146,13 @@ class RipleysKFunctionAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
             geom = feature.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped += 1
                 continue
-            point = geom.centroid().asPoint()
+            point = geometry_centroid_point(geom)
+            if point is None:
+                skipped += 1
+                continue
             x_coords.append(point.x())
             y_coords.append(point.y())
             feedback.setProgress(int(25 * (idx / total)))

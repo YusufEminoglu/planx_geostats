@@ -12,6 +12,7 @@ from qgis.core import (
     QgsFields,
     QgsPointXY,
     QgsGeometry,
+    QgsProject,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -23,6 +24,8 @@ from qgis.core import (
 )
 
 from ..core.stats_engines import calculate_standard_distance
+from ..core.layer_metadata import apply_output_metadata
+from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 
@@ -35,6 +38,10 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
     WEIGHT_FIELD = "WEIGHT_FIELD"
     MULTIPLIER = "MULTIPLIER"
     OUTPUT = "OUTPUT"
+
+    def __init__(self):
+        super().__init__()
+        self.out_layer_id = None
 
     def name(self) -> str:
         return "standard_distance"
@@ -124,11 +131,14 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom.isEmpty():
+            if geom is None or geom.isEmpty():
                 skipped_geometry += 1
                 continue
 
-            centroid = geom.centroid().asPoint()
+            centroid = geometry_centroid_point(geom)
+            if centroid is None:
+                skipped_geometry += 1
+                continue
             x_coords.append(centroid.x())
             y_coords.append(centroid.y())
 
@@ -199,6 +209,7 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
             QgsWkbTypes.Polygon,
             source.sourceCrs()
         )
+        self.out_layer_id = dest_id
 
         out_feat = QgsFeature()
         out_feat.setGeometry(QgsGeometry.fromPolygonXY([points]))
@@ -216,3 +227,26 @@ class StandardDistanceAlgorithm(QgsProcessingAlgorithm):
         feedback.setProgress(100)
 
         return {self.OUTPUT: dest_id}
+
+    def postProcessAlgorithm(self, context, feedback):
+        if self.out_layer_id is None:
+            return {}
+        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        if not layer:
+            return {}
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats standard distance output",
+            {
+                "mean_x": "Mean center X coordinate for the standard distance circle",
+                "mean_y": "Mean center Y coordinate for the standard distance circle",
+                "std_dist": "One-standard-distance radius before multiplier",
+                "multiplier": "Selected standard-distance multiplier",
+                "radius": "Output circle radius in layer map units",
+                "input_n": "Number of valid input features used",
+                "skip_geom": "Input features skipped because geometry was empty",
+                "bad_w": "Input features with null or invalid weight values",
+            },
+            self.displayName(),
+        )
+        return {}
