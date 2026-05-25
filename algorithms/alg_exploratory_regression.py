@@ -12,6 +12,7 @@ import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
+    NULL,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -211,7 +212,7 @@ class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
         return {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def _to_float(self, value):
-        if value is None or value == QVariant() or str(value) == "NULL":
+        if value is None or value == NULL or str(value) == "NULL":
             return None
         try:
             numeric = float(value)

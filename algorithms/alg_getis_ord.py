@@ -8,6 +8,7 @@ import numpy as np
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
+    NULL,
     QgsProject,
     QgsFeature,
     QgsField,
@@ -168,7 +169,7 @@ class GetisOrdAlgorithm(QgsProcessingAlgorithm):
             if feedback.isCanceled():
                 break
             val = f.attribute(field_name)
-            if val is None or val == QVariant() or str(val) == 'NULL':
+            if val is None or val == NULL or str(val) == 'NULL':
                 continue
             try:
                 y_dict[f.id()] = float(val)

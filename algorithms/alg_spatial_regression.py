@@ -11,6 +11,7 @@ import numpy as np
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
+    NULL,
     QgsProject,
     QgsFeature,
     QgsField,
@@ -169,7 +170,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
 
             # Dependent value
             y_val = f.attribute(dep_idx)
-            if y_val is None or y_val == QVariant() or str(y_val) == 'NULL':
+            if y_val is None or y_val == NULL or str(y_val) == 'NULL':
                 skipped += 1
                 continue
 
@@ -178,7 +179,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
             f_indeps = []
             for i_idx in indep_idxs:
                 x_val = f.attribute(i_idx)
-                if x_val is None or x_val == QVariant() or str(x_val) == 'NULL':
+                if x_val is None or x_val == NULL or str(x_val) == 'NULL':
                     has_null = True
                     break
                 try:

@@ -13,6 +13,7 @@ import numpy as np
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
+    NULL,
     QgsFeature,
     QgsFeatureSink,
     QgsField,
@@ -399,7 +400,7 @@ class SpatialAutoregressionAlgorithm(QgsProcessingAlgorithm):
         return libpysal, ML_Lag
 
     def _to_float(self, value):
-        if value is None or value == QVariant() or str(value) == "NULL":
+        if value is None or value == NULL or str(value) == "NULL":
             return None
         try:
             numeric = float(value)

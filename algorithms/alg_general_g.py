@@ -10,6 +10,7 @@ import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
+    NULL,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -145,7 +146,7 @@ class GeneralGAlgorithm(QgsProcessingAlgorithm):
                 continue
 
             val = f.attribute(field_idx)
-            if val is None or val == QVariant() or str(val) == 'NULL':
+            if val is None or val == NULL or str(val) == 'NULL':
                 continue
 
             try:

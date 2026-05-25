@@ -8,6 +8,7 @@ import numpy as np
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (
+    NULL,
     QgsProject,
     QgsFeature,
     QgsField,
@@ -164,7 +165,7 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
             vals = []
             for f_idx in field_idxs:
                 val = f.attribute(f_idx)
-                if val is None or val == QVariant() or str(val) == 'NULL':
+                if val is None or val == NULL or str(val) == 'NULL':
                     has_null = True
                     break
                 try:

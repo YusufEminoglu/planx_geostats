@@ -7,6 +7,7 @@ import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
+    NULL,
     QgsFeature,
     QgsField,
     QgsFields,
@@ -149,7 +150,7 @@ class MeanCenterAlgorithm(QgsProcessingAlgorithm):
             w_val = 1.0
             if has_weight:
                 val = f.attribute(weight_field)
-                if val is not None and val != QVariant() and str(val) != 'NULL':
+                if val is not None and val != NULL and str(val) != 'NULL':
                     try:
                         w_val = float(val)
                         if w_val < 0:

@@ -6,6 +6,7 @@ import logging
 import csv
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
+    NULL,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -158,7 +159,7 @@ class ExportAttributesAlgorithm(QgsProcessingAlgorithm):
                 # Add fields
                 for f_idx in field_idxs:
                     val = feature.attribute(f_idx)
-                    if val == QVariant() or val is None or str(val) == 'NULL':
+                    if val == NULL or val is None or str(val) == 'NULL':
                         row.append('')
                     else:
                         row.append(str(val))

@@ -14,6 +14,7 @@ import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
+    NULL,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -254,7 +255,7 @@ class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
                 break
             for name in field_names:
                 raw = feature.attribute(name)
-                if raw is None or raw == QVariant() or str(raw) == "NULL":
+                if raw is None or raw == NULL or str(raw) == "NULL":
                     missing[name] += 1
                     aligned_values[name].append(None)
                     continue
