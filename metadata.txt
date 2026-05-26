@@ -18,6 +18,8 @@ experimental=False
 deprecated=False
 license=GPL-3
 changelog=
+    0.9.12 - Maintenance release: refreshed Plugin Hub package after QGIS 3 and QGIS 4 compatibility validation.
+    0.9.11 - Internal stabilization patch for release pipeline alignment and package verification guards.
     0.9.10 - Beta stabilization complete: centralized optional dependency guidance, hardened output metadata persistence, added null/empty/failed-centroid geometry safeguards across centroid-based workflows, and expanded smoke coverage for release gates.
     0.9.9 - Workflow Advisor decision engine: added user-selectable analysis goal, geometry context, outcome type, explanatory-variable availability, and personalized recommended tool sequences.
     0.9.8 - Professional analytics release: added GeoStats Workflow Advisor, manual QA matrix, shared analyst guidance/report helpers, output-layer metadata aliases, VIF diagnostics, and Model Comparison rank/score auditing.
