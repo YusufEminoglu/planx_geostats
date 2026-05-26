@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.13] - 2026-05-26
+
+- GeoStats provider/runtime smoke coverage updates and QGIS 3.40+/4 compatibility validation.
+
 ## [0.9.12] - 2026-05-26
 
 - Maintenance release: refreshed Plugin Hub package after QGIS 3 and QGIS 4 compatibility validation.
