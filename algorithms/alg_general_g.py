@@ -8,7 +8,6 @@ import tempfile
 import html
 import numpy as np
 
-from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     NULL,
     QgsProcessing,

@@ -210,7 +210,7 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
             fids[i]: (labels[i], cluster_sizes[labels[i]], cluster_distances[i])
             for i in range(n)
         }
-        
+
         feedback.pushInfo("Writing clustered features to destination layer...")
         for current, f in enumerate(source.getFeatures()):
             if feedback.isCanceled():
@@ -274,10 +274,10 @@ class MultivariateClusteringAlgorithm(QgsProcessingAlgorithm):
         for idx, cluster_val in enumerate(unique_clusters):
             if cluster_val == NULL or cluster_val is None:
                 continue
-            
+
             c_val = int(cluster_val)
             color_hex = palette[c_val % len(palette)]
-            
+
             symbol = QgsSymbol.defaultSymbol(layer.geometryType())
             symbol.setColor(QColor(color_hex))
             symbol.setOpacity(0.85)

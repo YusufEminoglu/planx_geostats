@@ -215,10 +215,10 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
         # Rank candidates (targets get Rank 0)
         rankings = np.zeros(n, dtype=int)
         candidate_indices = [i for i in range(n) if not is_target_list[i]]
-        
+
         # Sort candidate indices by score ascending (smaller score = more similar)
         sorted_candidates = sorted(candidate_indices, key=lambda idx: scores[idx])
-        
+
         for rank, idx in enumerate(sorted_candidates, start=1):
             rankings[idx] = rank
         candidate_count = len(candidate_indices)
@@ -256,7 +256,7 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
 
         # Write ranked features
         results_map = {fids[i]: i for i in range(n)}
-        
+
         feedback.pushInfo("Writing ranked candidates to destination layer...")
         for current, f in enumerate(source.getFeatures()):
             if feedback.isCanceled():
@@ -310,7 +310,7 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
         # Graduated symbol renderer on sim_rank (Top similarity)
         # Ranks: Target is 0, top candidates are 1..10, etc.
         ranges = []
-        
+
         # Color palette: Target is dark grey, candidates scale from high similarity (green) to low (red)
         symbol_target = QgsSymbol.defaultSymbol(layer.geometryType())
         symbol_target.setColor(QColor("#2d3748"))  # Target color

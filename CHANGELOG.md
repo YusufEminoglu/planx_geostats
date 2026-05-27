@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.14] - 2026-05-27
+
+- Code quality and Hub submission hygiene.
+  - Added setup.cfg (flake8: W503, E203 disabled; max-line-length=120).
+  - Fixed 21 flake8 issues across 15 files: unused QVariant imports, missing blank lines, continuation indentation hoisted from f-strings, trailing whitespace stripped.
+  - All 42 Python files compile cleanly. Zero non-E501 flake8 issues.
+
 ## [0.9.13] - 2026-05-26
 
 - GeoStats provider/runtime smoke coverage updates and QGIS 3.40+/4 compatibility validation.

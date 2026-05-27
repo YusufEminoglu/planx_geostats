@@ -140,11 +140,11 @@ def calculate_mean_center(
     """Calculates the mean center of coordinate pairs."""
     if weights is None or len(weights) == 0:
         return float(np.mean(x_coords)), float(np.mean(y_coords))
-    
+
     total_weight = np.sum(weights)
     if total_weight == 0:
         return float(np.mean(x_coords)), float(np.mean(y_coords))
-        
+
     mean_x = np.sum(x_coords * weights) / total_weight
     mean_y = np.sum(y_coords * weights) / total_weight
     return float(mean_x), float(mean_y)
@@ -186,7 +186,7 @@ def calculate_sde(
     """
     n = len(x_coords)
     mean_x, mean_y = calculate_mean_center(x_coords, y_coords, weights)
-    
+
     if n <= 2:
         return mean_x, mean_y, 0.0, 0.0, 0.0
 
@@ -293,12 +293,12 @@ def calculate_local_moran(
         # Variance under randomization (Anselin 1995 formula)
         # Var(Ii) = w_i2 * (n - b2) / (n - 1) + (w_i^2 - w_i2) * (2b2 - n) / ((n - 1)(n - 2)) - E(Ii)^2
         var_term1 = (w_sum2 * (n - b2)) / (n - 1)
-        
+
         if n > 2:
             var_term2 = ((w_sum**2 - w_sum2) * (2*b2 - n)) / ((n - 1) * (n - 2))
         else:
             var_term2 = 0.0
-            
+
         var_Ii = var_term1 + var_term2 - (E_Ii ** 2)
 
         if var_Ii > 0:
@@ -338,7 +338,7 @@ def _chi2_sf_approx(x: float, df: int) -> float:
         return 1.0
     if df == 2:
         return float(math.exp(-0.5 * x))  # Exact for df=2
-    
+
     # Wilson-Hilferty approximation: Chi2 to normal
     d = float(df)
     z = ((x / d) ** (1.0 / 3.0) - (1.0 - 2.0 / (9.0 * d))) / math.sqrt(2.0 / (9.0 * d))
@@ -369,10 +369,10 @@ def calculate_ols(
     """
     n = len(y)
     p = X_data.shape[1]
-    
+
     # Add intercept column
     X = np.column_stack((np.ones(n), X_data))
-    
+
     # Solve beta = (X.T * X)^-1 * X.T * Y
     try:
         xtx_inv = np.linalg.pinv(X.T @ X)
@@ -386,19 +386,19 @@ def calculate_ols(
     residuals = y - y_pred
     ss_res = np.sum(residuals ** 2)
     ss_tot = np.sum((y - np.mean(y)) ** 2)
-    
+
     # Variance of residuals
     df_err = n - p - 1
     if df_err <= 0:
         raise ValueError(f"Sample size ({n}) must be greater than number of variables ({p} + intercept).")
-        
+
     s2 = ss_res / df_err
     std_residuals = residuals / math.sqrt(s2) if s2 > 0 else np.zeros(n)
-    
+
     # Standard Errors of Coefficients
     cov_beta = s2 * xtx_inv
     se_beta = np.sqrt(np.maximum(0.0, np.diagonal(cov_beta)))
-    
+
     # t-statistics and p-values
     t_stats = np.zeros(p + 1)
     p_vals = np.ones(p + 1)
@@ -430,7 +430,7 @@ def calculate_ols(
     g = residuals ** 2
     g_mean = np.mean(g)
     g_tot = np.sum((g - g_mean) ** 2)
-    
+
     bp_stat, bp_p = 0.0, 1.0
     if g_tot > 0:
         try:
@@ -565,7 +565,7 @@ def calculate_global_moran(
     # Variance under randomization
     num_var = n * ((n ** 2 - 3 * n + 3) * S1 - n * S2 + 3 * S0 ** 2) - D * ((n ** 2 - n) * S1 - 2 * n * S2 + 6 * S0 ** 2)
     den_var = (n - 1) * (n - 2) * (n - 3) * S0 ** 2
-    
+
     variance = num_var / den_var - (expected_i ** 2) if den_var > 0 else 0.0
     if variance > 0:
         z_score = (moran_i - expected_i) / math.sqrt(variance)
@@ -1053,14 +1053,14 @@ def calculate_kmeans(
     for c_idx in range(1, k_clusters):
         # Distance squared to closest centroid
         dists_sq = np.min([np.sum((z_data - centroids[c]) ** 2, axis=1) for c in range(c_idx)], axis=0)
-        
+
         # Avoid division by zero if all points are at the centroids
         sum_dists = np.sum(dists_sq)
         if sum_dists == 0:
             probs = np.ones(n) / n
         else:
             probs = dists_sq / sum_dists
-            
+
         idx = rng.choice(n, p=probs)
         centroids[c_idx] = z_data[idx]
 

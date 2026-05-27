@@ -26,6 +26,7 @@ from ..dependencies import (
 
 from ._icons import algorithm_icon
 
+
 class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
     HTML_REPORT = "HTML_REPORT"
 

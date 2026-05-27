@@ -185,21 +185,21 @@ class SDEAlgorithm(QgsProcessingAlgorithm):
         num_points = 72  # Every 5 degrees for a smooth polygon
         for i in range(num_points):
             alpha = (i / num_points) * 2.0 * np.pi
-            
+
             # Point on ellipse relative to center (unrotated)
             x_ell = semi_major * np.cos(alpha)
             y_ell = semi_minor * np.sin(alpha)
-            
+
             # Rotate
             x_rot = x_ell * np.cos(angle_rad) - y_ell * np.sin(angle_rad)
             y_rot = x_ell * np.sin(angle_rad) + y_ell * np.cos(angle_rad)
-            
+
             # Translate to mean center
             x_final = x_rot + mean_x
             y_final = y_rot + mean_y
-            
+
             points.append(QgsPointXY(x_final, y_final))
-            
+
         points.append(points[0])  # Close the ring
 
         # Prepare fields

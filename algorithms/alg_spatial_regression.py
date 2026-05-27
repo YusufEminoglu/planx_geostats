@@ -157,7 +157,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
                 raise QgsProcessingException(f"Independent field '{name}' not found.")
 
         feedback.pushInfo("Extracting numeric values and filtering missing data...")
-        
+
         dep_vals = []
         indep_vals = []
         valid_fids = []
@@ -199,7 +199,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
             except (ValueError, TypeError):
                 skipped += 1
                 continue
-            
+
             feedback.setProgress(int(20 * (idx / total)))
 
         n = len(dep_vals)
@@ -227,7 +227,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
         geom_type = source.geometryType()
         res_weight_type = "queen" if geom_type == QgsWkbTypes.PolygonGeometry else "knn"
         feedback.pushInfo(f"Building {res_weight_type} weights matrix for residual spatial autocorrelation test...")
-        
+
         neighbors, weights, id_order, _ = build_weights_matrix(
             source,
             res_weight_type,
@@ -301,10 +301,10 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
 
         jb_badge = '<span class="badge badge-success">Normally Distributed</span>' if jb_p >= 0.05 else '<span class="badge badge-danger">Non-Normal Residuals</span>'
         bp_badge = '<span class="badge badge-success">Homoskedastic</span>' if bp_p >= 0.05 else '<span class="badge badge-warning">Heteroskedastic</span>'
-        
+
         moran_status = "No Significant Autocorrelation"
         moran_class = "badge-success"
-        if abs(moran_i) > 0.15: # Proxy threshold
+        if abs(moran_i) > 0.15:  # Proxy threshold
             moran_status = "Autocorrelated Residuals"
             moran_class = "badge-danger"
         moran_badge = f'<span class="badge {moran_class}">{moran_status}</span>'
@@ -316,7 +316,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
             se = res["std_errors"][i]
             t_stat = res["t_statistics"][i]
             p_val = res["p_values"][i]
-            
+
             p_formatted = f"{p_val:.6f}" if p_val >= 0.0001 else "< 0.0001"
             p_class = "significant" if p_val < 0.05 else "non-significant"
 
@@ -329,6 +329,26 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
                 <td>{p_formatted}</td>
             </tr>"""
 
+        guidance_html = analyst_guidance_html(
+            "OLS Regression",
+            "OLS estimates a single global relationship between the dependent variable and selected predictors.",
+            [
+                "Complete records are sufficient relative to the number of predictors.",
+                "VIF and condition-number checks do not indicate severe multicollinearity.",
+                "Residuals are not strongly spatially patterned and diagnostics are acceptable.",
+            ],
+            [
+                "High VIF, high condition number, or unstable coefficient signs.",
+                "Heteroskedastic or non-normal residuals that affect inference.",
+                "Residual clusters that suggest missing spatial processes or local variation.",
+            ],
+            [
+                "Model Comparison Matrix",
+                "GWR or MGWR when relationships vary across space",
+                "Spatial Lag or Spatial Error Regression when residual dependence remains",
+            ],
+            "Use OLS as the transparent baseline model. Treat coefficients as planning evidence only when diagnostics, residual maps, and domain theory agree.",
+        )
         html_content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -528,31 +548,12 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
 
     {regression_quality_html(model_quality)}
 
-    {analyst_guidance_html(
-        "OLS Regression",
-        "OLS estimates a single global relationship between the dependent variable and selected predictors.",
-        [
-            "Complete records are sufficient relative to the number of predictors.",
-            "VIF and condition-number checks do not indicate severe multicollinearity.",
-            "Residuals are not strongly spatially patterned and diagnostics are acceptable.",
-        ],
-        [
-            "High VIF, high condition number, or unstable coefficient signs.",
-            "Heteroskedastic or non-normal residuals that affect inference.",
-            "Residual clusters that suggest missing spatial processes or local variation.",
-        ],
-        [
-            "Model Comparison Matrix",
-            "GWR or MGWR when relationships vary across space",
-            "Spatial Lag or Spatial Error Regression when residual dependence remains",
-        ],
-        "Use OLS as the transparent baseline model. Treat coefficients as planning evidence only when diagnostics, residual maps, and domain theory agree."
-    )}
+    {guidance_html}
 
     <h2>Recommended Analyst Action</h2>
     <div class="note">
-        Review coefficient signs, p-values, residual spatial autocorrelation, and model-quality warnings together. 
-        If residuals remain spatially autocorrelated, the model is likely missing a spatial process, neighborhood effect, 
+        Review coefficient signs, p-values, residual spatial autocorrelation, and model-quality warnings together.
+        If residuals remain spatially autocorrelated, the model is likely missing a spatial process, neighborhood effect,
         or scale-specific explanatory variable; consider revising the specification before using coefficients for planning decisions.
     </div>
 
@@ -584,7 +585,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
             },
             self.displayName(),
         )
-        
+
         # 7-class diverging standard deviation classes
         ranges = []
         range_definitions = [

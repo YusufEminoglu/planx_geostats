@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import csv
-from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     NULL,
     QgsProcessing,

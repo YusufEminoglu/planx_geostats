@@ -21,6 +21,7 @@ from qgis.core import (
 
 from ._icons import algorithm_icon
 
+
 class SampleDataGuideAlgorithm(QgsProcessingAlgorithm):
     LOAD_IN_PROJECT = "LOAD_IN_PROJECT"
     DATASET_TO_LOAD = "DATASET_TO_LOAD"

@@ -29,6 +29,7 @@ from ..dependencies import (
 
 from ._icons import algorithm_icon
 
+
 class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
     INSTALL_MODE = "INSTALL_MODE"
     CONFIRM = "CONFIRM"
