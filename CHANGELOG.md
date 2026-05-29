@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.15] - 2026-05-30
+
+- Revised plugin icon to SVG
+
 ## [0.9.14] - 2026-05-27
 
 - Code quality and Hub submission hygiene.
