@@ -16,6 +16,7 @@ from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
 from .algorithms.alg_spatial_autoregression import SpatialAutoregressionAlgorithm
 from .algorithms.alg_spatial_error_regression import SpatialErrorRegressionAlgorithm
 from .algorithms.alg_global_moran import GlobalMoranAlgorithm
+from .algorithms.alg_spatial_gini import SpatialGiniAlgorithm
 from .algorithms.alg_incremental_autocorrelation import IncrementalAutocorrelationAlgorithm
 from .algorithms.alg_ripleys_k import RipleysKFunctionAlgorithm
 from .algorithms.alg_average_nearest_neighbor import AverageNearestNeighborAlgorithm
@@ -72,6 +73,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
 
         # 02 | Urban Pattern Scan
         self.addAlgorithm(GlobalMoranAlgorithm())
+        self.addAlgorithm(SpatialGiniAlgorithm())
         self.addAlgorithm(GeneralGAlgorithm())
         self.addAlgorithm(IncrementalAutocorrelationAlgorithm())
         self.addAlgorithm(RipleysKFunctionAlgorithm())

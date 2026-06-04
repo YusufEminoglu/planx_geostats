@@ -136,6 +136,13 @@ class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
                 "If significant, continue to Local Moran's I or Getis-Ord Gi* to map where the pattern occurs.",
             ),
             (
+                "Is inequality spatially organized or mostly aspatial?",
+                "Spatial Inequality (Gini and Spatial Gini); Global Moran's I",
+                "One non-negative numeric field and a defensible neighbor definition.",
+                "Classic Gini, neighbor and non-neighbor components, spatial Gini share, and polarization.",
+                "Use Gi* or Local Moran's I to locate the places carrying the unequal burden or advantage.",
+            ),
+            (
                 "Where are statistically strong hot and cold spots?",
                 "Getis-Ord Gi*; Local Moran's I",
                 "Numeric field and a neighborhood rule that avoids too many isolated or fully connected features.",
@@ -194,7 +201,8 @@ class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
         ]
         selection_rows = [
             ("Point pattern without attributes", "Average Nearest Neighbor; Ripley's K", "Use ANN for one-distance summary; use Ripley's K to inspect pattern across multiple distances."),
-            ("Numeric value over polygons or points", "Global Moran's I; General G; Incremental Spatial Autocorrelation", "Use global tools to confirm whether a variable has spatial structure before mapping local clusters."),
+            ("Numeric value over polygons or points", "Global Moran's I; General G; Spatial Gini; Incremental Spatial Autocorrelation", "Use global tools to confirm whether a variable has spatial structure or spatially organized inequality."),
+            ("Non-negative equity or burden indicator", "Spatial Inequality (Gini and Spatial Gini)", "Use when the question is how unequal the distribution is and whether distant places differ more than neighbors."),
             ("Local clusters and outliers", "Getis-Ord Gi*; Local Moran's I; Bivariate Lee's L", "Use Gi* for hot/cold intensity, Local Moran for high-high/low-low/outlier classes, and Lee's L for paired-variable association."),
             ("Descriptive geography", "Mean Center; Median Center; Central Feature; Standard Distance; Directional Distribution; Linear Directional Mean", "Use these for concise spatial summaries, scenario comparisons, and directional trend communication."),
             ("Explanatory model", "OLS; GLR; Exploratory Regression", "Use OLS for continuous outcomes, logistic GLR for binary outcomes, Poisson GLR for counts, and Exploratory Regression for candidate screening."),
@@ -218,6 +226,7 @@ class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
         ]
         recipe_rows = [
             ("Urban heat clustering", "Izmir sample", "median_land_surface_temp_c; median_heat_island_index", "Data Readiness Audit -> Incremental Autocorrelation -> Global Moran's I -> Getis-Ord Gi*"),
+            ("Spatial equity screen", "Izmir sample", "park_m2_per_capita or senior_65plus_population", "Data Readiness Audit -> Spatial Inequality (Gini and Spatial Gini) -> Local Moran's I"),
             ("Green cooling relationship", "Izmir sample", "median_land_surface_temp_c with median_ndvi, park_m2_per_capita, tree_canopy_coverage_pct", "OLS -> GWR -> residual spatial autocorrelation -> Model Comparison Matrix"),
             ("Vulnerable population concentration", "Izmir sample", "senior_65plus_population; child_population", "Global Moran's I -> Local Moran's I -> Getis-Ord Gi*"),
             ("Count model smoke test", "Synthetic QA fixture", "count_target with explanatory_a and explanatory_b", "Generalized Linear Regression with Poisson family"),

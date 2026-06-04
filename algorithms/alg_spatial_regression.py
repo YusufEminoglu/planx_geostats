@@ -224,7 +224,7 @@ class SpatialRegressionAlgorithm(QgsProcessingAlgorithm):
             feedback.pushWarning(risk)
 
         # Build weights matrix dynamically for spatial autocorrelation diagnostics of residuals
-        geom_type = source.geometryType()
+        geom_type = QgsWkbTypes.geometryType(source.wkbType())
         res_weight_type = "queen" if geom_type == QgsWkbTypes.PolygonGeometry else "knn"
         feedback.pushInfo(f"Building {res_weight_type} weights matrix for residual spatial autocorrelation test...")
 

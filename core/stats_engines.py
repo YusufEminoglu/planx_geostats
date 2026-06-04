@@ -578,6 +578,167 @@ def calculate_global_moran(
     return float(moran_i), float(expected_i), float(variance), float(z_score), float(p_value)
 
 
+def calculate_spatial_gini(
+    values: np.ndarray,
+    neighbors: dict[int, list[int]],
+    id_order: list[int],
+    permutations: int = 99,
+    seed: int = 42,
+) -> dict:
+    """Calculate classic Gini plus Rey-Smith style spatial Gini decomposition.
+
+    The decomposition splits the pairwise absolute-difference numerator into
+    neighbor and non-neighbor components. Components use the same denominator
+    as the classic Gini, so neighbor_component + non_neighbor_component == gini.
+    """
+    y = np.array(values, dtype=float)
+    finite = np.isfinite(y)
+    if not np.all(finite):
+        y = y[finite]
+        id_order = [fid for fid, ok in zip(id_order, finite) if ok]
+
+    n = int(len(y))
+    if n < 2:
+        raise ValueError("Spatial Gini requires at least 2 finite numeric observations.")
+    if np.any(y < 0.0):
+        raise ValueError("Gini coefficients require non-negative values.")
+
+    mean_value = float(np.mean(y))
+    pair_indices, neighbor_flags = _spatial_gini_pair_index(neighbors, id_order)
+    total_pair_count = int(len(pair_indices))
+    if total_pair_count == 0:
+        raise ValueError("Spatial Gini requires at least one observation pair.")
+
+    denominator = float((n ** 2) * mean_value)
+    pair_sum, neighbor_sum, non_neighbor_sum = _spatial_gini_pair_sums(y, pair_indices, neighbor_flags)
+
+    gini = pair_sum / denominator if denominator > 0.0 else 0.0
+    neighbor_component = neighbor_sum / denominator if denominator > 0.0 else 0.0
+    non_neighbor_component = non_neighbor_sum / denominator if denominator > 0.0 else 0.0
+
+    neighbor_pair_count = int(sum(1 for flag in neighbor_flags if flag))
+    non_neighbor_pair_count = total_pair_count - neighbor_pair_count
+    neighbor_avg_diff = neighbor_sum / neighbor_pair_count if neighbor_pair_count else None
+    non_neighbor_avg_diff = non_neighbor_sum / non_neighbor_pair_count if non_neighbor_pair_count else None
+    neighbor_share = neighbor_sum / pair_sum if pair_sum > 0.0 else 0.0
+    non_neighbor_share = non_neighbor_sum / pair_sum if pair_sum > 0.0 else 0.0
+    polarization = None
+    if (
+        neighbor_avg_diff is not None
+        and non_neighbor_avg_diff is not None
+        and neighbor_avg_diff > 0.0
+    ):
+        polarization = non_neighbor_avg_diff / neighbor_avg_diff
+
+    result = {
+        "n": n,
+        "mean": mean_value,
+        "sum": float(np.sum(y)),
+        "gini": float(gini),
+        "pair_abs_sum": float(pair_sum),
+        "neighbor_abs_sum": float(neighbor_sum),
+        "non_neighbor_abs_sum": float(non_neighbor_sum),
+        "neighbor_component": float(neighbor_component),
+        "non_neighbor_component": float(non_neighbor_component),
+        "neighbor_share": float(neighbor_share),
+        "non_neighbor_share": float(non_neighbor_share),
+        "spatial_gini": float(non_neighbor_share),
+        "neighbor_pair_count": neighbor_pair_count,
+        "non_neighbor_pair_count": non_neighbor_pair_count,
+        "total_pair_count": total_pair_count,
+        "neighbor_avg_diff": neighbor_avg_diff,
+        "non_neighbor_avg_diff": non_neighbor_avg_diff,
+        "polarization": polarization,
+        "permutations": int(max(0, permutations)),
+        "expected_non_neighbor_component": None,
+        "std_non_neighbor_component": None,
+        "z_non_neighbor_component": None,
+        "p_sim": None,
+        "p_low_sim": None,
+        "expected_polarization": 1.0 if polarization is not None else None,
+        "polarization_p_sim": None,
+    }
+
+    if permutations <= 0 or non_neighbor_pair_count == 0 or pair_sum <= 0.0:
+        return result
+
+    rng = np.random.default_rng(seed)
+    sim_non_neighbor = np.zeros(int(permutations), dtype=float)
+    sim_polarization = []
+    for idx in range(int(permutations)):
+        permuted = rng.permutation(y)
+        sim_pair_sum, sim_neighbor_sum, sim_non_neighbor_sum = _spatial_gini_pair_sums(
+            permuted,
+            pair_indices,
+            neighbor_flags,
+        )
+        if sim_pair_sum > 0.0:
+            sim_non_neighbor[idx] = sim_non_neighbor_sum / denominator
+        if neighbor_pair_count and non_neighbor_pair_count and sim_neighbor_sum > 0.0:
+            sim_neighbor_avg = sim_neighbor_sum / neighbor_pair_count
+            sim_non_neighbor_avg = sim_non_neighbor_sum / non_neighbor_pair_count
+            sim_polarization.append(sim_non_neighbor_avg / sim_neighbor_avg)
+
+    expected = float(np.mean(sim_non_neighbor))
+    std = float(np.std(sim_non_neighbor))
+    result["expected_non_neighbor_component"] = expected
+    result["std_non_neighbor_component"] = std
+    result["z_non_neighbor_component"] = (
+        float((non_neighbor_component - expected) / std) if std > 0.0 else 0.0
+    )
+    result["p_sim"] = float((int(np.sum(sim_non_neighbor >= non_neighbor_component)) + 1) / (permutations + 1))
+    result["p_low_sim"] = float((int(np.sum(sim_non_neighbor <= non_neighbor_component)) + 1) / (permutations + 1))
+
+    if polarization is not None and sim_polarization:
+        sim_pol = np.array(sim_polarization, dtype=float)
+        result["polarization_p_sim"] = float((int(np.sum(sim_pol >= polarization)) + 1) / (len(sim_pol) + 1))
+
+    return result
+
+
+def _spatial_gini_pair_index(
+    neighbors: dict[int, list[int]],
+    id_order: list[int],
+) -> tuple[list[tuple[int, int]], list[bool]]:
+    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+    neighbor_pairs = set()
+    for fid in id_order:
+        i = id_to_idx[fid]
+        for nid in neighbors.get(fid, []):
+            if nid not in id_to_idx or nid == fid:
+                continue
+            j = id_to_idx[nid]
+            neighbor_pairs.add((i, j) if i < j else (j, i))
+
+    pair_indices: list[tuple[int, int]] = []
+    neighbor_flags: list[bool] = []
+    n = len(id_order)
+    for i in range(n - 1):
+        for j in range(i + 1, n):
+            pair = (i, j)
+            pair_indices.append(pair)
+            neighbor_flags.append(pair in neighbor_pairs)
+    return pair_indices, neighbor_flags
+
+
+def _spatial_gini_pair_sums(
+    y: np.ndarray,
+    pair_indices: list[tuple[int, int]],
+    neighbor_flags: list[bool],
+) -> tuple[float, float, float]:
+    total_sum = 0.0
+    neighbor_sum = 0.0
+    non_neighbor_sum = 0.0
+    for (i, j), is_neighbor in zip(pair_indices, neighbor_flags):
+        diff = abs(float(y[i]) - float(y[j]))
+        total_sum += diff
+        if is_neighbor:
+            neighbor_sum += diff
+        else:
+            non_neighbor_sum += diff
+    return total_sum, neighbor_sum, non_neighbor_sum
+
+
 def calculate_average_nearest_neighbor(
     x: np.ndarray,
     y: np.ndarray,

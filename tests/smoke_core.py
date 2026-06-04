@@ -73,6 +73,39 @@ def test_global_moran_zero_variance_is_graceful() -> None:
     assert result == (0.0, -1.0 / 3.0, 0.0, 0.0, 1.0)
 
 
+def test_spatial_gini_decomposition_matches_pairwise_definition() -> None:
+    neighbors = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2]}
+    result = stats.calculate_spatial_gini(
+        np.array([1.0, 2.0, 4.0, 8.0]),
+        neighbors,
+        [0, 1, 2, 3],
+        permutations=19,
+        seed=123,
+    )
+    assert abs(result["gini"] - (23.0 / 60.0)) < 1e-12
+    assert abs(result["neighbor_component"] - (7.0 / 60.0)) < 1e-12
+    assert abs(result["non_neighbor_component"] - (16.0 / 60.0)) < 1e-12
+    assert abs(result["spatial_gini"] - (16.0 / 23.0)) < 1e-12
+    assert abs(result["polarization"] - (16.0 / 7.0)) < 1e-12
+    assert result["neighbor_pair_count"] == 3
+    assert result["non_neighbor_pair_count"] == 3
+    assert 0.0 <= result["p_sim"] <= 1.0
+
+
+def test_spatial_gini_zero_inequality_is_graceful() -> None:
+    result = stats.calculate_spatial_gini(
+        np.array([0.0, 0.0, 0.0]),
+        {0: [1], 1: [0, 2], 2: [1]},
+        [0, 1, 2],
+        permutations=9,
+    )
+    assert result["gini"] == 0.0
+    assert result["neighbor_component"] == 0.0
+    assert result["non_neighbor_component"] == 0.0
+    assert result["spatial_gini"] == 0.0
+    assert result["p_sim"] is None
+
+
 def test_general_g_non_contiguous_ids() -> None:
     neighbors = {10: [20], 20: [10, 50], 50: [20, 90], 90: [50]}
     weights = {10: [1.0], 20: [1.0, 1.0], 50: [1.0, 1.0], 90: [1.0]}
@@ -507,6 +540,7 @@ def test_optional_dependency_error_guides_qgis_toolbox_installation() -> None:
         "Install / Update GeoStats Libraries",
         "explicit approval",
         "Restart QGIS",
+        "numba",
         "Import error",
     ]
     missing = [term for term in required_terms if term not in message]
@@ -516,6 +550,8 @@ def test_optional_dependency_error_guides_qgis_toolbox_installation() -> None:
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
+    test_spatial_gini_decomposition_matches_pairwise_definition()
+    test_spatial_gini_zero_inequality_is_graceful()
     test_general_g_non_contiguous_ids()
     test_sparse_neighbor_summary()
     test_filter_weights_to_valid_ids_restandardizes_rows()

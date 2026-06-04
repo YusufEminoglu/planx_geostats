@@ -255,7 +255,7 @@ class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
 
     def _residual_spatial_diagnostic(self, source, valid_fids, residuals, feedback):
         try:
-            weight_type = "queen" if source.geometryType() == QgsWkbTypes.PolygonGeometry else "knn"
+            weight_type = "queen" if QgsWkbTypes.geometryType(source.wkbType()) == QgsWkbTypes.PolygonGeometry else "knn"
             feedback.pushInfo(f"Building {weight_type} weights for GLR residual spatial autocorrelation diagnostics...")
             neighbors, _, _, _ = build_weights_matrix(source, weight_type, k_neighbors=8, feedback=feedback)
             filtered_neighbors, filtered_weights, filtered_ids = filter_weights_to_valid_ids(neighbors, valid_fids)

@@ -17,6 +17,7 @@ METADATA = ROOT / "metadata.txt"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
 QA_MATRIX = ROOT / "QA_MANUAL_TEST_MATRIX.md"
+PLUGIN_ICON = ROOT / "icons" / "icon.png"
 RELEASE_ZIP_VERIFIER = ROOT.parent / "packaging" / "verify_release_zip.py"
 RELEASE_ZIP_VERIFIER_TEST = ROOT.parent / "packaging" / "test_verify_release_zip.py"
 ALGORITHMS = ROOT / "algorithms"
@@ -31,7 +32,7 @@ EXPECTED_GROUPS = {
     "05 | Models and Scenarios",
 }
 
-MIN_EXPECTED_ALGORITHM_COUNT = 32
+MIN_EXPECTED_ALGORITHM_COUNT = 33
 
 
 def _module_tree(path: Path) -> ast.Module:
@@ -155,6 +156,17 @@ def test_every_algorithm_has_unique_png_icon() -> None:
         icon_hashes[checksum] = path.name
 
 
+def test_plugin_metadata_and_provider_use_packaged_png_icon() -> None:
+    metadata_text = METADATA.read_text(encoding="utf-8")
+    provider_source = PROVIDER.read_text(encoding="utf-8")
+
+    assert "icon=icons/icon.png" in metadata_text, "metadata.txt should point to the packaged PNG plugin icon"
+    assert "icon=icons/icon.svg" not in metadata_text, "metadata.txt should not point QGIS Hub to the SVG source icon"
+    assert PLUGIN_ICON.exists(), "Root plugin PNG icon should be packaged"
+    assert _png_dimensions(PLUGIN_ICON) == (512, 512), "Root plugin icon should be a 512x512 PNG"
+    assert '"icons", "icon.png"' in provider_source, "Processing provider should use the packaged PNG plugin icon"
+
+
 def _png_dimensions(path: Path) -> tuple[int, int]:
     data = path.read_bytes()
     assert data.startswith(b"\x89PNG\r\n\x1a\n"), f"Not a PNG file: {path.name}"
@@ -262,6 +274,7 @@ def test_workflow_advisor_covers_core_decision_sections() -> None:
         "Interpretation Discipline",
         "Data Readiness Audit",
         "Global Moran's I",
+        "Spatial Inequality (Gini and Spatial Gini)",
         "Getis-Ord Gi*",
         "Local Moran's I",
         "GWR; MGWR",
@@ -342,6 +355,26 @@ def test_global_moran_uses_core_interpretation_helper() -> None:
     ]
     missing = [term for term in required_terms if term not in core_source + "\n" + algorithm_source]
     assert not missing, f"Global Moran interpretation helper should cover report terms: {missing}"
+
+
+def test_spatial_gini_uses_core_decomposition_helper() -> None:
+    algorithm = ALGORITHMS / "alg_spatial_gini.py"
+    stats_core = ROOT / "core" / "stats_engines.py"
+    assert algorithm.exists(), "Spatial Gini algorithm should exist"
+
+    combined = algorithm.read_text(encoding="utf-8") + "\n" + stats_core.read_text(encoding="utf-8")
+    required_terms = [
+        "calculate_spatial_gini",
+        "Spatial Inequality (Gini and Spatial Gini)",
+        "Rey and Smith",
+        "neighbor_component",
+        "non_neighbor_component",
+        "spatial_gini",
+        "polarization",
+        "Permutation inference",
+    ]
+    missing = [term for term in required_terms if term not in combined]
+    assert not missing, f"Spatial Gini should expose decomposition and interpretation terms: {missing}"
 
 
 def test_local_pattern_tools_use_core_summary_and_metadata_helpers() -> None:
@@ -482,6 +515,7 @@ def test_manual_qa_matrix_covers_release_workflows() -> None:
         "GeoStats Workflow Advisor",
         "Data Readiness Audit",
         "Global Moran's I",
+        "Spatial Inequality (Gini and Spatial Gini)",
         "Getis-Ord Gi*",
         "Linear Directional Mean",
         "Center/direction output metadata",
@@ -507,6 +541,7 @@ def test_readme_documents_core_decision_helpers_and_release_zip_gate() -> None:
         "model-comparison scoring",
         "Monte Carlo sensitivity interpretation",
         "Global Moran's I report interpretation",
+        "Spatial Gini inequality decomposition",
         "developer-only paths are absent",
         "algorithm icons are present",
         "Processing-only",
@@ -585,6 +620,7 @@ def run_all() -> None:
     test_every_algorithm_file_is_registered_once()
     test_algorithm_catalog_has_stable_ids_and_groups()
     test_every_algorithm_has_unique_png_icon()
+    test_plugin_metadata_and_provider_use_packaged_png_icon()
     test_plugin_ui_surface_stays_processing_only()
     test_html_module_is_not_shadowed_in_report_writers()
     test_direct_polyline_polygon_calls_have_multipart_guard()
@@ -593,6 +629,7 @@ def run_all() -> None:
     test_model_comparison_uses_core_audit_helper()
     test_sensitivity_test_uses_core_audit_helper()
     test_global_moran_uses_core_interpretation_helper()
+    test_spatial_gini_uses_core_decomposition_helper()
     test_local_pattern_tools_use_core_summary_and_metadata_helpers()
     test_cluster_similarity_outputs_apply_metadata_aliases()
     test_model_output_layers_apply_metadata_aliases()

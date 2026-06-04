@@ -17,6 +17,7 @@ Use this matrix before a public upload when changes affect algorithms, reports, 
 |---|---|---|---|---|
 | Calculate Distance Band | synthetic `qa_points_grid` | K=5 | HTML report with neighbor-distance summary. | Non-projected unit warning missing or impossible distance values. |
 | Global Moran's I | Izmir sample | `median_land_surface_temp_c`, KNN=8 | HTML report with Moran's I, z, p, neighborhood diagnostics. | HTML failure, isolated count mismatch, no CRS/neighborhood diagnostics. |
+| Spatial Inequality (Gini and Spatial Gini) | Izmir sample | non-negative field such as `park_m2_per_capita`, KNN=8, permutations=99 | HTML report with classic Gini, neighbor/non-neighbor components, spatial Gini share, polarization, and optional CSV/JSON outputs. | Accepts negative values silently, components do not add to Gini, permutation p-value missing when requested, or neighbor diagnostics absent. |
 | Incremental Spatial Autocorrelation | Izmir sample | `median_land_surface_temp_c`, start=500, increment=500, n=10 | Peak distance reported and HTML generated. | `html` shadowing crash or missing peak support summary. |
 | General G | Izmir sample | `median_heat_island_index`, KNN=8 | High/low clustering report with caveats. | Fully connected or isolated warning absent when applicable. |
 | Getis-Ord Gi* | Izmir sample | `median_land_surface_temp_c`, KNN=8 | Output fields `gi_zscore`, `gi_pvalue`, `gi_conf`, `gi_nbrs`; hot/cold symbology and aliases. | Missing symbology, unaliased fields, null stats for valid records. |
@@ -56,6 +57,7 @@ Use this matrix before a public upload when changes affect algorithms, reports, 
 | Model Comparison audit engine | synthetic model-output layers | Score/rank penalizes residual spatial pattern, missing residual diagnostics, and incomplete coverage; recommendation prefers a defensible clean-residual candidate. | Lowest RMSE is always recommended without residual review or ranks are missing. |
 | Sensitivity interpretation engine | Izmir sample and sparse synthetic neighborhood scenario | Robust/sensitive verdict, next action, and sensitivity cautions reflect empirical p-value and neighbor graph risk. | Isolated or very dense graphs are treated as fully reliable. |
 | Global Moran interpretation engine | Izmir sample and synthetic smoke cases | Clustered/dispersed/random labels, evidence strength, and next action prioritize neighborhood graph quality before local follow-up. | Significant global result is interpreted as site-specific evidence without Local Moran/Gi* follow-up. |
+| Spatial Gini decomposition engine | core smoke test and Izmir inequality fields | Classic Gini equals neighbor plus non-neighbor components, spatial Gini share is the non-neighbor share, and polarization reflects average distant-pair versus neighbor-pair difference. | Gini math drifts from pairwise definition or spatial share is reported without neighbor/non-neighbor context. |
 | Local pattern class-summary engine | Izmir sample hot spot and LISA outputs | Processing log summarizes hot/cold, cluster/outlier, and dominant class counts; output aliases explain `gi_*` and `lisa_*` fields. | Local tools write styled layers but give no class summary or field metadata. |
 
 ## Release Gate
@@ -66,6 +68,8 @@ Run these after the manual matrix:
 py -3 planx_geostats\tests\smoke_core.py
 py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 planx_geostats\tests\smoke_provider_catalog.py
+C:\OSGeo4W\bin\python-qgis-ltr.bat planx_geostats\tests\qgis_runtime_algorithm_matrix.py --root C:\Users\YE\PyCharmMiscProject\qgis_plugins --runtime qgis-ltr
+C:\OSGeo4W\bin\python-qgis.bat planx_geostats\tests\qgis_runtime_algorithm_matrix.py --root C:\Users\YE\PyCharmMiscProject\qgis_plugins --runtime qgis4
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 ```

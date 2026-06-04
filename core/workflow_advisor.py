@@ -10,6 +10,7 @@ GOAL_OPTIONS = [
     "Summarize center, spread, or direction",
     "Build an explanatory model",
     "Compare candidate models",
+    "Measure spatial inequality or equity",
 ]
 GEOMETRY_OPTIONS = ["Point", "Line", "Polygon or area"]
 OUTCOME_OPTIONS = ["No outcome field", "Continuous numeric", "Binary 0/1", "Count"]
@@ -26,15 +27,27 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
 
     if geometry == 1 and goal not in {3}:
         warnings.append("Line geometry is only directly supported by a subset of GeoStats tools; convert line summaries to points or use Linear Directional Mean when the line direction is the analytical target.")
-    if outcome == 0 and goal in {1, 4, 5}:
+    if outcome == 0 and goal in {1, 4, 5, 6}:
         warnings.append("This goal usually needs an analysis or dependent field; choose a numeric, binary, or count field before running the recommended sequence.")
-    if has_explanatory and goal in {0, 1, 2, 3}:
+    if has_explanatory and goal in {0, 1, 2, 3, 6}:
         warnings.append("Predictor fields are available, but the selected goal is not primarily a modeling workflow; use them later in OLS, GLR, GWR, MGWR, SAR, or SEM.")
 
     if goal == 2:
         steps = ["Data Readiness Audit", "Calculate Distance Band", "Incremental Spatial Autocorrelation", "Sensitivity Test"]
         summary = "Start with distance-band selection before running local or global spatial statistics."
         samples = ["Izmir: median_land_surface_temp_c", "Synthetic QA: qa_points_grid"]
+    elif goal == 6:
+        steps = [
+            "Data Readiness Audit",
+            "Spatial Inequality (Gini and Spatial Gini)",
+            "Global Moran's I",
+            "Getis-Ord Gi* or Local Moran's I",
+        ]
+        summary = "Measure overall inequality first, then check whether that inequality is spatially organized and where it concentrates."
+        samples = [
+            "Izmir: park_m2_per_capita",
+            "Izmir: senior_65plus_population or other non-negative burden/access fields",
+        ]
     elif goal == 3 and geometry == 1:
         steps = ["Data Readiness Audit", "Linear Directional Mean", "Directional Distribution if converted to representative points"]
         summary = "Use line-specific directional tools first, then summarize converted point/centroid patterns if needed."

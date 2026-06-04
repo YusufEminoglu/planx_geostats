@@ -7,9 +7,10 @@ import sys
 from typing import List, Optional, Tuple
 
 
-PIP_PACKAGES = ["libpysal", "esda", "spreg", "mgwr", "scikit-learn"]
+PIP_PACKAGES = ["numba", "libpysal", "esda", "spreg", "mgwr", "scikit-learn"]
 MODULES = {
     "numpy": "numpy",
+    "numba": "numba",
     "scikit-learn": "sklearn",
     "libpysal": "libpysal",
     "esda": "esda",
@@ -23,7 +24,7 @@ def optional_dependency_error(tool_name: str, packages: List[str], import_error:
     package_list = ", ".join(packages)
     preview = ""
     try:
-        program, args = build_qgis_python_pip_command(list(packages))
+        program, args = build_qgis_python_pip_command(_install_packages_for(packages))
         preview = f" Preview command: {format_command(program, args)}."
     except Exception:
         preview = ""
@@ -36,6 +37,16 @@ def optional_dependency_error(tool_name: str, packages: List[str], import_error:
         "may not see newly installed modules."
         f"{preview} Import error: {import_error}"
     )
+
+
+def _install_packages_for(packages: List[str]) -> List[str]:
+    result = []
+    if any(package in {"libpysal", "esda", "spreg", "mgwr"} for package in packages):
+        result.append("numba")
+    for package in packages:
+        if package not in result:
+            result.append(package)
+    return result
 
 
 def resolve_qgis_python_executable() -> Optional[str]:

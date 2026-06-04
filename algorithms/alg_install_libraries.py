@@ -58,7 +58,7 @@ class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
     def shortHelpString(self) -> str:
         return (
             "Installs or updates the optional Python libraries used by PlanX "
-            "GeoStats Lab: libpysal, esda, spreg, mgwr, and scikit-learn. The tool reads "
+            "GeoStats Lab: numba, libpysal, esda, spreg, mgwr, and scikit-learn. The tool reads "
             "the package list from requirements_geostats.txt, builds a pip command "
             "for the Python environment used by QGIS, and streams the installation "
             "log into the Processing feedback panel.\n\n"

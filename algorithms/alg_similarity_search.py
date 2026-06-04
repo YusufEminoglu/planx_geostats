@@ -134,10 +134,15 @@ class SimilaritySearchAlgorithm(QgsProcessingAlgorithm):
 
         expr = QgsExpression(expr_str)
         expr_ctx = QgsExpressionContext()
-        expr_ctx.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(source))
+        expr_ctx.appendScope(QgsExpressionContextUtils.globalScope())
+        project = context.project() if context is not None else None
+        if project is not None:
+            expr_ctx.appendScope(QgsExpressionContextUtils.projectScope(project))
+        expr_ctx.setFields(source.fields())
 
         if expr.hasParserError():
             raise QgsProcessingException(f"Parser error in expression: {expr.parserErrorString()}")
+        expr.prepare(expr_ctx)
 
         # Extract features and profiles
         fids = []

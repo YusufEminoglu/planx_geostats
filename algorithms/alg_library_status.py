@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import html
-import importlib.util
+import importlib
 import os
 import sys
 import tempfile
@@ -77,11 +77,12 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
 
         statuses = []
         for package, module in MODULES.items():
-            available = importlib.util.find_spec(module) is not None
+            available, error = self._import_status(module)
             statuses.append({
                 "package": package,
                 "module": module,
                 "available": available,
+                "error": error,
                 "role": self._package_role(package),
             })
 
@@ -109,6 +110,7 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
     def _package_role(self, package: str) -> str:
         roles = {
             "numpy": "Numerical arrays, matrix operations, and core statistical calculations.",
+            "numba": "Compiled numerical kernels used by the PySAL and MGWR stack; stale versions can break imports against newer NumPy.",
             "scikit-learn": "Nearest-neighbor search, clustering support, and standardized multivariate workflows.",
             "libpysal": "Spatial weights, neighborhood graphs, and PySAL-compatible spatial structures.",
             "esda": "Exploratory spatial data analysis statistics such as Moran and Getis-Ord routines.",
@@ -117,17 +119,27 @@ class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
         }
         return roles.get(package, "Optional GeoStats support package.")
 
+    def _import_status(self, module: str) -> tuple[bool, str]:
+        try:
+            importlib.import_module(module)
+            return True, ""
+        except Exception as exc:
+            return False, f"{type(exc).__name__}: {exc}"
+
     def _write_html(self, path, statuses, missing, command, qgis_python, osgeo_shell):
         rows = []
         for item in statuses:
             state = "Available" if item["available"] else "Missing"
             state_class = "ok" if item["available"] else "missing"
+            role = item["role"]
+            if item.get("error"):
+                role += f" Import check failed: {item['error']}"
             rows.append(
                 "<tr>"
                 f"<td>{html.escape(item['package'])}</td>"
                 f"<td>{html.escape(item['module'])}</td>"
                 f"<td class=\"{state_class}\">{state}</td>"
-                f"<td>{html.escape(item['role'])}</td>"
+                f"<td>{html.escape(role)}</td>"
                 "</tr>"
             )
 

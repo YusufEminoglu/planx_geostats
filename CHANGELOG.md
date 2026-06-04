@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.17] - 2026-06-05
+
+- Added `Spatial Inequality (Gini and Spatial Gini)` to the Urban Pattern Scan group.
+- Added classic Gini, neighbor/non-neighbor Gini components, spatial Gini share, spatial polarization, and permutation inference.
+- Added optional CSV/JSON exports, HTML analyst guidance, algorithm icon, provider registration, smoke coverage, and release-gate count alignment.
+- Added a full QGIS runtime algorithm matrix that executes every GeoStats Processing algorithm against bundled sample data on QGIS 3 LTR and QGIS 4.
+- Restored the root plugin icon path by packaging `icons/icon.png` and pointing `metadata.txt` to the PNG asset used by the Processing provider.
+- Fixed Similarity Search expression-context handling and geometry-type checks in OLS/GLR residual diagnostics.
+- Hardened optional PySAL/MGWR dependency diagnostics so broken import-time dependency stacks are reported with the exact installer command.
+
 ## [0.9.15] - 2026-05-30
 
 - Revised plugin icon to SVG

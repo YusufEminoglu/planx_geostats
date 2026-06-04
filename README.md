@@ -6,7 +6,7 @@ The `GeoStats Workflow Advisor` tool provides a planning-oriented method guide w
 
 For release preparation, use `QA_MANUAL_TEST_MATRIX.md` as the manual test checklist covering setup tools, pattern statistics, geometry summaries, modeling workflows, symbology, report interpretation, and release gates.
 
-The main report decision logic is intentionally kept in QGIS-independent core helpers so it can be smoke-tested without launching QGIS. Current guarded helpers cover workflow advising, model-comparison scoring, Monte Carlo sensitivity interpretation, and Global Moran's I report interpretation.
+The main report decision logic is intentionally kept in QGIS-independent core helpers so it can be smoke-tested without launching QGIS. Current guarded helpers cover workflow advising, model-comparison scoring, Monte Carlo sensitivity interpretation, Global Moran's I report interpretation, and Spatial Gini inequality decomposition.
 
 ## Sample Data
 
@@ -18,7 +18,7 @@ The plugin also includes `sample_data/planx_geostats_synthetic_qa.gpkg`, a small
 
 - `00 | Setup and Diagnostics`: library checks, guided optional dependency installation, bundled sample-data loading, workflow advising, and pre-analysis data readiness reports.
 - `01 | Data Preparation and Neighborhoods`: tools for preparing attribute exports and choosing neighborhood distance parameters before a statistical workflow begins.
-- `02 | Urban Pattern Scan`: global pattern tools that help planners understand whether a point or polygon distribution is clustered, dispersed, or spatially autocorrelated across the study area.
+- `02 | Urban Pattern Scan`: global pattern and inequality tools that help planners understand whether a point or polygon distribution is clustered, dispersed, spatially autocorrelated, or spatially unequal across the study area.
 - `03 | Hot Spots and Spatial Outliers`: local pattern tools for finding statistically meaningful concentrations, cold spots, cluster/outlier classes, and feature similarity groups.
 - `04 | Centers, Direction and Dispersion`: geographic distribution tools for mean/median centers, central features, standard distance, directional ellipses, and linear directional trends.
 - `05 | Models and Scenarios`: OLS regression, generalized linear regression, spatial lag/error regression, exploratory regression, GWR, MGWR, model comparison, and sensitivity tools for testing explanatory variables, spatial dependence, multiscale local relationships, and scenario robustness.
@@ -44,7 +44,7 @@ py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats -PluginsRoot C:\Users\YE\PyCharmMiscProject\qgis_plugins
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.13
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.17
 ```
 
 The release zip verifier also checks that developer-only paths are absent, algorithm icons are present, metadata points to a packaged icon, and the plugin remains Processing-only without menu or toolbar UI hooks.
