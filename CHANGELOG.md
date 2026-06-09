@@ -1,5 +1,10 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
 ## [0.9.17] - 2026-06-05
 
 - Added `Spatial Inequality (Gini and Spatial Gini)` to the Urban Pattern Scan group.
@@ -28,11 +33,6 @@
 ## [0.9.12] - 2026-05-26
 
 - Maintenance release: refreshed Plugin Hub package after QGIS 3 and QGIS 4 compatibility validation.
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.9.10] - 2026-05-22
 
