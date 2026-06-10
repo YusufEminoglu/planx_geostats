@@ -170,16 +170,17 @@ Kurulum: QGIS → *Eklentiler → Eklentileri Yönet ve Kur* → **PlanX GeoStat
 
 ---
 
-## 🌐 The PlanX Ecosystem
+## 🧩 Part of the PlanX ecosystem
 
-| Plugin | What it does |
-|---|---|
-| [PlanX](https://github.com/YusufEminoglu/PlanX) | Urban planning main suite |
-| **PlanX GeoStats Lab** | *This plugin* — spatial statistics, hot spots, LISA, regression |
-| [PlanX CAD Toolset](https://github.com/YusufEminoglu/PlanX-CAD) | CAD drafting, measuring, road platforms |
-| [PlanX Suitability Lab](https://github.com/YusufEminoglu/planx_suitability_lab) | Raster MCDA suitability analysis |
-| [PlanX DataCube Lab](https://github.com/YusufEminoglu/planx_datacube) | Space-time cubes, EHSA, forecasting |
-| [OSM Quick 3D](https://github.com/YusufEminoglu/osm_quick_3d) | One-click OSM → native QGIS 3D massing |
+This plugin is one of 15 open-source QGIS plugins for urban planning by the same author:
+
+| Planning & analysis | CAD & production | 3D & visualization |
+|---|---|---|
+| [PlanX](https://github.com/YusufEminoglu/PlanX) — spatial-planning suite | [PlanX CAD Toolset](https://github.com/YusufEminoglu/PlanX-CAD) — drafting-grade CAD | [PlanX 3D City](https://github.com/YusufEminoglu/planx_3d_city) — Three.js city viewer |
+| [GeoStats Lab](https://github.com/YusufEminoglu/planx_geostats) — spatial statistics | [EasyFillet](https://github.com/YusufEminoglu/EasyFillet) — tangent-arc fillet | [3D OSM Model](https://github.com/YusufEminoglu/osm_3d_model) — OSM → 3D city in browser |
+| [Suitability Lab](https://github.com/YusufEminoglu/planx_suitability_lab) — raster MCDA | [Settlement Toolset](https://github.com/YusufEminoglu/PlanX-Settlement) — 9-stage settlement plans | [OSM Quick 3D](https://github.com/YusufEminoglu/osm_quick_3d) — OSM → native QGIS 3D |
+| [DataCube Lab](https://github.com/YusufEminoglu/planx_datacube) — spatiotemporal cubes | [UIP Toolset](https://github.com/YusufEminoglu/PlanX-UIP) — Turkish master-plan automation | [Urban Procedural 3D](https://github.com/YusufEminoglu/planx_urban_procedural_3d) — parametric zoning lab |
+| [Urban Resilience](https://github.com/YusufEminoglu/planx_urban_resilience) — 28 resilience tools | [ParcelFlux](https://github.com/YusufEminoglu/parcelflux) — parcel subdivision | [CartoLab](https://github.com/YusufEminoglu/planx_cartolab) — publication cartography |
 
 ---
 
