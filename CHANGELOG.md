@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.19] - 2026-07-14
+
+- Add Bivariate Local Moran's I (Bivariate LISA) algorithm and unique icon
+
 ## [0.9.18] - 2026-06-18
 
 - docs: add CITATION.cff for Zenodo DOI integration

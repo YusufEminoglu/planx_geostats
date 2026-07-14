@@ -1735,3 +1735,142 @@ def calculate_glr(
         }
 
     raise ValueError("Unsupported GLR family. Use gaussian, logistic, or poisson.")
+
+
+def calculate_bivariate_local_moran(
+    x: np.ndarray,
+    y: np.ndarray,
+    neighbors: dict[int, list[int]],
+    weights: dict[int, list[float]],
+    id_order: list[int],
+    permutations: int = 999,
+    seed: int = 42
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
+    """Calculates Bivariate Local Moran's I (LISA) cluster and outlier diagnostics using conditional permutation.
+
+    Returns:
+        A tuple of:
+          - I_values: NumPy array of Bivariate Moran's I indices (floats)
+          - z_scores: NumPy array of z-scores (floats)
+          - p_values: NumPy array of pseudo p-values (floats)
+          - quadrants: List of strings ('HH', 'LL', 'HL', 'LH', 'Not Significant')
+    """
+    n = len(x)
+    I_values = np.zeros(n)
+    z_scores = np.zeros(n)
+    p_values = np.ones(n)
+    quadrants = ["Not Significant"] * n
+
+    if n <= 2:
+        return I_values, z_scores, p_values, quadrants
+
+    x_mean = np.mean(x)
+    x_std = np.std(x)
+    y_mean = np.mean(y)
+    y_std = np.std(y)
+
+    if x_std == 0 or y_std == 0:
+        return I_values, z_scores, p_values, quadrants
+
+    zx = (x - x_mean) / x_std
+    zy = (y - y_mean) / y_std
+
+    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+
+    # Compute observed local Moran's I for each location
+    spatial_lags = np.zeros(n)
+    for idx, fid in enumerate(id_order):
+        f_neighs = neighbors.get(fid, [])
+        f_weights = weights.get(fid, [])
+
+        valid_neigh_indices = []
+        valid_w = []
+        for j, nid in enumerate(f_neighs):
+            if nid in id_to_idx:
+                valid_neigh_indices.append(id_to_idx[nid])
+                valid_w.append(f_weights[j])
+
+        w_sum = sum(valid_w)
+        if w_sum == 0:
+            continue
+
+        w_arr = np.array(valid_w) / w_sum
+        lag = np.sum(w_arr * zy[valid_neigh_indices])
+        spatial_lags[idx] = lag
+        I_values[idx] = zx[idx] * lag
+
+    class _LCG:
+        __slots__ = ("_s",)
+        _A = 6364136223846793005
+        _C = 1442695040888963407
+        _M = (1 << 64) - 1
+        def __init__(self, s):
+            self._s = (int(s) * 2 + 0x9E3779B97F4A7C15) & self._M
+        def uniform(self, lo, hi):
+            self._s = (self._A * self._s + self._C) & self._M
+            frac = (self._s >> 11) / float(1 << 53)
+            return lo + (hi - lo) * frac
+        def shuffle(self, arr):
+            for i in range(len(arr) - 1, 0, -1):
+                j = int(self.uniform(0, i + 1))
+                arr[i], arr[j] = arr[j], arr[i]
+
+    rng = _LCG(seed)
+
+    # Perform conditional permutation testing
+    for idx, fid in enumerate(id_order):
+        f_neighs = neighbors.get(fid, [])
+        f_weights = weights.get(fid, [])
+
+        valid_neigh_indices = []
+        valid_w = []
+        for j, nid in enumerate(f_neighs):
+            if nid in id_to_idx:
+                valid_neigh_indices.append(id_to_idx[nid])
+                valid_w.append(f_weights[j])
+
+        w_sum = sum(valid_w)
+        if w_sum == 0:
+            continue
+
+        w_arr = np.array(valid_w) / w_sum
+        observed_I = I_values[idx]
+
+        other_indices = [i for i in range(n) if i != idx]
+        perm_I_vals = np.zeros(permutations)
+        num_neighbors = len(valid_neigh_indices)
+
+        for p in range(permutations):
+            shuffled_others = list(other_indices)
+            rng.shuffle(shuffled_others)
+            perm_neighbor_indices = shuffled_others[:num_neighbors]
+
+            perm_lag = np.sum(w_arr * zy[perm_neighbor_indices])
+            perm_I_vals[p] = zx[idx] * perm_lag
+
+        extreme_count = np.sum(np.abs(perm_I_vals) >= np.abs(observed_I))
+        p_val = (extreme_count + 1) / (permutations + 1)
+        p_values[idx] = p_val
+
+        mean_perm = np.mean(perm_I_vals)
+        std_perm = np.std(perm_I_vals)
+        if std_perm > 0:
+            z_scores[idx] = (observed_I - mean_perm) / std_perm
+        else:
+            z_scores[idx] = 0.0
+
+        if p_val < 0.05:
+            high_x = zx[idx] > 0
+            high_lag = spatial_lags[idx] > 0
+
+            if high_x and high_lag:
+                quadrants[idx] = "HH"
+            elif not high_x and not high_lag:
+                quadrants[idx] = "LL"
+            elif high_x and not high_lag:
+                quadrants[idx] = "HL"
+            elif not high_x and high_lag:
+                quadrants[idx] = "LH"
+
+    return I_values, z_scores, p_values, quadrants
+

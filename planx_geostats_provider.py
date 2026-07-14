@@ -11,6 +11,7 @@ from .algorithms.alg_getis_ord import GetisOrdAlgorithm
 from .algorithms.alg_mean_center import MeanCenterAlgorithm
 from .algorithms.alg_sde import SDEAlgorithm
 from .algorithms.alg_local_moran import LocalMoranAlgorithm
+from .algorithms.alg_bivariate_lisa import BivariateLISAAlgorithm
 from .algorithms.alg_bivariate_lee_l import BivariateLeeLAlgorithm
 from .algorithms.alg_spatial_regression import SpatialRegressionAlgorithm
 from .algorithms.alg_spatial_autoregression import SpatialAutoregressionAlgorithm
@@ -82,6 +83,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         # 03 | Hot Spots and Spatial Outliers
         self.addAlgorithm(GetisOrdAlgorithm())
         self.addAlgorithm(LocalMoranAlgorithm())
+        self.addAlgorithm(BivariateLISAAlgorithm())
         self.addAlgorithm(BivariateLeeLAlgorithm())
         self.addAlgorithm(MultivariateClusteringAlgorithm())
         self.addAlgorithm(SimilaritySearchAlgorithm())
