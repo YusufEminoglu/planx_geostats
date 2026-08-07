@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.20] - 2026-08-07
+
+- 2.5x manual expansion: 300+ equations, 215+ DOI refs, HelpUrlMixin, GitHub Pages
+
 ## [0.9.19] - 2026-07-14
 
 - Add Bivariate Local Moran's I (Bivariate LISA) algorithm and unique icon
