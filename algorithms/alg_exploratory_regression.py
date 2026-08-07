@@ -10,6 +10,7 @@ import tempfile
 
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProcessing,
@@ -31,7 +32,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class ExploratoryRegressionAlgorithm(QgsProcessingAlgorithm):
+class ExploratoryRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     MAX_MODEL_COMBINATIONS = 5000
 
     INPUT = "INPUT"

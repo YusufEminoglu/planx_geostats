@@ -6,6 +6,7 @@ import logging
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsFeature,
@@ -33,7 +34,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class MedianCenterAlgorithm(QgsProcessingAlgorithm):
+class MedianCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     WEIGHT_FIELD = "WEIGHT_FIELD"
     OUTPUT = "OUTPUT"

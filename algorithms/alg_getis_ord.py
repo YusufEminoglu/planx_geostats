@@ -7,6 +7,7 @@ import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProject,
@@ -37,7 +38,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class GetisOrdAlgorithm(QgsProcessingAlgorithm):
+class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELD = "FIELD"
     WEIGHT_TYPE = "WEIGHT_TYPE"

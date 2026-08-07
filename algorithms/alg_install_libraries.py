@@ -9,6 +9,7 @@ import sys
 import time
 from typing import List, Tuple
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -30,7 +31,7 @@ from ..dependencies import (
 from ._icons import algorithm_icon
 
 
-class InstallGeoStatsLibrariesAlgorithm(QgsProcessingAlgorithm):
+class InstallGeoStatsLibrariesAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INSTALL_MODE = "INSTALL_MODE"
     CONFIRM = "CONFIRM"
     COMMAND = "COMMAND"

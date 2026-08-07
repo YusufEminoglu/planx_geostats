@@ -8,6 +8,7 @@ import tempfile
 import html
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -28,7 +29,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class AverageNearestNeighborAlgorithm(QgsProcessingAlgorithm):
+class AverageNearestNeighborAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     STUDY_AREA = "STUDY_AREA"
     HTML_REPORT = "HTML_REPORT"

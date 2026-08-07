@@ -6,6 +6,7 @@ import html
 import os
 import tempfile
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessingAlgorithm,
     QgsProcessingOutputHtml,
@@ -24,7 +25,7 @@ from ..core.workflow_advisor import (
 from ._icons import algorithm_icon
 
 
-class GeoStatsWorkflowAdvisorAlgorithm(QgsProcessingAlgorithm):
+class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     GOAL = "GOAL"
     GEOMETRY_CONTEXT = "GEOMETRY_CONTEXT"
     OUTCOME_TYPE = "OUTCOME_TYPE"

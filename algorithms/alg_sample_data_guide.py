@@ -6,6 +6,7 @@ import html
 import os
 import tempfile
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -22,7 +23,7 @@ from qgis.core import (
 from ._icons import algorithm_icon
 
 
-class SampleDataGuideAlgorithm(QgsProcessingAlgorithm):
+class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     LOAD_IN_PROJECT = "LOAD_IN_PROJECT"
     DATASET_TO_LOAD = "DATASET_TO_LOAD"
     HTML_REPORT = "HTML_REPORT"

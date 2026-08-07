@@ -10,6 +10,7 @@ import tempfile
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsFeature,
@@ -45,7 +46,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class GeneralizedLinearRegressionAlgorithm(QgsProcessingAlgorithm):
+class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     DEP_VAR = "DEP_VAR"
     INDEPENDENTS = "INDEPENDENTS"

@@ -7,6 +7,7 @@ import math
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsFeature,
@@ -35,7 +36,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class SDEAlgorithm(QgsProcessingAlgorithm):
+class SDEAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     WEIGHT_FIELD = "WEIGHT_FIELD"
     STD_DEV = "STD_DEV"

@@ -7,6 +7,7 @@ import math
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsFeature,
     QgsField,
@@ -31,7 +32,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class LinearDirectionalMeanAlgorithm(QgsProcessingAlgorithm):
+class LinearDirectionalMeanAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
 

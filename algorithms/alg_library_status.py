@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessingAlgorithm,
     QgsProcessingOutputHtml,
@@ -27,7 +28,7 @@ from ..dependencies import (
 from ._icons import algorithm_icon
 
 
-class GeoStatsLibraryStatusAlgorithm(QgsProcessingAlgorithm):
+class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     HTML_REPORT = "HTML_REPORT"
 
     def name(self) -> str:

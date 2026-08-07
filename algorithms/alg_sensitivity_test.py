@@ -8,6 +8,7 @@ import tempfile
 import html
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProcessing,
@@ -38,7 +39,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class SensitivityTestAlgorithm(QgsProcessingAlgorithm):
+class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELD = "FIELD"
     DISTANCE_BAND = "DISTANCE_BAND"

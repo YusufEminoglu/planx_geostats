@@ -12,6 +12,7 @@ from typing import Optional
 
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProcessing,
@@ -29,7 +30,7 @@ from qgis.core import (
 from ._icons import algorithm_icon
 
 
-class DataReadinessAuditAlgorithm(QgsProcessingAlgorithm):
+class DataReadinessAuditAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELDS = "FIELDS"
     HTML_REPORT = "HTML_REPORT"

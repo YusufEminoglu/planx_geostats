@@ -9,6 +9,7 @@ import tempfile
 
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -29,7 +30,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class RipleysKFunctionAlgorithm(QgsProcessingAlgorithm):
+class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     START_DISTANCE = "START_DISTANCE"
     DISTANCE_INCREMENT = "DISTANCE_INCREMENT"

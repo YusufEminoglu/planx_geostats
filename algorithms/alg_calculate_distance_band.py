@@ -7,6 +7,7 @@ import os
 import tempfile
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -26,7 +27,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class CalculateDistanceBandAlgorithm(QgsProcessingAlgorithm):
+class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     NEIGHBOR_COUNT = "NEIGHBOR_COUNT"
     HTML_REPORT = "HTML_REPORT"

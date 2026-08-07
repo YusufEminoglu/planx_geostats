@@ -8,6 +8,7 @@ import tempfile
 import html
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProcessing,
@@ -40,7 +41,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class GlobalMoranAlgorithm(QgsProcessingAlgorithm):
+class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELD = "FIELD"
     WEIGHT_TYPE = "WEIGHT_TYPE"

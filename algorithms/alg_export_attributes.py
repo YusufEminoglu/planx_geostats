@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import csv
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProcessing,
@@ -23,7 +24,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class ExportAttributesAlgorithm(QgsProcessingAlgorithm):
+class ExportAttributesAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     FIELDS = "FIELDS"
     DELIMITER = "DELIMITER"

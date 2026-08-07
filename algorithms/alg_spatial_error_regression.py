@@ -12,6 +12,7 @@ import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsFeature,
@@ -57,7 +58,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class SpatialErrorRegressionAlgorithm(QgsProcessingAlgorithm):
+class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INPUT = "INPUT"
     DEP_VAR = "DEP_VAR"
     INDEPENDENTS = "INDEPENDENTS"

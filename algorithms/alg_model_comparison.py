@@ -9,6 +9,7 @@ import tempfile
 
 import numpy as np
 
+from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProcessing,
@@ -36,7 +37,7 @@ from ._icons import algorithm_icon
 logger = logging.getLogger("PlanX GeoStats Lab")
 
 
-class ModelComparisonAlgorithm(QgsProcessingAlgorithm):
+class ModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     MODEL_LAYERS = "MODEL_LAYERS"
     DEP_VAR = "DEP_VAR"
     HTML_REPORT = "HTML_REPORT"
