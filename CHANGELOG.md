@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.21] - 2026-08-07
+
+- Add floating Save as PDF button to reference manual
+
 ## [0.9.20] - 2026-08-07
 
 - 2.5x manual expansion: 300+ equations, 215+ DOI refs, HelpUrlMixin, GitHub Pages
