@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.22] - 2026-08-07
+
+- Added online user manual link (https://yusufeminoglu.github.io/planx_geostats/) and GitHub repository star call-to-action.
+
 ## [0.9.21] - 2026-08-07
 
 - Add floating Save as PDF button to reference manual
