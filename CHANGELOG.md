@@ -1,8 +1,12 @@
 # Changelog
 
+## [0.9.23] - 2026-08-08
+
+- Update documentation link to GEOSTATS_REFERENCE_MANUAL.html
+
 ## [0.9.22] - 2026-08-07
 
-- Added online user manual link (https://yusufeminoglu.github.io/planx_geostats/) and GitHub repository star call-to-action.
+- Added online user manual link (https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html) and GitHub repository star call-to-action.
 
 ## [0.9.21] - 2026-08-07
 

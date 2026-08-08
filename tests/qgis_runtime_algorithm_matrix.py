@@ -767,8 +767,9 @@ def _run_matrix(root: Path, runtime: str, only: set[str], out_dir: Path) -> dict
 
 
 def main() -> int:
+    default_root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, required=True, help="qgis_plugins root")
+    parser.add_argument("--root", type=Path, default=default_root, help="qgis_plugins root")
     parser.add_argument("--runtime", default="unknown")
     parser.add_argument("--only", nargs="*", default=[], help="Algorithm ids or names to run")
     parser.add_argument("--output-dir", type=Path, default=None)
