@@ -51,10 +51,30 @@ class ExportAttributesAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Exports selected attributes and feature centroid coordinates (X, Y) "
-            "to a formatted text file (CSV, Tab-delimited, Space-delimited, or Semicolon-delimited).\n\n"
-            "This is helpful for preparing spatial datasets to be analyzed in external statistical "
-            "software packages like R, SPSS, SAS, or Python."
+            "Exports the attribute table (or a chosen subset of fields) plus "
+            "optional feature centroid coordinates to a delimited text file - comma, "
+            "tab, semicolon, or space - as a lossless bridge from QGIS to R, Stata, "
+            "SPSS, or Python/pandas. Output is always UTF-8 with a header row; NULL "
+            "values (QGIS NULL, Python None, or the literal string 'NULL') all "
+            "export as an empty field, the standard CSV missing-value "
+            "convention.\n\n"
+            "When INCLUDE_COORDS is enabled, X_COORD and Y_COORD are prepended in "
+            "the layer's CRS units, taken from each feature's centroid rather than "
+            "raw vertices. These two columns feed directly into R's spdep, e.g. "
+            "knearneigh(cbind(data$X_COORD, data$Y_COORD), k = 5) - verify the CRS "
+            "is projected first, since coordinates in degrees make any downstream "
+            "distance-based weights meaningless.\n\n"
+            "Comma is the safest general-purpose default. Switch to Tab when field "
+            "values may themselves contain commas (addresses, free-text "
+            "descriptions); switch to Semicolon for European-locale spreadsheet "
+            "import where comma is the decimal separator. Avoid Space whenever any "
+            "exported field can contain internal spaces, since space-delimited rows "
+            "become ambiguous to re-parse.\n\n"
+            "On the receiving side, read empty fields as missing explicitly: R's "
+            "read.csv(..., na.strings = c('', 'NA')), pandas' "
+            "read_csv(..., na_values = ['']), or Stata's destring after import - "
+            "otherwise a numeric field with any missing values will be read in as "
+            "text."
         )
 
     def initAlgorithm(self, config=None):

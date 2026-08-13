@@ -65,10 +65,27 @@ class StandardDistanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Measures the degree to which features are concentrated or dispersed "
-            "around their geometric mean center by calculating the Standard Distance.\n\n"
-            "Creates a circular polygon representing the standard distance. "
-            "You can choose a multiplier of 1, 2, or 3 standard deviations."
+            "Computes the spatial analogue of the standard deviation: a single "
+            "scalar measuring how concentrated or dispersed features are "
+            "around their (optionally weighted) mean center, output as a "
+            "circular polygon whose radius is the standard distance times a "
+            "chosen multiplier (1, 2, or 3 SD).\n\n"
+            "Output fields: mean_x/mean_y (circle center), std_dist (the 1-SD "
+            "radius before multiplying), multiplier, radius (the actual drawn "
+            "circle radius), input_n, skip_geom, and bad_w. Under approximate "
+            "bivariate normality, roughly 63% of features fall within 1 SD, "
+            "about 98% within 2 SD, and nearly all within 3 SD - use 1 SD as a "
+            "'core' concentration measure, 2 SD as an approximate envelope, "
+            "and 3 SD to visualize full extent including outliers.\n\n"
+            "Standard Distance assumes dispersion is the same in every "
+            "direction (isotropic) - it is literally the trace of the spatial "
+            "covariance matrix, sigma_x^2 + sigma_y^2, and discards the cross "
+            "term entirely. Two datasets with identical Standard Distance can "
+            "look completely different on a map if one is circular and the "
+            "other is a narrow diagonal band; when directional bias is a real "
+            "possibility, use Directional Distribution (the Standard "
+            "Deviational Ellipse) instead, which captures orientation and "
+            "anisotropy that this tool cannot."
         )
 
     def initAlgorithm(self, config=None):

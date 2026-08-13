@@ -11,8 +11,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROVIDER = ROOT / "planx_geostats_provider.py"
-MAIN_PLUGIN = ROOT / "main_plugin.py"
-DEPENDENCIES = ROOT / "dependencies.py"
 METADATA = ROOT / "metadata.txt"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
@@ -172,22 +170,6 @@ def _png_dimensions(path: Path) -> tuple[int, int]:
     assert data.startswith(b"\x89PNG\r\n\x1a\n"), f"Not a PNG file: {path.name}"
     width, height = struct.unpack(">II", data[16:24])
     return int(width), int(height)
-
-
-def test_plugin_ui_surface_stays_processing_only() -> None:
-    forbidden_terms = [
-        "QAction",
-        "QDialog",
-        "QProcess",
-        "QPushButton",
-        "addPluginToMenu",
-        "addToolBarIcon",
-        "removePluginMenu",
-        "removeToolBarIcon",
-    ]
-    combined = MAIN_PLUGIN.read_text(encoding="utf-8") + "\n" + DEPENDENCIES.read_text(encoding="utf-8")
-    found = [term for term in forbidden_terms if term in combined]
-    assert not found, f"Unexpected non-Processing UI hooks found: {found}"
 
 
 def test_html_module_is_not_shadowed_in_report_writers() -> None:
@@ -544,7 +526,7 @@ def test_readme_documents_core_decision_helpers_and_release_zip_gate() -> None:
         "Spatial Gini inequality decomposition",
         "developer-only paths are absent",
         "algorithm icons are present",
-        "Processing-only",
+        "hybrid Processing + dock-GUI plugin",
     ]
     missing = [term for term in required_terms if term not in content]
     assert not missing, f"README should document decision-helper and release-zip gates: {missing}"
@@ -621,7 +603,6 @@ def run_all() -> None:
     test_algorithm_catalog_has_stable_ids_and_groups()
     test_every_algorithm_has_unique_png_icon()
     test_plugin_metadata_and_provider_use_packaged_png_icon()
-    test_plugin_ui_surface_stays_processing_only()
     test_html_module_is_not_shadowed_in_report_writers()
     test_direct_polyline_polygon_calls_have_multipart_guard()
     test_release_documentation_version_is_synchronized()

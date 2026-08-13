@@ -60,11 +60,31 @@ class LinearDirectionalMeanAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Identifies the mean direction, mean length, and geographic center for "
-            "a set of line features.\n\n"
-            "Computes the circular weighted mean of line orientations (weighted by line "
-            "length) and outputs a single representative trend line centered at the "
-            "geographic mean of all line midpoints."
+            "Computes the length-weighted circular mean direction and mean "
+            "length of a set of line features, using proper circular "
+            "(periodic) statistics so that a line at 359 degrees and one at 1 "
+            "degree correctly average to 0 degrees, not 180. Each line's "
+            "Euclidean start-to-end length is its implicit weight in the "
+            "circular mean - no separate weight field is needed or accepted. "
+            "For multi-part geometries, only the first component is used.\n\n"
+            "Output fields: mean_angle (compass bearing, 0 = North, "
+            "clockwise), mean_length, center_x/center_y (the geographic mean "
+            "of all line midpoints), and line_count. Internally the tool also "
+            "computes the mean resultant length Rbar (0 to 1, how strongly "
+            "lines agree on a direction), which is not exposed as an output "
+            "field but drives the trend line's visual length; Rbar near 1 "
+            "means strong directional consensus, near 0 means lines point in "
+            "all directions with no preference - most real street networks "
+            "fall in the 0.1-0.5 range, reflecting grid dominance without one "
+            "single preferred bearing.\n\n"
+            "This computes a directional mean, not an axial mean: a line at "
+            "45 degrees and one at 225 degrees point in opposite directions "
+            "and are treated as different bearings, even though they lie on "
+            "the same street. For undirected orientation analysis (where a "
+            "north-south street should be treated the same regardless of "
+            "which end is 'start'), double every angle before computing the "
+            "mean and halve the result afterward - this tool does not do that "
+            "transformation automatically."
         )
 
     def initAlgorithm(self, config=None):

@@ -71,13 +71,25 @@ class BivariateLeeLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Evaluates local bivariate spatial association between one feature attribute "
-            "and the spatial lag of another attribute. Positive values indicate that high "
-            "or low values of the first field are near similarly high or low neighboring "
-            "values of the second field; negative values indicate local cross-variable contrast.\n\n"
-            "The output includes lee_l, y_lag_z, lee_class, and lee_nbrs diagnostic fields. "
-            "This implementation is a planning-oriented Lee's L style local diagnostic and "
-            "does not run permutation inference."
+            "A planning-oriented local diagnostic for bivariate spatial "
+            "association: for each feature, multiplies the standardized value of "
+            "field X by the spatial lag (weighted neighborhood average) of the "
+            "standardized field Y. Positive local_l means X and Y's neighborhood "
+            "values move together (both high or both low); negative means they "
+            "move in opposite directions (a local cross-variable contrast).\n\n"
+            "Output fields: lee_l (the local statistic), y_lag_z (Y's "
+            "standardized spatial lag), lee_class, and lee_nbrs. lee_class labels "
+            "every feature with a non-zero local_l by the sign combination of X "
+            "and lagged Y (High-X/High-Y Lag, Low-X/Low-Y Lag, High-X/Low-Y Lag, "
+            "Low-X/High-Y Lag) - there is no significance test or p-value gating "
+            "these labels, unlike Local Moran's I or Bivariate LISA.\n\n"
+            "Because every non-isolated feature gets a class label regardless of "
+            "how large or small local_l is, do not read lee_class alone as "
+            "evidence of a meaningful pattern - look at the magnitude of lee_l "
+            "and map it alongside the class to separate strong local "
+            "associations from noise near zero. This implementation does not run "
+            "permutation inference; for a formally tested bivariate local "
+            "statistic, use Bivariate LISA instead."
         )
 
     def initAlgorithm(self, config=None):

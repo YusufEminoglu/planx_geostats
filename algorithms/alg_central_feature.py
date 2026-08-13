@@ -60,10 +60,27 @@ class CentralFeatureAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Identifies the most centrally located feature in a dataset.\n\n"
-            "The central feature is the one that minimizes the total Euclidean "
-            "distance to all other features. An optional weight field can be used "
-            "to emphasize certain features in the distance calculation."
+            "Finds the actual input feature that minimizes the (optionally "
+            "weighted) sum of Euclidean distances to every other feature - the "
+            "discrete 1-median, and the natural choice whenever the answer must "
+            "be a real, existing location rather than an arbitrary point in "
+            "space (e.g. 'which of our existing clinics is best positioned to "
+            "serve the rest of the district?').\n\n"
+            "Output fields: is_central (1 on the selected feature, absent "
+            "elsewhere) and total_distance (that feature's total distance to "
+            "all others, in map units - lower means more central). All "
+            "original attributes are preserved on every output feature.\n\n"
+            "Because the search is restricted to the N input locations rather "
+            "than all of continuous space, the Central Feature's "
+            "total_distance is always greater than or equal to the true "
+            "geometric-median objective computed by Median Center - compare "
+            "the two to gauge how much is lost by restricting the search to "
+            "existing sites. This tool is O(N^2) in time and memory (a full "
+            "pairwise distance matrix), fine for planning datasets under "
+            "roughly 10,000 features; beyond that, prefer Median Center. This "
+            "same computation is also available as the 'Central Feature' mode "
+            "inside the Mean Center / Central Feature tool (this group) - both "
+            "use the identical underlying engine."
         )
 
     def initAlgorithm(self, config=None):

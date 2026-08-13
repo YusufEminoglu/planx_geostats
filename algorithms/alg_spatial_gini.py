@@ -79,13 +79,30 @@ class SpatialGiniAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Calculates the classic Gini coefficient and a spatial decomposition of the Gini "
-            "numerator into neighbor and non-neighbor pair contributions following the Rey and "
-            "Smith spatial Gini logic used in PySAL-style inequality workflows.\n\n"
-            "Use this for non-negative planning indicators such as income, exposure, service "
-            "access, risk burden, population rates, or resource provision. The report includes "
-            "classic Gini, neighbor Gini component, non-neighbor Gini component, spatial Gini "
-            "share, spatial polarization, pair counts, and optional permutation inference."
+            "Computes the classic Gini coefficient (0 = perfect equality, 1 = "
+            "perfect inequality) and decomposes its numerator into neighbor-pair "
+            "and non-neighbor-pair contributions following Rey & Smith (2013), "
+            "answering a question the classic Gini alone cannot: is the observed "
+            "inequality spatially organized, or scattered randomly across the "
+            "landscape? Requires non-negative values (income, exposure, service "
+            "access, risk burden, population rates) - negative values are refused "
+            "at input, since the Gini denominator is undefined when the mean is "
+            "zero or negative.\n\n"
+            "Key outputs: gini, neighbor_component and non_neighbor_component (sum "
+            "to gini), spatial_gini (the non-neighbor share; > 0.5 means most "
+            "inequality is carried by distant pairs, i.e. regional gradients rather "
+            "than local contrast), and polarization (ratio of average distant-pair "
+            "difference to average neighbor-pair difference; > 1 means distant "
+            "places differ more than neighbors do). With PERMUTATIONS > 0 (default "
+            "99), the tool also reports p_sim, an empirical p-value from randomly "
+            "reshuffling values across locations while holding the spatial layout "
+            "fixed.\n\n"
+            "Spatial Gini share depends on the neighbor definition: what looks "
+            "regionally structured at KNN-8 may look neutral at KNN-24. Report the "
+            "weight type and K alongside the share, and test more than one "
+            "neighborhood size before concluding. Not suitable for variables that "
+            "span zero (net migration, standardized residuals, growth rates) or for "
+            "categorical data."
         )
 
     def initAlgorithm(self, config=None):

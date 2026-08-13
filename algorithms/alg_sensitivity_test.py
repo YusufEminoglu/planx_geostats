@@ -66,12 +66,30 @@ class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Assesses the sensitivity of Global Moran's I spatial autocorrelation to "
-            "spatial randomness using Monte Carlo permutation simulations.\n\n"
-            "The observed Moran's I is compared against a reference distribution generated "
-            "by randomly shuffling (permuting) the attribute values across features. "
-            "The result indicates whether the observed spatial pattern is statistically "
-            "robust or could be an artifact of random arrangement."
+            "Runs a Monte Carlo permutation test on Global Moran's I: "
+            "computes the observed I, then repeatedly (999 times by "
+            "default, seed 42 for reproducibility) randomly reshuffles the "
+            "target field's values across the same feature locations and "
+            "weights matrix, recomputing I each time to build an empirical "
+            "reference distribution under the null of complete spatial "
+            "randomness.\n\n"
+            "Output: observed_i, simulated_mean and simulated_std (the "
+            "reference distribution's own mean/spread), empirical_p (the "
+            "fraction of simulated I values as extreme as or more extreme "
+            "than observed), and the 5th/95th percentile bounds of the "
+            "simulated distribution.\n\n"
+            "This is a genuine alternative to the analytical z-score/p-value "
+            "Global Moran's I already reports, not a duplicate of it - the "
+            "analytical formula relies on an asymptotic normal "
+            "approximation that can be unreliable for small samples, "
+            "unusual weight structures, or non-normal field distributions, "
+            "while the permutation-based empirical_p makes no such "
+            "assumption. A meaningful disagreement between the analytical "
+            "p-value and empirical_p is itself informative and suggests the "
+            "analytical result may not be trustworthy for this dataset. Use "
+            "a higher permutation count (up to 9999) when empirical_p is "
+            "close to a decision threshold (e.g. near 0.05) and more "
+            "precision is needed."
         )
 
     def initAlgorithm(self, config=None):

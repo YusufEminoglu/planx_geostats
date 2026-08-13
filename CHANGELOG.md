@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0] - 2026-08-13
+
+- Deepened every algorithm's in-GUI help text (`shortHelpString`) with concrete field-by-field interpretation guidance, thresholds, and cross-tool recommendations — previously 30-150 words each, now 180-310 words.
+- Added a genuine Theoretical Background section to the six Centers, Direction and Dispersion algorithms' manual entries, grounded only in each entry's own already-cited literature.
+- Fixed broken `helpUrl()` deep links on all 34 algorithms (manual anchor slugs never matched `name()`-derived hashes), a wrong icon on Bivariate LISA, a manual HTML tag-balance bug, 4 mismatched algorithm-id labels, and 1 broken DOI link.
+- Added a dockable **GeoStats Lab** panel (toolbar icon + Plugins menu entry) grouping all 34 tools by category with search and one-click launch. The plugin is now packaged as a hybrid Processing + dock-GUI plugin (it was Processing-only since 0.9.1).
+- Added a copy-anchor-link button, 24 "See also" cross-reference boxes, and 5 performance/complexity badges to the reference manual.
+
 ## [0.9.23] - 2026-08-08
 
 - Update documentation link to GEOSTATS_REFERENCE_MANUAL.html

@@ -70,16 +70,25 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Given a set of weighted features, identifies statistically significant "
-            "hot spots, cold spots, and spatial outliers using the Anselin Local Moran's I statistic.\n\n"
-            "The output layer will include lisa_i, lisa_z, lisa_p, quadrant, and lisa_nbrs. "
-            "The lisa_nbrs field records how many valid neighboring features supported each "
-            "local statistic. The quadrants represent:\n"
-            "- HH (High-High): High values surrounded by high values\n"
-            "- LL (Low-Low): Low values surrounded by low values\n"
-            "- HL (High-Low): Spatial outlier (high value surrounded by low values)\n"
-            "- LH (Low-High): Spatial outlier (low value surrounded by high values)\n"
-            "- Not Significant: Features that are not statistically significant (p >= 0.05)"
+            "Computes Anselin's Local Moran's I for every feature, classifying "
+            "each into a spatial cluster or outlier quadrant using the analytical "
+            "randomization variance (Anselin, 1995) - not permutation. Output "
+            "fields: lisa_i (local I), lisa_z, lisa_p, lisa_nbrs (valid neighbor "
+            "count), and quadrant, assigned only when lisa_p < 0.05:\n"
+            "- HH (High-High): a high value surrounded by high neighbors (part of a hot cluster)\n"
+            "- LL (Low-Low): a low value surrounded by low neighbors (part of a cold cluster)\n"
+            "- HL (High-Low): a high value surrounded by low neighbors (spatial outlier)\n"
+            "- LH (Low-High): a low value surrounded by high neighbors (spatial outlier)\n"
+            "- Not Significant: p >= 0.05, or the feature had no valid neighbors\n\n"
+            "Each feature is tested independently at p < 0.05 with no "
+            "multiple-testing correction applied - across hundreds of features, "
+            "roughly 5% will cross that threshold by chance alone even under "
+            "complete spatial randomness. Treat an isolated significant cell with "
+            "suspicion unless it forms a spatially coherent group with its "
+            "neighbors; a single significant cell surrounded by 'Not Significant' "
+            "cells is a common false-positive pattern. Run Global Moran's I first "
+            "to confirm a genuine global signal exists before mapping local "
+            "quadrants."
         )
 
     def initAlgorithm(self, config=None):

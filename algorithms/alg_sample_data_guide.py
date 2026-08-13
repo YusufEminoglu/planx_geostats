@@ -69,12 +69,29 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Opens a concise guide for the bundled PlanX GeoStats Lab sample dataset "
-            "and can optionally load the planning sample, the synthetic QA fixture, "
-            "or both into the current QGIS project.\n\n"
-            "The Izmir sample is the default planning demo. The synthetic QA fixture is "
-            "a compact developer/manual QA dataset for point, line, polygon, and "
-            "model-output workflow checks."
+            "Generates an HTML catalog of the two GeoPackages bundled with PlanX "
+            "GeoStats Lab and can load either or both into the current QGIS "
+            "project.\n\n"
+            "The Izmir planning sample (layer planx_geostats_izmir_neighborhoods, 237 "
+            "polygons, EPSG:5253) carries English-named heat, green-space, network, "
+            "population, and built-form indicators with real spatial structure - the "
+            "coastal-to-inland heat gradient is strong enough that Global Moran's I on "
+            "median_land_surface_temp_c returns a significant positive result, making "
+            "it a known-good baseline for confirming the toolchain works end to "
+            "end.\n\n"
+            "The synthetic QA fixture is a separate, compact GeoPackage built for edge "
+            "cases rather than realism: a 100-point regular grid (qa_points_grid) for "
+            "ANN and Ripley's K, a directional multiline layer "
+            "(qa_lines_directional) for Linear Directional Mean, a small polygon layer "
+            "(qa_polygons_mini) for contiguity weights, and six pre-computed "
+            "model-output layers (qa_ols_model_output through qa_mgwr_model_output) "
+            "that exercise Model Comparison Matrix's field-detection logic for each "
+            "regression family.\n\n"
+            "Loading mode controls which layers are added: the Izmir sample alone, "
+            "the QA fixture alone, or both. Use the Izmir sample for demonstrations "
+            "and manual workflow checks; use the QA fixture when verifying that a "
+            "change to a tool still handles isolated features, constant fields, or "
+            "mixed geometry correctly before it reaches production data."
         )
 
     def initAlgorithm(self, config=None):

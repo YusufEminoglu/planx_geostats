@@ -66,12 +66,30 @@ class MeanCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Calculates the geographic center of a set of features.\n\n"
-            "Options:\n"
-            "1. Mean Center: Computes the average coordinate centroid, "
-            "optionally weighted by a numeric attribute.\n"
-            "2. Central Feature: Finds the individual feature that has "
-            "the shortest cumulative distance to all other features in the layer."
+            "Computes the geographic center of a set of features via one of two "
+            "modes, selected by MODE. Mean Center (default) is the arithmetic "
+            "mean of feature centroid coordinates, optionally weighted by a "
+            "numeric field - fast, but with a zero breakdown point: a single "
+            "outlier feature can pull it far from where most features actually "
+            "sit. Central Feature instead returns the actual input feature whose "
+            "(optionally weighted) sum of distances to all others is smallest - "
+            "always a real, existing location, at the cost of only approximating "
+            "the true geometric center.\n\n"
+            "Output differs by mode: Mean Center produces a new point with "
+            "mean_x, mean_y, total_w, input_n, skip_geom, and bad_w fields; "
+            "Central Feature instead returns the selected input feature itself, "
+            "with all of its original attributes preserved and no new fields "
+            "added. The Central Feature computation here is identical to the "
+            "standalone Central Feature tool (same core engine) - use whichever "
+            "entry point is more convenient; there is no difference in the "
+            "result.\n\n"
+            "Weighted mean center is the standard technique for computing a "
+            "population, employment, or demand centroid; the vector between the "
+            "unweighted and weighted center (the 'shift vector') is a classic "
+            "diagnostic for tracking demographic or economic deconcentration "
+            "over successive time periods. For datasets that may contain "
+            "extreme outliers, prefer Median Center (the true geometric median) "
+            "or Central Feature over the Mean Center mode."
         )
 
     def initAlgorithm(self, config=None):

@@ -65,11 +65,29 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Performs K-Means clustering on feature attribute values to group features "
-            "into a specified number of clusters based on multivariate similarity.\n\n"
-            "All input attributes are standardized using Z-scores before clustering. "
-            "Outputs a new vector layer containing the original attributes plus a new "
-            "`cluster_id` column (0 to K-1) representing cluster assignment."
+            "Groups features into K clusters by K-means on their attribute "
+            "profile: every selected numeric field is Z-score standardized "
+            "first (so fields on different scales, e.g. population counts and "
+            "percentages, contribute comparably), centroids are initialized with "
+            "K-means++, and Lloyd's algorithm iterates to convergence (up to 100 "
+            "iterations, tolerance 1e-4). Output is the original layer plus a "
+            "cluster_id field (0 to K-1).\n\n"
+            "The within-cluster sum of squares (WCSS) is printed to the "
+            "Processing log, not written to the output layer - to choose K, run "
+            "the tool at several K values and look for the 'elbow' where WCSS "
+            "stops dropping sharply, rather than picking K from a single run. "
+            "K-means assumes clusters are roughly convex and similarly sized in "
+            "standardized-attribute space; it will split a single elongated or "
+            "highly unequal-density group into artificial sub-clusters, and it "
+            "is sensitive to which fields are included - adding several "
+            "correlated fields effectively up-weights whatever pattern they "
+            "share.\n\n"
+            "This groups features by attribute similarity only; it has no "
+            "spatial-contiguity constraint, so cluster members are not "
+            "guaranteed to be geographically near each other. Map cluster_id to "
+            "check whether the resulting groups also have spatial structure, or "
+            "use Similarity Search when the question is about similarity to "
+            "specific reference features rather than a global partition."
         )
 
     def initAlgorithm(self, config=None):

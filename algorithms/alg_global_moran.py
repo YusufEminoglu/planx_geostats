@@ -69,11 +69,31 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Measures spatial autocorrelation based on both feature locations and feature values "
-            "using the Global Moran's I statistic.\n\n"
-            "Evaluates whether the pattern expressed is clustered, dispersed, or random. "
-            "Generates an HTML diagnostic report showing the Moran's I index, expected index, "
-            "variance, z-score, and p-value."
+            "Tests whether a numeric field is spatially clustered (similar values near "
+            "each other), dispersed (dissimilar values adjacent), or indistinguishable "
+            "from random, using Global Moran's I under the randomization assumption "
+            "(Cliff & Ord, 1981). This is the gateway screening statistic: a "
+            "significant result justifies local analysis (Local Moran's I, Getis-Ord "
+            "Gi*) to locate where the pattern occurs; a non-significant result "
+            "counsels caution before spatial modeling.\n\n"
+            "Report fields: moran_i (observed I, roughly -1 to +1 for "
+            "row-standardized weights), expected_i (= -1/(N-1) under CSR), variance, "
+            "z_score, p_value, plus a plain-language pattern classification and "
+            "confidence tier (Strong: p < 0.01, Moderate: p < 0.05, Weak: p >= "
+            "0.05). z >= 1.96 indicates clustering, z <= -1.96 indicates dispersion, "
+            "|z| < 1.96 is not distinguishable from complete spatial randomness at "
+            "alpha = 0.05.\n\n"
+            "Moran's I is a global number: it cannot say where clustering occurs, "
+            "cannot separate one big cluster from several small ones, and is "
+            "sensitive to the spatial-weights choice - a different W can flip the "
+            "conclusion. It is also scale-dependent; if distance-band weights are "
+            "used, run Incremental Spatial Autocorrelation first to find the "
+            "distance where the signal peaks rather than guessing a threshold.\n\n"
+            "The report also flags isolated features (zero neighbors, which "
+            "contribute nothing and effectively shrink the sample) and "
+            "fully-connected graphs (every feature a neighbor of every other, where "
+            "I collapses toward 0 and loses discriminatory power) - both indicate a "
+            "weight specification mismatched to the data's geometry."
         )
 
     def initAlgorithm(self, config=None):

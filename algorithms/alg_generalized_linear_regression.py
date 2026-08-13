@@ -81,13 +81,29 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
 
     def shortHelpString(self) -> str:
         return (
-            "Fits a generalized linear regression model for continuous, binary, or count "
-            "dependent variables. Gaussian is equivalent to standard OLS-style linear "
-            "regression, Logistic models a binary 0/1 outcome, and Poisson models "
-            "non-negative integer counts.\n\n"
-            "The output layer includes fitted values and residuals for each complete record. "
-            "The HTML report includes coefficients, standard errors, z-statistics, p-values, "
-            "AIC, convergence status, and model-quality warnings."
+            "Fits a generalized linear model for continuous (Gaussian - "
+            "equivalent to OLS), binary (Logistic), or count (Poisson) "
+            "dependent variables, using iteratively reweighted least squares "
+            "(IRLS) for the non-Gaussian families (up to 100 iterations, "
+            "convergence tolerance 1e-6). Choosing the right family matters: "
+            "fitting OLS to a 0/1 outcome or an integer count produces "
+            "predictions outside the valid range and understates uncertainty "
+            "at the boundaries - use Logistic for binary outcomes and Poisson "
+            "for non-negative integer counts (crime counts, facility counts, "
+            "event counts).\n\n"
+            "Output: fitted values and residuals per complete record, plus an "
+            "HTML report with coefficients, standard errors, z-statistics, "
+            "p-values, AIC, convergence status, and model-quality "
+            "warnings.\n\n"
+            "Watch the convergence status field for non-Gaussian families - "
+            "IRLS can fail to converge with severe separation (a predictor "
+            "that perfectly predicts the outcome in Logistic) or extreme "
+            "multicollinearity, and a non-converged result should not be "
+            "interpreted. Poisson assumes the conditional variance equals the "
+            "mean; if your count data show overdispersion (variance well "
+            "above the mean, common with clustered events), coefficient "
+            "estimates remain roughly correct but standard errors will be "
+            "understated - treat p-values as optimistic in that case."
         )
 
     def initAlgorithm(self, config=None):

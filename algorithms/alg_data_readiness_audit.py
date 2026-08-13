@@ -58,12 +58,30 @@ class DataReadinessAuditAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Reviews a vector layer before spatial statistics and modeling. The audit checks CRS risk, "
-            "geometry availability, numeric field completeness, missing values, non-finite values, "
-            "constant and near-constant indicators, and sample-specific PlanX workflow readiness.\n\n"
-            "Use this before Global Moran, hot spot analysis, local outlier analysis, regression, GWR, "
-            "MGWR, and spatial autoregression workflows. The output is an English HTML report designed "
-            "for analyst QA notes and reproducible project documentation."
+            "Runs a four-level pre-modeling audit on a vector layer: layer integrity "
+            "(feature count, geometry type, CRS, empty/invalid/multipart geometry "
+            "counts), per-field numeracy (valid/missing/non-finite counts, min, max, "
+            "mean, median, standard deviation, skewness, IQR outliers, unique-value "
+            "count), pairwise multicollinearity (complete-case Pearson correlation "
+            "between audited fields), and readiness against four built-in PlanX "
+            "planning workflows (urban heat scan, green cooling model, accessibility, "
+            "equity review).\n\n"
+            "Each field is classified Ready, Review, or Not ready. Not ready means "
+            "fewer than four valid values or no real variation (constant, or standard "
+            "deviation at or below 1e-9) - such a field produces singular matrices or "
+            "degenerate statistics if forced into a model. Review means valid/total "
+            "is below 0.75 or missing values exceed 10%. Field pairs correlated at "
+            "|r| >= 0.85 are flagged as a multicollinearity risk (>= 0.95 as severe); "
+            "this is a screening threshold, not a ban - complementary measures of one "
+            "phenomenon are often correlated that strongly.\n\n"
+            "A geographic CRS triggers an explicit warning: 1 degree of longitude is "
+            "roughly 85 km at 40N and 56 km at 60N, so Euclidean distances in degrees "
+            "are not metric and will silently corrupt every distance-band, "
+            "K-function, GWR, or nearest-neighbor result computed on the layer.\n\n"
+            "Run this before Global Moran, hot spot analysis, local outlier analysis, "
+            "regression, GWR, MGWR, or spatial autoregression. Optional CSV and JSON "
+            "exports carry the same findings machine-readably for analyst notes or CI "
+            "checks."
         )
 
     def initAlgorithm(self, config=None):

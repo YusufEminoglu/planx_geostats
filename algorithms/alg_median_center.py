@@ -63,10 +63,30 @@ class MedianCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Computes the Median Center, which is the coordinate location that minimizes "
-            "the sum of Euclidean distances from all features to that point.\n\n"
-            "This algorithm iteratively solves for the optimal center using Weiszfeld's "
-            "algorithm, and outputs a single point feature layer."
+            "Computes the geometric median (also called the 1-median, "
+            "Fermat-Weber point, or spatial median): the point in continuous "
+            "space - not necessarily any input feature - that minimizes the "
+            "sum of (optionally weighted) Euclidean distances to all features. "
+            "Solved via Weiszfeld's iterative algorithm, initialized from the "
+            "weighted mean center, with a fixed convergence tolerance of 1e-6 "
+            "and a maximum of 100 iterations; typical well-conditioned datasets "
+            "converge in 15-40 iterations. If an iterate ever lands exactly on "
+            "a data point (a division-by-zero risk), the implementation "
+            "perturbs it slightly and continues.\n\n"
+            "Output fields: median_x, median_y, and total_dist (the minimized "
+            "objective value - the sum of weighted distances from the median "
+            "center to every feature). Unlike the mean center, the geometric "
+            "median has a breakdown point of 0.5: up to half the data can be "
+            "arbitrarily displaced without destroying the estimate, versus a "
+            "breakdown point of 0 for the mean.\n\n"
+            "Use this whenever the dataset may contain outliers or extreme "
+            "values that would distort the mean center, or when solving a "
+            "genuine minisum facility-location problem (minimize total travel "
+            "distance) with no constraint that the answer be an existing site. "
+            "For very small datasets (fewer than 5 features), the median "
+            "center rarely differs meaningfully from the mean center; when the "
+            "result should correspond to an actual candidate site, compare "
+            "against Central Feature instead."
         )
 
     def initAlgorithm(self, config=None):

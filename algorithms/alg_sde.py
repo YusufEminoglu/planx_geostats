@@ -66,11 +66,32 @@ class SDEAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Measures the directional distribution of a set of features "
-            "by calculating the Standard Deviational Ellipse (SDE).\n\n"
-            "Creates a polygon ellipse that represents the spatial dispersion "
-            "and orientation of features. You can choose to calculate 1, 2, "
-            "or 3 standard deviations."
+            "Computes the Standard Deviational Ellipse (SDE): a polygon "
+            "ellipse that captures spatial dispersion, orientation, and "
+            "anisotropy simultaneously, at a chosen size (1, 2, or 3 standard "
+            "deviations). The semi-major axis points along the direction of "
+            "maximum spread, the semi-minor axis along minimum spread, and "
+            "the rotation angle gives the primary trend axis in compass "
+            "degrees.\n\n"
+            "Output fields: mean_x/mean_y (ellipse center), rotation (compass "
+            "degrees), semi_major and semi_minor (axis lengths in map units), "
+            "std_dev (the chosen multiplier), input_n, skip_geom, and bad_w. "
+            "Two derived shape metrics worth computing from the axes "
+            "yourself: eccentricity (0 for a circle, approaching 1 for an "
+            "extremely elongated ellipse) and elongation ratio "
+            "semi_major/semi_minor (around 2 for moderate anisotropy, over 3 "
+            "for strong directional concentration).\n\n"
+            "Classic applications: track population-weighted ellipses across "
+            "census periods to see a city's growth axis (a growing semi_major "
+            "means expansion along a corridor; a rotating angle means the "
+            "city is 'pivoting' toward a new axis, e.g. from a rail line to a "
+            "highway); compare ellipses for different categories (crime "
+            "types, disease incidence) to detect corridor-following versus "
+            "area-wide patterns. Under approximate bivariate normality, a "
+            "k-SD ellipse is also readable as a confidence region for a "
+            "randomly drawn feature's location. Use Standard Distance instead "
+            "when a single scalar is enough and directional detail is not "
+            "needed."
         )
 
     def initAlgorithm(self, config=None):

@@ -124,7 +124,7 @@ Load either (or both) via `00 → Sample Dataset Guide`, then run `Data Readines
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox** (no toolbar/menu clutter — this plugin is Processing-only by design).
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 34 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://github.com/YusufEminoglu/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -143,7 +143,7 @@ Load either (or both) via `00 → Sample Dataset Guide`, then run `Data Readines
 - **Headless smoke tests** (`tests/smoke_core.py`, `smoke_sample_data.py`, `smoke_provider_catalog.py`) run without QGIS and gate every release. The report decision logic is intentionally kept in **QGIS-independent core helpers**, so **workflow advising**, **model-comparison scoring**, **Monte Carlo sensitivity interpretation**, **Global Moran's I report interpretation** and **Spatial Gini inequality decomposition** are unit-tested without launching QGIS.
 - A **full QGIS runtime matrix** executes every algorithm against the bundled sample data on **QGIS 3 LTR and QGIS 4**.
 - A manual **QA test matrix** (`QA_MANUAL_TEST_MATRIX.md`) covers setup, statistics, symbology, report interpretation and release gates.
-- The release-zip verifier asserts that **developer-only paths are absent**, **algorithm icons are present**, metadata points to a packaged icon, and the plugin remains **Processing-only** with no menu or toolbar UI hooks.
+- The release-zip verifier asserts that **developer-only paths are absent**, **algorithm icons are present**, and metadata points to a packaged icon. PlanX GeoStats Lab is packaged as a **hybrid Processing + dock-GUI plugin**, so its menu/toolbar hooks (the GeoStats Lab dock panel) are an intentional, verified part of the release rather than a packaging mistake.
 
 <details>
 <summary><b>Developer validation commands</b></summary>
@@ -155,7 +155,7 @@ py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.9.23
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.10.0
 ```
 
 </details>

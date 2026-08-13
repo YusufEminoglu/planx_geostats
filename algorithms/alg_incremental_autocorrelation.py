@@ -59,11 +59,31 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Measures spatial autocorrelation (Global Moran's I) at multiple "
-            "distance increments to identify the distance where clustering "
-            "is most pronounced (peak z-score).\n\n"
-            "This is essential for selecting an appropriate distance band "
-            "for other spatial statistics tools like Hot Spot Analysis."
+            "Computes Global Moran's I at a sequence of expanding distance bands "
+            "(START_DISTANCE, then +DISTANCE_INCREMENT per step, N_INCREMENTS "
+            "steps) to find the distance at which spatial clustering peaks - the "
+            "recommended, data-driven way to choose a distance-band threshold when "
+            "there is no theoretical basis for one. Each band uses a binary "
+            "weights matrix (neighbor if distance <= band, else not); the tool "
+            "reports Moran's I, its expected value, z-score, and p-value at every "
+            "band, plus min/median/max neighbor count and isolated-feature count "
+            "per band, and highlights the peak-|z| distance.\n\n"
+            "Read the z-score trajectory shape, not just the peak value: a peak at "
+            "an intermediate distance that declines afterward means the process "
+            "has a characteristic scale - use that peak as the threshold. A "
+            "monotonically increasing trajectory suggests a regional-scale "
+            "process; consider expanding the tested range. A monotonically "
+            "decreasing trajectory means the strongest clustering is at the "
+            "smallest tested scale. Multiple peaks can mean multiple spatial "
+            "processes operating at different scales, worth investigating "
+            "individually (or modeling with MGWR).\n\n"
+            "Even at the peak distance, check the isolated-feature count: if more "
+            "than roughly 5% of features still have zero neighbors there, the peak "
+            "is too small a scale for reliable inference and a larger, less "
+            "statistically 'optimal' band may be the more defensible choice. This "
+            "tool finds the strongest measured signal, not full connectivity - "
+            "pair it with Calculate Distance Band when universal connectivity also "
+            "matters."
         )
 
     def initAlgorithm(self, config=None):

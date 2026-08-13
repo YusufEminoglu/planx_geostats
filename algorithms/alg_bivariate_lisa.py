@@ -65,22 +65,35 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         return "planx_hotspots_outliers"
 
     def icon(self):
-        return algorithm_icon("local_moran_lisa")
+        return algorithm_icon("bivariate_lisa")
 
     def createInstance(self):
         return BivariateLISAAlgorithm()
 
     def shortHelpString(self) -> str:
         return (
-            "Identifies statistically significant spatiotemporal relationships between "
-            "a target variable X at a location and a neighboring variable Y using the Bivariate Local Moran's I (LISA) statistic.\n\n"
-            "The output layer will include bilisa_i, bilisa_z, bilisa_p, quadrant, and bilisa_nb. "
-            "The quadrants represent:\n"
-            "- HH (High-High): High X values surrounded by high neighboring Y values\n"
-            "- LL (Low-Low): Low X values surrounded by low neighboring Y values\n"
-            "- HL (High-Low): Spatial outlier (high X value surrounded by low neighboring Y values)\n"
-            "- LH (Low-High): Spatial outlier (low X value surrounded by high neighboring Y values)\n"
-            "- Not Significant: Features that are not statistically significant (p >= 0.05)"
+            "Extends Local Moran's I to two variables: for each feature, tests "
+            "whether variable X at that location is significantly associated "
+            "with the spatial lag (neighborhood average) of variable Y, using "
+            "conditional-permutation inference (999 permutations by default, "
+            "configurable 99-9999) rather than an analytical formula - the "
+            "bivariate case has no simple closed-form null distribution.\n\n"
+            "Output fields: bilisa_i, bilisa_z, bilisa_p, bilisa_nb (valid "
+            "neighbor count), and quadrant, assigned when bilisa_p < 0.05:\n"
+            "- HH (High-High): high X surrounded by high neighboring Y\n"
+            "- LL (Low-Low): low X surrounded by low neighboring Y\n"
+            "- HL (High-Low): high X surrounded by low neighboring Y\n"
+            "- LH (Low-High): low X surrounded by high neighboring Y\n\n"
+            "Bivariate LISA is directional and asymmetric: X's local relationship "
+            "to lagged Y is not the same computation as Y's local relationship to "
+            "lagged X, so running the tool with the fields swapped can produce a "
+            "genuinely different map, not just a relabeled one - run both "
+            "directions when the causal direction between X and Y is unclear. As "
+            "with any bivariate spatial statistic, a significant result reflects "
+            "association, not causation, and can be inflated by each variable's "
+            "own spatial autocorrelation even when no real cross-variable "
+            "relationship exists; check univariate Local Moran's I on X and Y "
+            "separately as a sanity check."
         )
 
     def initAlgorithm(self, config=None):

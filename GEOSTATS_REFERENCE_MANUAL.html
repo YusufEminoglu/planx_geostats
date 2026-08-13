@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanX GeoStats Lab — Comprehensive Reference Manual v0.9.20</title>
+<title>PlanX GeoStats Lab — Comprehensive Reference Manual v0.10.0</title>
 <script>
 MathJax = {
   tex: {
     tags: 'ams',
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
     macros: {
       xb: '\\bar{x}',
       yb: '\\bar{y}',
@@ -347,6 +349,53 @@ main {
   letter-spacing: .04em;
 }
 
+/* Copy-anchor-link button */
+.copy-anchor-btn {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  border: 1px solid var(--gs-slate-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--gs-slate-500);
+  font-size: .92rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.copy-anchor-btn:hover { background: var(--gs-teal-50); color: var(--gs-teal-700); border-color: var(--gs-teal-300); }
+.copy-anchor-btn.copied { background: var(--gs-teal-500); color: #fff; border-color: var(--gs-teal-500); }
+
+/* Performance / complexity badge, inline next to a heading */
+.perf-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gs-gold-100);
+  color: var(--gs-gold-600);
+  border: 1px solid var(--gs-gold-300);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* See also cross-links box */
+.see-also-box {
+  background: var(--gs-gold-50);
+  border: 1px solid var(--gs-gold-200);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  margin: 14px 0;
+  font-size: .84rem;
+  color: var(--gs-slate-700);
+  line-height: 1.6;
+}
+.see-also-box strong { color: var(--gs-gold-600); }
+.see-also-box a { color: var(--gs-teal-700); font-weight: 600; text-decoration: none; }
+.see-also-box a:hover { text-decoration: underline; }
+
 .alg-card-body { padding: 18px 28px 24px; }
 
 .alg-desc {
@@ -610,7 +659,7 @@ main {
 <nav id="sidebar">
 <div class="sidebar-header">
   <div class="brand">PlanX GeoStats Lab<span>Spatial Statistics</span></div>
-  <div class="version">Reference Manual — v0.9.20</div>
+  <div class="version">Reference Manual — v0.10.0</div>
 </div>
 <div class="sidebar-nav">
   <a href="#overview">Overview &amp; Philosophy</a>
@@ -687,7 +736,7 @@ main {
 </div>
 
 <div class="meta-row">
-    <span class="meta-chip">v0.9.20</span>
+    <span class="meta-chip">v0.10.0</span>
     <span class="meta-chip">34 algorithms</span>
     <span class="meta-chip">6 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
@@ -790,6 +839,7 @@ Infrastructure tools for environment verification, optional library management, 
     <h4>GeoStats Library Status</h4>
     <div class="alg-id">geostats_library_status</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-library-status" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -873,6 +923,7 @@ Infrastructure tools for environment verification, optional library management, 
     <h4>Install / Update GeoStats Libraries</h4>
     <div class="alg-id">install_geostats_libraries</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-install-libraries" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -946,8 +997,9 @@ Infrastructure tools for environment verification, optional library management, 
   <div class="alg-icon">🧪</div>
   <div class="alg-info">
     <h4>Sample Dataset Guide</h4>
-    <div class="alg-id">sample_data_guide</div>
+    <div class="alg-id">sample_dataset_guide</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-sample-data" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1022,6 +1074,7 @@ Infrastructure tools for environment verification, optional library management, 
     <h4>Data Readiness Audit</h4>
     <div class="alg-id">data_readiness_audit</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-data-readiness" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1108,10 +1161,6 @@ Infrastructure tools for environment verification, optional library management, 
 </article>
 
 <!-- Workflow Advisor -->
-</div>
-</article>
-
-<!-- Workflow Advisor -->
 <article class="alg-card" id="alg-workflow-advisor">
 <div class="alg-card-header">
   <div class="alg-icon">🧭</div>
@@ -1119,6 +1168,7 @@ Infrastructure tools for environment verification, optional library management, 
     <h4>GeoStats Workflow Advisor</h4>
     <div class="alg-id">geostats_workflow_advisor</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-workflow-advisor" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1201,11 +1251,6 @@ Infrastructure tools for environment verification, optional library management, 
 
 <!-- ════════════════════════════════════════════════════════════════ -->
 <!--  GROUP 01 — DATA PREPARATION AND NEIGHBORHOODS                 -->
-</div>
-</article>
-
-<!-- ════════════════════════════════════════════════════════════════ -->
-<!--  GROUP 01 — DATA PREPARATION AND NEIGHBORHOODS                 -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <div class="group-anchor" id="group-01"></div>
 <div class="group-header">
@@ -1224,6 +1269,7 @@ Tools that define the spatial framework within which all subsequent analyses ope
     <h4>Calculate Distance Band from Neighbor Count</h4>
     <div class="alg-id">calculate_distance_band</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-distance-band" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1302,8 +1348,9 @@ Tools that define the spatial framework within which all subsequent analyses ope
   <div class="alg-icon">📤</div>
   <div class="alg-info">
     <h4>Export Feature Attributes to CSV/ASCII</h4>
-    <div class="alg-id">export_attributes</div>
+    <div class="alg-id">export_attributes_to_ascii</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-export-attrs" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1398,6 +1445,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <h4>Spatial Autocorrelation (Global Moran's I)</h4>
     <div class="alg-id">global_moran_autocorrelation</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-global-moran" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1520,7 +1568,11 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>Neighborhood diagnostics.</strong> The report flags two critical conditions: (1) <em>isolated features</em> — features with zero neighbors, which contribute nothing to the global statistic and effectively shrink the sample; (2) <em>fully connected graph</em> — when every feature is a neighbor of every other, I approaches 0 and the statistic loses discriminatory power. Both conditions indicate an inappropriate weight specification for the data geometry.
   </p>
 
-  <h5>6. Literature</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-inc-autocorr">Incremental Autocorrelation</a> &middot; <a href="#alg-spatial-gini">Spatial Gini</a> &middot; <a href="#alg-getis-ord">Getis-Ord Gi*</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a>
+  </div>
+
+<h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Moran, P.A.P.</strong> (1950). "Notes on Continuous Stochastic Phenomena." <em>Biometrika</em> 37(1/2): 17–23. DOI: <a href="https://doi.org/10.1093/biomet/37.1-2.17">10.1093/biomet/37.1-2.17</a> — The origin paper. Introduces the I statistic as a spatial analogue of serial correlation.</p>
   <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1973). <em>Spatial Autocorrelation.</em> London: Pion. ISBN: 978-0850860368 — First book-length treatment; derives moments of I under both normality and randomization.</p>
@@ -1543,9 +1595,10 @@ Global spatial statistics that characterize the overall structure of a spatial v
 <div class="alg-card-header">
   <div class="alg-icon">⚖️</div>
   <div class="alg-info">
-    <h4>Spatial Inequality (Gini and Spatial Gini)</h4>
+    <h4>Spatial Inequality (Gini and Spatial Gini)<span class="perf-badge">PERMUTATION (OPT.)</span></h4>
     <div class="alg-id">spatial_gini_inequality</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-spatial-gini" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1665,7 +1718,11 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>Application domains.</strong> The spatial Gini is designed for non-negative planning indicators: household income, property values, environmental hazard exposure indices, accessibility scores, service-provision rates, population density, and tax-base per capita. It is <em>not</em> suitable for variables that span zero (net migration rate, standardized residuals, growth rates) or for ordinal/categorical variables. For binary variables (presence/absence), consider the spatial segregation indices (e.g., dissimilarity index with spatial decomposition) instead.
   </p>
 
-  <h5>6. Literature</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-global-moran">Global Moran's I</a> &middot; <a href="#alg-getis-ord">Getis-Ord Gi*</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a>
+  </div>
+
+<h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Gini, C.</strong> (1912). <em>Variabilità e Mutabilità: Contributo allo Studio delle Distribuzioni e delle Relazioni Statistiche.</em> Bologna: Cuppini. — The foundational work introducing the concentration ratio (now the Gini coefficient). Original publication in Italian.</p>
   <p style="margin:4px 0;"><strong>Rey, S.J. &amp; Smith, R.J.</strong> (2013). "A Spatial Decomposition of the Gini Coefficient." <em>Letters in Spatial and Resource Sciences</em> 6(2): 55–70. DOI: <a href="https://doi.org/10.1007/s12076-012-0086-z">10.1007/s12076-012-0086-z</a> — The primary methodological reference; introduces the neighbor/non-neighbor decomposition used in this plugin.</p>
@@ -1689,8 +1746,9 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <div class="alg-icon">🔺</div>
   <div class="alg-info">
     <h4>High/Low Clustering (Getis-Ord General G)</h4>
-    <div class="alg-id">general_g</div>
+    <div class="alg-id">general_g_autocorrelation</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-general-g" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1803,7 +1861,11 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>Critical scale sensitivity.</strong> The General G is evaluated at a single distance band <em>d</em>. The result is conditional on this choice: a G that indicates high-value clustering at d = 1000 m may show no clustering at d = 500 m, and a fully-connected graph at d = 5000 m. The observed G approaches the expectation as d increases (more pairs become neighbors until every pair is a neighbor, and G converges to \(S_0 / [N(N-1)]\)). Always use Incremental Spatial Autocorrelation or Calculate Distance Band (Group 01) to determine an appropriate threshold before running General G.
   </p>
 
-  <h5>6. Literature</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-getis-ord">Getis-Ord Gi*</a> &middot; <a href="#alg-global-moran">Global Moran's I</a>
+  </div>
+
+<h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Getis, A. &amp; Ord, J.K.</strong> (1992). "The Analysis of Spatial Association by Use of Distance Statistics." <em>Geographical Analysis</em> 24(3): 189–206. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1992.tb00261.x">10.1111/j.1538-4632.1992.tb00261.x</a> — The foundational paper; introduces both the global General G and the local \(G_i(d)\) statistic.</p>
   <p style="margin:4px 0;"><strong>Ord, J.K. &amp; Getis, A.</strong> (1995). "Local Spatial Autocorrelation Statistics: Distributional Issues and an Application." <em>Geographical Analysis</em> 27(4): 286–306. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00912.x">10.1111/j.1538-4632.1995.tb00912.x</a> — Refines the local \(G_i^*\) formulation and derives distributional properties; the source of the Gi* formula used in Group 03.</p>
@@ -1827,8 +1889,9 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <div class="alg-icon">📈</div>
   <div class="alg-info">
     <h4>Incremental Spatial Autocorrelation</h4>
-    <div class="alg-id">incremental_autocorrelation</div>
+    <div class="alg-id">incremental_spatial_autocorrelation</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-inc-autocorr" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -1934,7 +1997,11 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>Isolated features at peak.</strong> Even at the peak z-score distance, some features may have zero neighbors. If the isolated-count at the peak is more than ~5% of total features, the peak distance is too small for reliable inference. Choose a distance band where isolated features are minimized and z-score is still significant.
   </p>
 
-  <h5>6. Literature</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-distance-band">Calculate Distance Band</a> &middot; <a href="#alg-global-moran">Global Moran's I</a>
+  </div>
+
+<h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1973). <em>Spatial Autocorrelation.</em> London: Pion. ISBN: 978-0850860368 — Introduces the spatial correlogram as a method for exploring autocorrelation across distance classes.</p>
   <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1981). <em>Spatial Processes: Models &amp; Applications.</em> London: Pion. ISBN: 978-0850860818 — Definitive treatment of the correlogram approach; chapters 5–6.</p>
@@ -1960,6 +2027,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <h4>Ripley's K-Function</h4>
     <div class="alg-id">ripleys_k_function</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-ripleys-k" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -2073,7 +2141,11 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>Cautionary note on maximum distance.</strong> Ripley and subsequent authors (Baddeley et al., 2015) recommend interpreting K(d) only for \(d \le 0.25 \sqrt{A}\) (i.e., one-quarter of the square root of the study area). Beyond this distance, edge effects become severe and the variance of the estimator increases. The plugin does not enforce this cutoff automatically; the analyst should assess whether the maximum tested distance is interpretable given the study-area geometry.
   </p>
 
-  <h5>6. Literature</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ann">Average Nearest Neighbor</a>
+  </div>
+
+<h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Ripley, B.D.</strong> (1976). "The Second-Order Analysis of Stationary Point Processes." <em>Journal of Applied Probability</em> 13(2): 255–266. DOI: <a href="https://doi.org/10.2307/3212829">10.2307/3212829</a> — The origin paper; defines the K-function and derives its theoretical properties for stationary point processes.</p>
   <p style="margin:4px 0;"><strong>Ripley, B.D.</strong> (1977). "Modelling Spatial Patterns" (with discussion). <em>Journal of the Royal Statistical Society B</em> 39(2): 172–212. DOI: <a href="https://doi.org/10.1111/j.2517-6161.1977.tb01615.x">10.1111/j.2517-6161.1977.tb01615.x</a> — The full treatment with edge-correction methods and the discussion where Besag proposes the L(d) transformation.</p>
@@ -2099,6 +2171,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <h4>Average Nearest Neighbor</h4>
     <div class="alg-id">average_nearest_neighbor</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-ann" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -2213,7 +2286,11 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>Centroid caveat.</strong> For polygon or line features, the plugin uses feature centroids as point locations. This is appropriate when features are approximately point-like (small parcels, building footprints) but can be misleading for large or irregularly-shaped polygons. Two large adjacent polygons with centroids far apart may genuinely be neighbors. For polygon layers where area varies substantially, consider generating population-weighted centroid points or using contiguity-based methods (Moran's I with Queen/Rook weights) instead.
   </p>
 
-  <h5>6. Literature</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ripleys-k">Ripley's K-Function</a>
+  </div>
+
+<h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Clark, P.J. &amp; Evans, F.C.</strong> (1954). "Distance to Nearest Neighbor as a Measure of Spatial Relationships in Populations." <em>Ecology</em> 35(4): 445–453. DOI: <a href="https://doi.org/10.2307/1931034">10.2307/1931034</a> — The foundational paper; derives the expected nearest-neighbor distance under CSR and the standard error used in this plugin.</p>
   <p style="margin:4px 0;"><strong>Donnelly, K.</strong> (1978). "Simulations to Determine the Variance and Edge-Effect of Total Nearest Neighbour Distance." In I. Hodder (ed.), <em>Simulation Studies in Archaeology</em>, pp. 91–95. Cambridge: Cambridge University Press. — Corrects the Clark-Evans formulation for edge effects in bounded regions.</p>
@@ -2251,6 +2328,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     <h4>Hot Spot Analysis (Getis-Ord Gi*)</h4>
     <div class="alg-id">getis_ord_gi</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-getis-ord" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -2423,7 +2501,11 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     follow the exact Ord &amp; Getis (1995) formulation using the error function.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-general-g">General G</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a> &middot; <a href="#alg-distance-band">Calculate Distance Band</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>Primary:</strong><br>
     1. Getis, A. &amp; Ord, J.K. (1992). "The Analysis of Spatial Association by Use of Distance Statistics." <em>Geographical Analysis</em> 24(3): 189–206. doi:10.1111/j.1538-4632.1992.tb00261.x — <em>foundational paper defining Gi and Gi*</em><br>
@@ -2452,6 +2534,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     <h4>Cluster and Outlier Analysis (Local Moran's I / LISA)</h4>
     <div class="alg-id">local_moran_lisa</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-local-moran" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -2676,7 +2759,11 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     Data Readiness Audit (Group 00) reports kurtosis for all selected fields.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-getis-ord">Getis-Ord Gi*</a> &middot; <a href="#alg-bivariate-lisa">Bivariate LISA</a> &middot; <a href="#alg-global-moran">Global Moran's I</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>Primary:</strong><br>
     1. Anselin, L. (1995). "Local Indicators of Spatial Association — LISA." <em>Geographical Analysis</em> 27(2): 93–115. doi:10.1111/j.1538-4632.1995.tb00338.x — <em>the canonical LISA paper; defines the criteria, derives the moments, introduces the Moran scatterplot</em><br>
@@ -2702,9 +2789,10 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
 <div class="alg-card-header">
   <div class="alg-icon">🔗</div>
   <div class="alg-info">
-    <h4>Bivariate Cluster and Outlier Analysis (Bivariate LISA)</h4>
+    <h4>Bivariate Cluster and Outlier Analysis (Bivariate LISA)<span class="perf-badge">PERMUTATION</span></h4>
     <div class="alg-id">bivariate_lisa</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-bivariate-lisa" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -2898,7 +2986,11 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     comparable across variable pairs on different scales.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-bivariate-lee">Bivariate Lee's L</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>Primary (bivariate LISA):</strong><br>
     1. Anselin, L., Syabri, I. &amp; Smirnov, O. (2002). "Visualizing Multivariate Spatial Correlation with Dynamically Linked Windows." In L. Anselin &amp; S. Rey (eds.), <em>New Tools for Spatial Data Analysis: Proceedings of the Specialist Meeting</em>. Santa Barbara: Center for Spatially Integrated Social Science, UCSB. — <em>the original bivariate LISA operationalization</em><br>
@@ -2928,6 +3020,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     <h4>Bivariate Spatial Association (Lee's L)</h4>
     <div class="alg-id">bivariate_spatial_association_lees_l</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-bivariate-lee" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -3090,7 +3183,11 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     enabling targeted case-study selection for qualitative follow-up.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-bivariate-lisa">Bivariate LISA</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>Primary:</strong><br>
     1. Lee, S.-I. (2001). "Developing a Bivariate Spatial Association Measure: An Integration of Pearson's r and Moran's I." <em>Journal of Geographical Systems</em> 3(4): 369–385. doi:10.1007/s101090100064 — <em>the foundational paper introducing Lee's L as an integrated measure</em><br>
@@ -3120,6 +3217,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     <h4>Multivariate Clustering (K-Means)</h4>
     <div class="alg-id">multivariate_clustering</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-multivar-cluster" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -3360,6 +3458,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     <h4>Similarity Search</h4>
     <div class="alg-id">similarity_search</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-similarity" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -3601,11 +3700,16 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <h4>Mean Center</h4>
     <div class="alg-id">mean_center</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-mean-center" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
     Computes the geographic center (arithmetic mean of X and Y coordinates) of a set of features, optionally weighted by a numeric field. The simplest spatial central-tendency measure and the foundation of centrographic analysis. When weighted by population, this yields the <strong>population centroid</strong>; when weighted by employment, the <strong>employment centroid</strong>; the shift vector between unweighted and weighted centers reveals the spatial pull of the weighting variable — a classic technique for tracking demographic and economic deconcentration over time.
   </div>
+
+  <h5>Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The mean center is the direct spatial analogue of the arithmetic mean, and its use in geography predates modern GIS by more than a century: the U.S. Census Bureau has computed and published the national population center after every decennial census since 1790, tracking its westward and southward drift as the settlement pattern of the country shifted. Sviatlovsky and Eells (1937) formalized the broader family of centrographic measures — mean center, standard distance, median center — as a coherent toolkit borrowed directly from the physics of the center of mass, treating each feature as a unit (or weighted) point mass and the mean center as the point where the distribution would balance if cut from rigid material.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The mean center's chief virtue is also its chief weakness: because it is a linear function of the coordinates, it is trivial to compute and to weight, but it inherits the arithmetic mean's zero breakdown point — a single feature at an extreme coordinate can pull the center arbitrarily far from where most of the data actually sit. This is the motivation for pairing Mean Center with Median Center (this group) whenever the dataset may contain outliers, a pairing recommended as standard practice since at least Kellerman's (1981) CATMOG monograph on centrographic measures.</p>
 
   <h5>Parameters</h5>
   <table class="params-table">
@@ -3649,9 +3753,13 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <strong>Limitations.</strong> The mean center is sensitive to outliers — a single feature at an extreme coordinate shifts the center proportionally. For skewed point patterns, prefer the <strong>Median Center</strong>. The mean center may also fall in an uninhabitable location (water body, mountain ridge) — use the <strong>Central Feature</strong> when the result must be an actual input feature.
   </div>
 
-  <h5>References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-median-center">Median Center</a> &middot; <a href="#alg-central-feature">Central Feature</a> &middot; <a href="#alg-std-distance">Standard Distance</a> &middot; <a href="#alg-sde">Directional Distribution</a>
+  </div>
+
+<h5>References</h5>
   <div class="cite">
-    <strong>Sviatlovsky, E.E. &amp; Eells, W.C.</strong> (1937). "The Centrographical Method and Regional Analysis." <em>Geographical Review</em> 27(2): 240–254. <a href="https://doi.org/10.2307/210334" target="_blank" rel="noopener">doi:10.2307/210093</a> ·
+    <strong>Sviatlovsky, E.E. &amp; Eells, W.C.</strong> (1937). "The Centrographical Method and Regional Analysis." <em>Geographical Review</em> 27(2): 240–254. <a href="https://doi.org/10.2307/210093" target="_blank" rel="noopener">doi:10.2307/210093</a> ·
     <strong>Kellerman, A.</strong> (1981). "Centrographic Measures in Geography." <em>CATMOG</em> 32. Geo Abstracts, Norwich. ISBN 0-86094-081-2 ·
     <strong>Burt, J.E. &amp; Barber, G.M.</strong> (1996). <em>Elementary Statistics for Geographers</em> (2nd ed.). Guilford Press. ISBN 1-57230-003-8 ·
     <strong>Mendeleev, D.I.</strong> (1906). <em>K poznaniyu Rossii</em> [Toward the Understanding of Russia]. St. Petersburg. ·
@@ -3670,14 +3778,19 @@ Descriptive spatial statistics that characterize the central tendency, direction
 <div class="alg-card-header">
   <div class="alg-icon">⦿</div>
   <div class="alg-info">
-    <h4>Central Feature</h4>
+    <h4>Central Feature<span class="perf-badge">O(N&sup2;)</span></h4>
     <div class="alg-id">central_feature</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-central-feature" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
     Identifies the <strong>most centrally located existing feature</strong> in the dataset — the feature $j^*$ whose sum of Euclidean distances to all other features is minimized. Unlike the Mean Center (which may fall in an uninhabited location such as a water body or mountain ridge), the Central Feature is always one of the actual input features. This is a discrete approximation to the 1-median problem, making it invaluable for <strong>facility-location screening</strong> when the candidate set is restricted to existing sites (e.g., "which existing fire station is most central to the at-risk population?").
   </div>
+
+  <h5>Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The Central Feature tool solves a discrete instance of the classical 1-median (Weber) problem: among a fixed candidate set, find the point that minimizes total weighted distance to all others. This "restrict the search to existing sites" framing is the standard first move in applied facility-location analysis (Wesolowsky, 1993) — planners rarely have the freedom to build a new facility anywhere in continuous space, but very often need to decide which of several existing sites (schools, clinics, depots) is best positioned to serve the rest. Kuhn and Kuenne (1962) generalized the underlying Weber problem to weighted multi-point demand, the same generalization this tool implements via the WEIGHT_FIELD parameter.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">Because the search is restricted to the N input features rather than all of continuous space, Central Feature always returns a worse or equal objective value than the true geometric median computed by Median Center (this group) — the two tools are best used together, with the efficiency ratio between their respective total-distance outputs indicating how much is lost by restricting the search to actual sites rather than any point in the plane.</p>
 
   <h5>Parameters</h5>
   <table class="params-table">
@@ -3719,7 +3832,11 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <strong>Diagnostic value.</strong> Compare the central feature's total_distance to the Median Center's total_dist output. If they are close, the discrete optimum approximates the continuous optimum well. If they diverge, either (a) the feature set is sparse relative to the area, or (b) the continuous optimum lies in a gap between features — consider whether a new facility is warranted.
   </div>
 
-  <h5>References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-mean-center">Mean Center</a> &middot; <a href="#alg-median-center">Median Center</a>
+  </div>
+
+<h5>References</h5>
   <div class="cite">
     <strong>Kuhn, H.W. &amp; Kuenne, R.E.</strong> (1962). "An Efficient Algorithm for the Numerical Solution of the Generalized Weber Problem in Spatial Economics." <em>Journal of Regional Science</em> 4(2): 21–33. <a href="https://doi.org/10.1111/j.1467-9787.1962.tb00902.x" target="_blank" rel="noopener">doi:10.1111/j.1467-9787.1962.tb00902.x</a> ·
     <strong>Weiszfeld, E.</strong> (1937). "Sur le point pour lequel la somme des distances de n points donnés est minimum." <em>Tohoku Mathematical Journal</em> 43: 355–386. (No DOI; pre-digital) ·
@@ -3743,11 +3860,16 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <h4>Median Center (Weiszfeld Algorithm)</h4>
     <div class="alg-id">median_center</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-median-center" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
     Computes the <strong>geometric median</strong> (also called the 1-median, Fermat–Weber point, or spatial median) — the point in continuous space that minimizes the sum of weighted Euclidean distances to all features. The geometric median is substantially more <strong>robust to outliers</strong> than the mean center: a single feature at an extreme distance does not pull the median center as strongly as it pulls the mean. Its <strong>breakdown point is 0.5</strong> (up to half the data can be arbitrarily displaced without destroying the estimate), compared to 0 for the mean center. Implemented via <strong>Weiszfeld's iterative algorithm</strong> (1937) with automatic perturbation when the iterate coincides with a data point.
   </div>
+
+  <h5>Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The geometric median has a distinguished, largely independent history in three separate fields: facility-location theory (where it is the Weber point, solving the classical problem of siting a factory to minimize total weighted transport cost to several markets), robust statistics (where it is the multivariate L1-median, one of the highest-breakdown-point location estimators known), and computational geometry (where the Weiszfeld iteration remains a standard reference algorithm for convex-but-nonsmooth optimization). Weiszfeld's 1937 paper predates the modern optimization literature by decades and was rediscovered independently more than once before Kuhn (1973) supplied a rigorous convergence proof.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">Vardi and Zhang (2000) placed the geometric median within the modern statistical-depth framework, showing it is the deepest point of a multivariate L1 data-depth function — a formalization of the intuitive idea that the median center is the "most typical" location in a point set, robust to contamination in a way the mean center fundamentally cannot be. Lopuhaa and Rousseeuw's (1991) breakdown-point theory for affine-equivariant location estimators is the formal basis for the BP = 0.5 figure reported below.</p>
 
   <h5>Parameters</h5>
   <table class="params-table">
@@ -3796,7 +3918,11 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <strong>When not to use.</strong> For datasets with very few features ($N &lt; 5$), the median center may not differ meaningfully from the mean center. For large datasets where computation time is critical, consider the Central Feature as a faster $O(N^2)$ discrete alternative. For minimax problems (minimize the maximum distance to any point), use the <strong>1-center</strong> (not the 1-median), which is not directly provided by this tool but can be approximated by the Central Feature when constrained to existing sites.
   </div>
 
-  <h5>References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-mean-center">Mean Center</a> &middot; <a href="#alg-central-feature">Central Feature</a>
+  </div>
+
+<h5>References</h5>
   <div class="cite">
     <strong>Weiszfeld, E.</strong> (1937). "Sur le point pour lequel la somme des distances de n points donnés est minimum." <em>Tohoku Mathematical Journal</em> 43: 355–386. (No DOI; pre-digital. English translation by F. Plastria available.) ·
     <strong>Kuhn, H.W.</strong> (1973). "A Note on Fermat's Problem." <em>Mathematical Programming</em> 4(1): 98–107. <a href="https://doi.org/10.1007/bf01584648" target="_blank" rel="noopener">doi:10.1007/bf01584648</a> ·
@@ -3820,11 +3946,16 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <h4>Standard Distance</h4>
     <div class="alg-id">standard_distance</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-std-distance" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
     Computes the <strong>spatial analogue of the standard deviation</strong> — the degree to which features are concentrated or dispersed around their mean center. Produces a circular polygon centered on the weighted mean center with radius equal to the standard distance multiplied by a user-selected factor (1, 2, or 3 SD). The standard distance is a <strong>circle of dispersion</strong>: it captures how tightly or loosely points cluster around their center, but unlike the SDE it assumes isotropic (directionally uniform) dispersion.
   </div>
+
+  <h5>Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">Standard Distance was introduced by D. Welty Lefever in 1926 as a byproduct of deriving the Standard Deviational Ellipse (this group): before generalizing dispersion to an anisotropic ellipse, Lefever first needed the isotropic special case — a single scalar summarizing "how spread out" a point pattern is, directly analogous to the standard deviation of a univariate sample. Furfey (1927) and later Bachi (1963) placed the measure on firmer mathematical footing, establishing its relationship to the trace of the spatial covariance matrix that this implementation exposes directly ($SD^2 = \operatorname{tr}(\mathbf{C}) = \sigma_x^2 + \sigma_y^2$).</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">Because Standard Distance discards the covariance term $\Sigma_{xy}$ entirely, it cannot detect directional bias: two datasets with identical isotropic spread but very different orientations (one circular, one a narrow diagonal band) can produce the same standard distance despite looking completely different on a map. This is the single most common reason to prefer the Standard Deviational Ellipse over Standard Distance whenever the analyst suspects the pattern is not radially symmetric.</p>
 
   <h5>Parameters</h5>
   <table class="params-table">
@@ -3874,7 +4005,11 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <strong>Comparative analysis.</strong> Compute standard distances for the same variable across multiple time periods (e.g., population distribution 1990, 2000, 2010, 2020). A progressively increasing SD indicates spatial deconcentration (suburbanization); a stable or shrinking SD indicates containment or densification. The change in SD over time can be expressed as an annualized growth rate.
   </div>
 
-  <h5>References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-sde">Directional Distribution</a>
+  </div>
+
+<h5>References</h5>
   <div class="cite">
     <strong>Furfey, P.H.</strong> (1927). "A Note on Lefever's 'Standard Deviational Ellipse'." <em>American Journal of Sociology</em> 33(1): 94–98. <a href="https://doi.org/10.1086/214336" target="_blank" rel="noopener">doi:10.1086/214336</a> ·
     <strong>Bachi, R.</strong> (1963). "Standard Distance Measures and Related Methods for Spatial Analysis." <em>Papers of the Regional Science Association</em> 10(1): 83–132. <a href="https://doi.org/10.1007/BF01934680" target="_blank" rel="noopener">doi:10.1007/BF01934680</a> ·
@@ -3898,11 +4033,16 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <h4>Directional Distribution (Standard Deviational Ellipse)</h4>
     <div class="alg-id">directional_distribution</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-sde" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
     Computes the <strong>Standard Deviational Ellipse (SDE)</strong> — a polygon ellipse that simultaneously captures the <strong>spatial dispersion, directional orientation, and anisotropy</strong> of a point pattern. Introduced by D. Welty Lefever in 1926, the SDE remains one of the most widely used centrographic tools in urban geography, criminology, epidemiology, and transportation planning. The ellipse's semi-major axis shows the direction of maximum spatial spread; the semi-minor axis shows the direction of minimum spread; the rotation angle $\theta$ quantifies the primary trend axis measured from due East (converted to compass degrees in output). Available at 1, 2, or 3 standard deviations.
   </div>
+
+  <h5>Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The SDE occupies a central place in the centrographic tradition alongside Mean Center and Standard Distance (this group), but its influence extends further: it is the two-dimensional special case of the general theory of confidence ellipses for a bivariate normal distribution, so a k-SD ellipse can be read, approximately and under bivariate normality, as a confidence region for the location of a randomly drawn feature. Wang, Shi and Miao (2015) formalized this connection explicitly, deriving exact confidence levels for the SDE at arbitrary standard-deviation multipliers and extending the construction to higher dimensions.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">This dual identity — an intuitive visual summary that is also a defensible statistical object — is why the SDE became the default descriptive-geography tool in early GIS packages (Mitchell, 2005), where ad hoc convex-hull or bounding-box envelopes had previously served the same visual role without any statistical grounding.</p>
 
   <h5>Parameters</h5>
   <table class="params-table">
@@ -3962,7 +4102,11 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <strong>Historical note.</strong> Lefever's original 1926 formula used a different rotation-angle expression: $\tan 2\theta = \big[\Sigma\tilde{x}^2 - \Sigma\tilde{y}^2 + \sqrt{(\Sigma\tilde{x}^2 - \Sigma\tilde{y}^2)^2 + 4(\Sigma\tilde{x}\tilde{y})^2}\big] / (2\Sigma\tilde{x}\tilde{y})$, which always produces an acute angle. Furfey (1927) immediately criticized this as geometrically inconsistent, noting it does not minimize the projected variance. Yuill (1971) definitively settled the matter in favor of the eigenvector-based $\frac{1}{2}\arctan\!2(2\Sigma_{xy}, \Sigma_{xx} - \Sigma_{yy})$ formulation. The GeoStats Lab implementation follows the Yuill/Furfey convention.
   </div>
 
-  <h5>References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-std-distance">Standard Distance</a>
+  </div>
+
+<h5>References</h5>
   <div class="cite">
     <strong>Lefever, D.W.</strong> (1926). "Measuring Geographic Concentration by Means of the Standard Deviational Ellipse." <em>American Journal of Sociology</em> 32(1): 88–94. <a href="https://doi.org/10.1086/214027" target="_blank" rel="noopener">doi:10.1086/214027</a> ·
     <strong>Furfey, P.H.</strong> (1927). "A Note on Lefever's 'Standard Deviational Ellipse'." <em>American Journal of Sociology</em> 33(1): 94–98. <a href="https://doi.org/10.1086/214336" target="_blank" rel="noopener">doi:10.1086/214336</a> ·
@@ -3986,11 +4130,16 @@ Descriptive spatial statistics that characterize the central tendency, direction
     <h4>Linear Directional Mean</h4>
     <div class="alg-id">linear_directional_mean</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-linear-dir-mean" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
     Computes the <strong>mean direction</strong> (compass bearing, $0^\circ$ = North, clockwise) and the <strong>mean length</strong> of a set of line features using length-weighted circular statistics. The result is a single representative trend line centered at the geographic mean of all line midpoints, extending half the mean length in each direction along the mean bearing. Designed for analyzing <strong>street-network orientation</strong> (e.g., identifying a city's dominant grid angle), <strong>migration-flow vectors</strong>, <strong>prevailing wind fields</strong>, <strong>fault-line patterns</strong> in geology, or any dataset where line <em>direction</em> carries analytical meaning. Circular (periodic) statistics correctly handle the wrap-around problem: $359^\circ$ and $1^\circ$ average to $0^\circ$, not $180^\circ$.
   </div>
+
+  <h5>Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">Linear Directional Mean belongs to circular (directional) statistics, a branch developed specifically because ordinary linear statistics break down on periodic data: the arithmetic mean of $1^\circ$ and $359^\circ$ is $180^\circ$, which is exactly backwards for a compass bearing that in reality differs by only $2^\circ$. Rayleigh (1880) derived the foundational result — the resultant-length distribution of randomly phased vectors summed together — while studying wave interference in physics, a result circular statistics later adopted wholesale as the basis for testing directional uniformity (the Rayleigh test this tool reports as $Z$). Von Mises (1918) supplied the circular analogue of the normal distribution, and Mardia &amp; Jupp (2000) and Fisher (1993) later consolidated the field into the modern reference texts this implementation follows.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">Boeing (2019) applied exactly this framework to street-network orientation at a global, comparative scale, quantifying the "griddedness" of hundreds of cities via the same mean-resultant-length statistic ($\bar{R}$) this tool computes — the planning-applications guidance below draws directly on that framework.</p>
 
   <h5>Parameters</h5>
   <table class="params-table">
@@ -4092,6 +4241,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Ordinary Least Squares (OLS) Spatial Regression</h4>
     <div class="alg-id">ols_regression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-ols" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4163,7 +4313,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Step 3 — Residual diagnostics.</strong> Jarque-Bera significant (p &lt; 0.05) → residuals are non-normal; t-tests and p-values should be interpreted cautiously. Koenker's BP significant → heteroskedasticity present; consider robust SEs or variable transformations. Moran's I significant → spatial structure remains in residuals; a spatial model (SAR or SEM) is indicated.<br><br>
     <strong>Step 4 — Diagnostic hierarchy.</strong> Address multicollinearity first (drop or combine high-VIF variables), then re-run OLS. If residual Moran's I remains significant, the best-fitting OLS specification still violates the independence assumption: progress to SAR or SEM. If all diagnostics are clean, OLS coefficients may be used as a global baseline for spatial comparison.
   </div>
-  <h5>Key Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-exploratory-reg">Exploratory Regression</a> &middot; <a href="#alg-glr">Generalized Linear Regression</a> &middot; <a href="#alg-spatial-lag">Spatial Lag Regression (SAR)</a> &middot; <a href="#alg-spatial-error">Spatial Error Regression (SEM)</a>
+  </div>
+
+<h5>Key Academic References</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-600);line-height:1.8;margin-top:10px;">
     <p>1. <strong>Belsley, D.A., Kuh, E. &amp; Welsch, R.E.</strong> (1980). <em>Regression Diagnostics: Identifying Influential Data and Sources of Collinearity.</em> Wiley. DOI: <a href="https://doi.org/10.1002/0471725153">10.1002/0471725153</a></p>
     <p>2. <strong>Breusch, T.S. &amp; Pagan, A.R.</strong> (1979). "A Simple Test for Heteroscedasticity and Random Coefficient Variation." <em>Econometrica</em> 47(5): 1287–1294. DOI: <a href="https://doi.org/10.2307/1911963">10.2307/1911963</a></p>
@@ -4189,6 +4343,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Generalized Linear Regression (GLR)</h4>
     <div class="alg-id">generalized_linear_regression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-glr" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4254,7 +4409,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Poisson family.</strong> Coefficients are log-rate ratios. $\exp(\beta_j)$ is the incidence rate ratio: a one-unit increase in $x_j$ multiplies the expected count by $e^{\beta_j}$. Example: $\beta_j = 0.3$ → $e^{0.3} \approx 1.35$, a 35% increase in expected count. Equidispersion ($\mathbb{E}[y] = \text{Var}(y)$) is assumed; if the residual deviance substantially exceeds the residual degrees of freedom, the data are overdispersed and a negative-binomial model may be warranted.<br><br>
     <strong>Warning.</strong> The GLR implementations are self-contained NumPy engines. They do not compute deviance residuals, leverage, or Cook's distance. For full GLM diagnostics (including overdispersion tests, Pearson residuals, and influence measures), export the data to R or use <code>statsmodels</code> in Python. The output layer includes <code>glr_fit</code> and <code>glr_resid</code> for manual inspection.
   </div>
-  <h5>Key Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ols">OLS Regression</a>
+  </div>
+
+<h5>Key Academic References</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-600);line-height:1.8;margin-top:10px;">
     <p>1. <strong>Nelder, J.A. &amp; Wedderburn, R.W.M.</strong> (1972). "Generalized Linear Models." <em>Journal of the Royal Statistical Society, Series A</em> 135(3): 370–384. DOI: <a href="https://doi.org/10.2307/2344614">10.2307/2344614</a></p>
     <p>2. <strong>McCullagh, P. &amp; Nelder, J.A.</strong> (1989). <em>Generalized Linear Models</em> (2nd ed.). Chapman &amp; Hall, London. DOI: <a href="https://doi.org/10.1007/978-1-4899-3242-6">10.1007/978-1-4899-3242-6</a></p>
@@ -4280,6 +4439,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Spatial Lag Regression (SAR / Spatial Autoregressive Model)</h4>
     <div class="alg-id">spatial_autoregression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-spatial-lag" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4350,7 +4510,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>SAR vs. SEM decision.</strong> Run OLS first. If residual Moran's I is significant: (a) if LM-lag is significant but LM-error is not → SAR; (b) if LM-error is significant but LM-lag is not → SEM; (c) if both are significant → compare robust forms; (d) if neither is significant but residual Moran's I persists → re-examine the spatial weights definition. The plugin's Model Comparison tool automates this flow.<br><br>
     <strong>Weight sensitivity.</strong> The spatial autoregressive coefficient is sensitive to $\mathbf{W}$. Test stability by re-running SAR with at least two weight specifications (e.g., KNN $k=8$ vs. Queen contiguity). If $\rho$ changes sign or loses significance, the spatial process may not be robustly identified — be cautious about policy interpretation.
   </div>
-  <h5>Key Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-spatial-error">Spatial Error Regression (SEM)</a> &middot; <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
+  </div>
+
+<h5>Key Academic References</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-600);line-height:1.8;margin-top:10px;">
     <p>1. <strong>Anselin, L.</strong> (1988). <em>Spatial Econometrics: Methods and Models.</em> Kluwer, Dordrecht. DOI: <a href="https://doi.org/10.1007/978-94-015-7799-1">10.1007/978-94-015-7799-1</a></p>
     <p>2. <strong>LeSage, J. &amp; Pace, R.K.</strong> (2009). <em>Introduction to Spatial Econometrics.</em> CRC Press, Boca Raton. DOI: <a href="https://doi.org/10.1201/9781420064254">10.1201/9781420064254</a></p>
@@ -4376,6 +4540,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Spatial Error Regression (SEM / Spatial Error Model)</h4>
     <div class="alg-id">spatial_error_regression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-spatial-error" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4436,7 +4601,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Planning interpretation.</strong> Prefer SEM when spatial dependence is believed to come from <em>unmeasured context</em> (historical planning districts, environmental gradients, infrastructure quality) that affects the outcome but is not of direct analytical interest. Prefer SAR when the outcome at neighbouring locations is theoretically and causally expected to influence the local outcome (property values, service demand, congestion, innovation diffusion). When in doubt, estimate both and compare AICc.<br><br>
     <strong>Residual re-check.</strong> After fitting SEM, inspect <code>sem_stdres</code> on the map and check the post-SEM Moran's I on residuals in the HTML report. If residuals remain spatially autocorrelated after SEM, the model may need additional explanatory variables, a different $\mathbf{W}$, a higher-order spatial process (SARAR model), or a locally varying specification (GWR).
   </div>
-  <h5>Key Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-spatial-lag">Spatial Lag Regression (SAR)</a> &middot; <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
+  </div>
+
+<h5>Key Academic References</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-600);line-height:1.8;margin-top:10px;">
     <p>1. <strong>Anselin, L.</strong> (1988). <em>Spatial Econometrics: Methods and Models.</em> Kluwer, Dordrecht. DOI: <a href="https://doi.org/10.1007/978-94-015-7799-1">10.1007/978-94-015-7799-1</a></p>
     <p>2. <strong>LeSage, J. &amp; Pace, R.K.</strong> (2009). <em>Introduction to Spatial Econometrics.</em> CRC Press, Boca Raton. DOI: <a href="https://doi.org/10.1201/9781420064254">10.1201/9781420064254</a></p>
@@ -4462,6 +4631,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Exploratory Regression</h4>
     <div class="alg-id">exploratory_regression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-exploratory-reg" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4509,7 +4679,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Recommended workflow.</strong> (a) Define a candidate set grounded in theory — do not feed "everything available" into the tool. (b) Run Exploratory Regression and inspect the top ~5 models by AICc. (c) Eliminate any model whose coefficient signs contradict theory, even if AICc is excellent. (d) For the surviving candidates, re-estimate each in OLS Regression and inspect residual diagnostics. (e) If residual Moran's I is significant, estimate the corresponding SAR and SEM specifications. (f) Select the final model based on theoretical coherence, diagnostic cleanliness, and AICc — in that order of priority.<br><br>
     <strong>Common pitfalls.</strong> (a) "The best AICc model must be the right model" — AICc selects the model that best approximates the data-generating process <em>from the candidate set</em>; if the true model is not in the candidate set, AICc cannot find it. (b) "More variables = better fit" — AICc penalises complexity; adding a spurious variable can <em>worsen</em> AICc. (c) "All high-ranked models are interchangeable" — two models with similar AICc may have completely different coefficient interpretations; read the coefficient column in the report.
   </div>
-  <h5>Key Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-data-readiness">Data Readiness Audit</a>
+  </div>
+
+<h5>Key Academic References</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-600);line-height:1.8;margin-top:10px;">
     <p>1. <strong>Burnham, K.P. &amp; Anderson, D.R.</strong> (2002). <em>Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach</em> (2nd ed.). Springer, New York. DOI: <a href="https://doi.org/10.1007/b97636">10.1007/b97636</a></p>
     <p>2. <strong>Hurvich, C.M. &amp; Tsai, C.L.</strong> (1989). "Regression and Time Series Model Selection in Small Samples." <em>Biometrika</em> 76(2): 297–307. DOI: <a href="https://doi.org/10.1093/biomet/76.2.297">10.1093/biomet/76.2.297</a></p>
@@ -4535,6 +4709,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Geographically Weighted Regression (GWR)</h4>
     <div class="alg-id">gwr_regression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-gwr" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4667,7 +4842,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Computational scaling.</strong> The engine computes an $n \times n$ distance matrix and solves $n$ local regressions, each requiring an $(p+1) \times (p+1)$ matrix pseudoinverse. For $n = 1{,}000$ features and $p = 3$ predictors, the computation is nearly instantaneous. For $n = 10{,}000$, expect tens of seconds. For very large datasets ($n \gt 20{,}000$), consider aggregating to a coarser spatial unit or using a fixed kernel with a well-chosen bandwidth to reduce the effective local sample size.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-mgwr">MGWR</a> &middot; <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>[GWR-1]</strong> Brunsdon, C., Fotheringham, A.S. &amp; Charlton, M.E. (1996). "Geographically Weighted Regression: A Method for Exploring Spatial Nonstationarity." <em>Geographical Analysis</em> 28(4): 281–298. <a href="https://doi.org/10.1111/j.1538-4632.1996.tb00936.x" target="_blank" rel="noopener">doi:10.1111/j.1538-4632.1996.tb00936.x</a><br>
     <strong>[GWR-2]</strong> Fotheringham, A.S., Charlton, M.E. &amp; Brunsdon, C. (1998). "Geographically Weighted Regression: A Natural Evolution of the Expansion Method for Spatial Data Analysis." <em>Environment and Planning A</em> 30(11): 1905–1927. <a href="https://doi.org/10.1068/a301905" target="_blank" rel="noopener">doi:10.1068/a301905</a><br>
@@ -4690,9 +4869,10 @@ Spatial econometric and regression models that estimate relationships between a 
 <div class="alg-card-header">
   <div class="alg-icon">🌐</div>
   <div class="alg-info">
-    <h4>Multiscale Geographically Weighted Regression (MGWR)</h4>
+    <h4>Multiscale Geographically Weighted Regression (MGWR)<span class="perf-badge">COMPUTE-INTENSIVE</span></h4>
     <div class="alg-id">multiscale_geographically_weighted_regression</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-mgwr" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4829,7 +5009,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Computational scaling.</strong> MGWR is the most computationally expensive algorithm in GeoStats Lab. The backfitting loop runs $p+1$ bandwidth optimization problems per iteration, each of which evaluates multiple candidate bandwidths via GWR fits. For $n = 500$ features and $p = 3$ predictors, expect 10&ndash;60 seconds. For $n = 2000$, expect 2&ndash;10 minutes. For $n \gt 5000$, expect tens of minutes. The <code>N_CHUNKS</code> parameter controls a memory-time tradeoff: higher values reduce peak memory usage but increase wall-clock time due to chunking overhead. Consider subsampling or spatial aggregation for very large layers.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-gwr">GWR</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>[MGWR-1]</strong> Fotheringham, A.S., Yang, W. &amp; Kang, W. (2017). "Multiscale Geographically Weighted Regression (MGWR)." <em>Annals of the American Association of Geographers</em> 107(6): 1247–1265. <a href="https://doi.org/10.1080/24694452.2017.1352480" target="_blank" rel="noopener">doi:10.1080/24694452.2017.1352480</a><br>
     <strong>[MGWR-2]</strong> Yu, H., Fotheringham, A.S., Li, Z., Oshan, T., Kang, W. &amp; Wolf, L.J. (2020). "Inference in Multiscale Geographically Weighted Regression." <em>Geographical Analysis</em> 52(1): 87–106. <a href="https://doi.org/10.1111/gean.12189" target="_blank" rel="noopener">doi:10.1111/gean.12189</a><br>
@@ -4852,9 +5036,10 @@ Spatial econometric and regression models that estimate relationships between a 
 <div class="alg-card-header">
   <div class="alg-icon">🎲</div>
   <div class="alg-info">
-    <h4>Attribute Randomization Sensitivity Test</h4>
+    <h4>Attribute Randomization Sensitivity Test<span class="perf-badge">MONTE CARLO</span></h4>
     <div class="alg-id">sensitivity_test</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-sensitivity" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -4959,7 +5144,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Computational scaling.</strong> Each simulation requires one permutation and one matrix-vector product. For $n = 500$ features and $M = 999$ simulations, runtime is under one second. For $n = 5000$, runtime is approximately 5&ndash;15 seconds depending on weight-matrix density. The weight matrix is stored densely ( $n \times n$ floats), so memory usage is approximately $8n^2$ bytes (e.g., ~200 MB for $n = 5000$). For very large datasets, consider spatial subsampling before running the sensitivity test.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-global-moran">Global Moran's I</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>[SENS-1]</strong> Cliff, A.D. &amp; Ord, J.K. (1981). <em>Spatial Processes: Models and Applications.</em> London: Pion. ISBN: 978-0-85086-081-8.<br>
     <strong>[SENS-2]</strong> Anselin, L. (1995). "Local Indicators of Spatial Association — LISA." <em>Geographical Analysis</em> 27(2): 93–115. <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00338.x" target="_blank" rel="noopener">doi:10.1111/j.1538-4632.1995.tb00338.x</a><br>
@@ -4985,6 +5174,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <h4>Model Comparison Matrix</h4>
     <div class="alg-id">model_comparison_matrix</div>
   </div>
+  <button class="copy-anchor-btn" data-anchor="alg-model-comparison" title="Copy link to this section" type="button">🔗</button>
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
@@ -5103,7 +5293,11 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>Computational scaling.</strong> The tool reads each layer's attribute table (I/O-bound), computes fit metrics (trivial), and runs residual spatial autocorrelation diagnostics (requires spatial-weight construction per layer). For layers with thousands of features, weight construction dominates runtime. For $k$ layers each with $n \approx 1000$ features, total runtime is a few seconds. The comparison tool is designed to be run interactively as the final step in a modeling session.
   </div>
 
-  <h5>Academic References</h5>
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-gwr">GWR</a> &middot; <a href="#alg-mgwr">MGWR</a> &middot; <a href="#alg-spatial-lag">Spatial Lag Regression (SAR)</a> &middot; <a href="#alg-spatial-error">Spatial Error Regression (SEM)</a>
+  </div>
+
+<h5>Academic References</h5>
   <div class="cite">
     <strong>[COMP-1]</strong> Burnham, K.P. &amp; Anderson, D.R. (2002). <em>Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach</em> (2nd ed.). New York: Springer. <a href="https://doi.org/10.1007/b97636" target="_blank" rel="noopener">doi:10.1007/b97636</a><br>
     <strong>[COMP-2]</strong> Akaike, H. (1974). "A New Look at the Statistical Model Identification." <em>IEEE Transactions on Automatic Control</em> 19(6): 716–723. <a href="https://doi.org/10.1109/TAC.1974.1100705" target="_blank" rel="noopener">doi:10.1109/TAC.1974.1100705</a><br>
@@ -5292,7 +5486,7 @@ Spatial econometric and regression models that estimate relationships between a 
 <!--  FOOTER                                                        -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <footer class="refman-footer">
-  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v0.9.20.</strong><br>
+  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v0.10.0.</strong><br>
   Developed by Yusuf Eminoğlu with feedback from educational workflows at Dokuz Eylül University, Department of City and Regional Planning.<br>
   Licensed under GPL-3.0. Source repository: <a href="https://github.com/YusufEminoglu/planx_geostats" style="color:var(--gs-teal-600);">github.com/YusufEminoglu/planx_geostats</a>.<br>
   <em>All methods are documented with their primary academic references. The plugin implements its own engines for core computations; advanced models delegate to community-vetted Python packages with full version transparency.</em>
@@ -5300,6 +5494,59 @@ Spatial econometric and regression models that estimate relationships between a 
 
 </div><!-- .content-area -->
 </main>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  COPY ANCHOR LINK BUTTONS                                      -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    // file:// pages and non-secure contexts: navigator.clipboard is often
+    // unavailable, so fall back to the classic hidden-textarea + execCommand
+    // approach, which still works there.
+    return new Promise(function(resolve, reject) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('execCommand copy failed'));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.copy-anchor-btn');
+    if (!btn) return;
+    const anchor = btn.getAttribute('data-anchor');
+    if (!anchor) return;
+    const url = window.location.href.split('#')[0] + '#' + anchor;
+    copyText(url).then(function() {
+      const original = btn.textContent;
+      btn.textContent = '✓';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.textContent = original;
+        btn.classList.remove('copied');
+      }, 1200);
+    }).catch(function() {
+      // Clipboard access denied or unavailable: at least still navigate
+      // the address bar to the anchor so the link is visible/selectable.
+      window.location.hash = anchor;
+    });
+  });
+})();
+</script>
 
 <!-- ════════════════════════════════════════════════════════════════ -->
 <!--  SIDEBAR SCROLL SPY                                            -->

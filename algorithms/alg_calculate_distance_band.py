@@ -52,11 +52,27 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Calculates distance statistics to the N-th nearest neighbor (minimum, average, maximum, "
-            "and percentiles) for all features.\n\n"
-            "This tool is extremely useful for choosing a threshold distance band when running spatial "
-            "autocorrelation or hot spot analysis. For example, using the maximum nearest neighbor distance "
-            "as the threshold ensures that every feature has at least one neighbor in the analysis."
+            "Computes the distance to the k-th nearest neighbor for every feature "
+            "(centroid-to-centroid, Euclidean) and reports six summary statistics: "
+            "minimum, 25th percentile, median, mean, 75th percentile, and maximum. "
+            "The maximum is the smallest distance band that guarantees every feature "
+            "has at least k neighbors - the data-driven answer to 'what distance "
+            "band should I use?'.\n\n"
+            "k = 1 answers the most common question, 'what distance ensures every "
+            "feature has at least one neighbor?'. k = 5 to 8 produces a neighborhood "
+            "size comparable to Queen contiguity on a typical polygon layer. Larger k "
+            "smooths local variation aggressively and should be justified by the "
+            "scale of the spatial process being studied.\n\n"
+            "If the mean is more than twice the median, the feature distribution is "
+            "strongly heterogeneous - a dense core with distant outliers - and a "
+            "single distance band will give core features hundreds of neighbors "
+            "while peripheral features get exactly k. Consider KNN weights or "
+            "splitting the analysis into sub-regions instead.\n\n"
+            "This tool guarantees connectivity, not that the spatial process peaks "
+            "at that scale. Follow up with Incremental Spatial Autocorrelation on "
+            "the actual target variable to find the analytically optimal band; when "
+            "the two differ substantially, prefer the autocorrelation-peak distance "
+            "and note the isolation count it leaves behind."
         )
 
     def initAlgorithm(self, config=None):

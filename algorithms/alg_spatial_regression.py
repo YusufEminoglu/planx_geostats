@@ -74,11 +74,31 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Performs Ordinary Least Squares (OLS) linear regression analysis.\n\n"
-            "Calculates relationships between a dependent variable and one or more independent variables. "
-            "Outputs a residuals layer mapped by standard deviation of residuals, and generates a detailed "
-            "diagnostic report containing R-squared, coefficients, Jarque-Bera, Koenker's Breusch-Pagan, "
-            "and residual spatial autocorrelation diagnostics."
+            "Fits Ordinary Least Squares linear regression via the normal "
+            "equations (beta = (X'X)^-1 X'y, using the Moore-Penrose "
+            "pseudoinverse for stability), then runs a battery of "
+            "diagnostics: Jarque-Bera normality, Koenker's studentized "
+            "Breusch-Pagan heteroskedasticity test, and Moran's I on the "
+            "residuals to check for leftover spatial dependence. Always run "
+            "this before any spatial regression variant (Spatial "
+            "Autoregression, Spatial Error, GWR, MGWR) - it establishes the "
+            "classical baseline and tells you whether spatial structure is "
+            "even present in what OLS leaves unexplained.\n\n"
+            "Output: fitted values and residuals appended per feature, plus "
+            "a full HTML diagnostic report with coefficients, standard "
+            "errors, t-statistics, p-values, R2/adjusted R2, AIC, and the "
+            "three diagnostic tests above.\n\n"
+            "Significant residual spatial autocorrelation (a significant "
+            "Moran's I on residuals) is the single most important flag this "
+            "tool produces: it means OLS standard errors are unreliable (too "
+            "small, overstating significance) and a spatial specification - "
+            "Spatial Lag if the dependence looks like a substantive spillover "
+            "process, Spatial Error if it looks like nuisance autocorrelation "
+            "from omitted spatially-structured variables - is likely "
+            "warranted. A significant Breusch-Pagan test means coefficient "
+            "standard errors are unreliable for a different reason "
+            "(heteroskedasticity); consider robust standard errors or a "
+            "different model family via Generalized Linear Regression."
         )
 
     def initAlgorithm(self, config=None):

@@ -70,12 +70,29 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Given a set of weighted features, identifies statistically significant "
-            "hot spots and cold spots using the Getis-Ord Gi* statistic.\n\n"
-            "The output layer will include gi_zscore, gi_pvalue, gi_conf, and gi_nbrs. "
-            "A confidence bin value of +3 indicates a 99% confidence hot spot, while -3 "
-            "indicates a 99% confidence cold spot. The gi_nbrs field records how many "
-            "valid neighboring features supported each local statistic."
+            "Computes the Getis-Ord Gi* statistic for every feature: whether a "
+            "feature and its neighbors together form a statistically significant "
+            "hot spot (high values), cold spot (low values), or neither, relative "
+            "to the study area as a whole. Gi* always includes the feature itself "
+            "in its own neighborhood sum (unlike plain Gi), which behaves better "
+            "at the edges of the study area and is the standard variant used in "
+            "practice.\n\n"
+            "Output fields: gi_zscore, gi_pvalue, gi_conf (a signed confidence "
+            "bin: +/-3 at p < 0.01, +/-2 at p < 0.05, +/-1 at p < 0.10, 0 "
+            "otherwise; sign gives hot vs cold), and gi_nbrs (how many valid "
+            "neighbors supported the local statistic). Regardless of the chosen "
+            "weight type (Queen, Rook, KNN, Distance Band), every neighbor "
+            "contributes equally - the weight type only decides who counts as a "
+            "neighbor, not how strongly; there is no distance-decay weighting "
+            "inside Gi* itself.\n\n"
+            "A feature with zero valid neighbors is silently assigned z = 0, p = "
+            "1, conf = 0 - it looks exactly like 'not significant' in the output "
+            "even though the real issue is missing neighborhood support, not an "
+            "absence of pattern. Always cross-check gi_nbrs before trusting a "
+            "'not significant' result, especially with sparse KNN or small "
+            "distance bands. Gi* finds clusters, not outliers - where a high "
+            "value surrounded by low neighbors (or vice versa) is the object of "
+            "interest, use Local Moran's I instead."
         )
 
     def initAlgorithm(self, config=None):

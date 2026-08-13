@@ -70,11 +70,26 @@ class SimilaritySearchAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Similarity Search finds candidate features that are most similar "
-            "to one or more target features, based on a profile of selected numeric fields.\n\n"
-            "Target features are identified via a QGIS expression. Attributes are standardized "
-            "using Z-scores, and Manhattan or Euclidean distances are calculated between candidates "
-            "and the target profile. Output contains rankings (`sim_rank`) and distance scores (`sim_index`)."
+            "Ranks every feature in the layer by similarity to one or more "
+            "target features selected via a QGIS expression. All chosen numeric "
+            "fields are Z-score standardized; if multiple targets are selected, "
+            "their standardized profiles are averaged into a single target "
+            "profile, then each candidate's distance to that profile is "
+            "computed as Euclidean (default) or Manhattan.\n\n"
+            "Output fields: sim_index (the standardized distance - lower means "
+            "more similar; 0 for a feature that exactly matches the target "
+            "profile) and sim_rank (integer rank by ascending sim_index, where "
+            "1 is the closest non-target feature). Target features themselves "
+            "are excluded from ranking.\n\n"
+            "Because distance is computed in standardized space, the result "
+            "depends entirely on which fields are selected - including an "
+            "irrelevant field dilutes genuine similarity on the fields that "
+            "matter, and Manhattan distance weights large single-field "
+            "differences less severely than Euclidean does. When multiple "
+            "targets are averaged into one profile, a candidate can rank as "
+            "'similar' to the average while being quite different from every "
+            "individual target - review sim_index alongside the actual field "
+            "values for the top-ranked candidates, not the rank alone."
         )
 
     def initAlgorithm(self, config=None):

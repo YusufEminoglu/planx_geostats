@@ -64,12 +64,31 @@ class GeneralGAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Measures the degree of clustering for either high values or low values over "
-            "the study area using the Getis-Ord General G statistic.\n\n"
-            "Calculates the observed General G index, compares it with the expected General G index, "
-            "and derives a z-score and p-value representing statistical significance under the "
-            "randomization assumption.\n\n"
-            "Outputs a diagnostic HTML report with detailed metrics and spatial pattern interpretation."
+            "Tests whether high values or low values specifically are spatially "
+            "clustered, using the Getis-Ord General G statistic - the directional "
+            "counterpart to Global Moran's I, which detects clustering of any kind "
+            "but cannot say whether it is high values or low values doing the "
+            "clustering. Requires non-negative values, since the statistic is a "
+            "ratio of weighted cross-products (x_i times x_j) and is undefined when "
+            "values can be negative; a negative value in the field raises an error "
+            "before computation starts.\n\n"
+            "Report fields: observed_g, expected_g (= S0 / [N(N-1)] under CSR), "
+            "variance (computed from exact permutation moments, not a normal "
+            "approximation), z_score, p_value, and a directional pattern label. z "
+            ">= 1.96 indicates clustering of HIGH values; z <= -1.96 indicates "
+            "clustering of LOW values - useful for spotting concentrated "
+            "deprivation, risk, or under-provision that merits an equity review. "
+            "|z| < 1.96 means neither high nor low values show directional "
+            "clustering at the chosen distance band.\n\n"
+            "General G uses a single, fixed distance-band threshold, not "
+            "contiguity or KNN weights, so the result is conditional on that "
+            "choice - a clustering signal at 1000 m can vanish at 500 m or wash out "
+            "entirely once the graph becomes fully connected at very large "
+            "distances. Run Calculate Distance Band or Incremental Spatial "
+            "Autocorrelation first to choose a defensible threshold. Report "
+            "Moran's I alongside General G: I can be significant while G is not "
+            "(structure involving both high and low values equally), or vice "
+            "versa."
         )
 
     def initAlgorithm(self, config=None):

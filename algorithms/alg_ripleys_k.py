@@ -58,13 +58,27 @@ class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Evaluates point-pattern clustering or dispersion across multiple distance bands "
-            "using Ripley's K-Function and the transformed L(d)-d value.\n\n"
-            "Positive L(d)-d values indicate more neighbors within distance d than expected "
-            "under complete spatial randomness; negative values indicate fewer neighbors. "
-            "This implementation uses centroid distances and does not apply edge correction, "
-            "so results should be interpreted as a diagnostic planning scan rather than a final "
-            "inferential test."
+            "Evaluates point-pattern clustering or dispersion simultaneously "
+            "across every tested distance, using Ripley's K-function and Besag's "
+            "variance-stabilized L(d) - d transform. Unlike Average Nearest "
+            "Neighbor, which only looks at each feature's single closest neighbor "
+            "(first-order structure), Ripley's K characterizes second-order "
+            "structure: a pattern can look random at the nearest-neighbor scale "
+            "while being strongly clustered at, say, 500 m, or vice versa.\n\n"
+            "L(d) - d is the field to read: 0 under Complete Spatial Randomness, "
+            "positive means more neighbors within d than CSR predicts "
+            "(clustering), negative means fewer (dispersion). The report also "
+            "gives observed_k, expected_k (= pi * d^2 under CSR), observed pair "
+            "count, and neighbor-count diagnostics (min/median/max/isolated) at "
+            "every band, plus the study area used - user-supplied if given, "
+            "otherwise the bounding-box area of the point set.\n\n"
+            "This implementation uses centroid distances with no edge correction, "
+            "so points near the study-area boundary are undercounted relative to "
+            "their true neighbor count - if clustering shows up anyway, the true "
+            "clustering is likely at least as strong. Treat results as a "
+            "diagnostic planning scan rather than a formal inferential test, and "
+            "prefer a user-supplied study area over the bounding-box default "
+            "whenever the true study boundary is irregular or known."
         )
 
     def initAlgorithm(self, config=None):

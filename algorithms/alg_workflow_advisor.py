@@ -57,11 +57,29 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Creates a practical HTML advisor that maps common planning-analysis "
-            "questions to PlanX GeoStats Lab tools, input requirements, expected "
-            "outputs, and follow-up checks.\n\n"
-            "Use this before choosing a statistic, when teaching a workflow, or when "
-            "documenting which tool sequence should be used for a planning question."
+            "Maps four analyst-specified inputs - primary goal (7 options: explore "
+            "pattern, map hot spots, choose a distance band, summarize centers, build "
+            "an explanatory model, compare models, measure spatial inequality), "
+            "geometry context (point/line/polygon), outcome type "
+            "(none/continuous/binary/count), and whether explanatory fields are "
+            "available - to a concrete, ordered tool sequence, plus the checks to run "
+            "before trusting the result and any warnings the combination "
+            "deserves.\n\n"
+            "The underlying logic lives in core/workflow_advisor.py as a pure "
+            "function, so the same four inputs always produce the same "
+            "recommendation. Outcome type drives model-family selection: continuous "
+            "outcomes route to OLS/GWR/MGWR, binary outcomes to logistic Generalized "
+            "Linear Regression, and counts to Poisson Generalized Linear Regression. "
+            "Goal drives dependency ordering: 'build an explanatory model' always "
+            "prepends Data Readiness Audit and appends residual review plus Model "
+            "Comparison Matrix; 'map hot spots' prepends Calculate Distance Band.\n\n"
+            "Warnings surface known mismatches - for example, line geometry paired "
+            "with a goal other than the directional-trend option, or an "
+            "outcome-dependent goal selected with 'no outcome field' - without "
+            "blocking the report. Treat the recommendation as a starting sequence, "
+            "not a substitute for domain judgment: a bounded rate variable should "
+            "still be transformed before OLS even though the advisor does not know "
+            "that."
         )
 
     def initAlgorithm(self, config=None):

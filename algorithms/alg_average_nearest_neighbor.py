@@ -54,13 +54,31 @@ class AverageNearestNeighborAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Measures the distance from each feature centroid to its nearest neighbor's centroid. "
-            "It then calculates the average of all these nearest neighbor distances.\n\n"
-            "If the average distance is less than the average for a hypothetical random distribution, "
-            "the distribution of the features being analyzed is considered clustered. If the average "
-            "distance is greater, the features are considered dispersed.\n\n"
-            "Outputs an HTML report detailing the Nearest Neighbor Ratio, observed mean distance, "
-            "expected mean distance, z-score, and p-value."
+            "Computes the Nearest Neighbor Index (NNI): the ratio of the observed "
+            "mean distance from each feature centroid to its single nearest "
+            "neighbor, against the expected mean distance under Complete Spatial "
+            "Randomness (CSR). NNI < 1 indicates clustering, NNI = 1 indicates a "
+            "random pattern, NNI > 1 indicates dispersion (up to roughly 2.15 for "
+            "a perfect hexagonal lattice). This is the fastest, simplest pattern "
+            "diagnostic in the group - a reasonable first check before the "
+            "heavier Ripley's K or Incremental Autocorrelation.\n\n"
+            "The report also gives the observed and expected mean distances, a "
+            "z-score and p-value for the difference (using the Clark & Evans "
+            "0.26136 standard-error constant), and whether the study area used "
+            "was user-supplied or derived from the layer's bounding box. Distance "
+            "search uses scikit-learn's KD-Tree when available (O(N log N)) and "
+            "otherwise falls back to a chunked NumPy search that never "
+            "materializes the full distance matrix at once.\n\n"
+            "The result is sensitive to the study area: a larger area lowers the "
+            "expected density and inflates the expected distance, making the same "
+            "observed pattern look more clustered; a smaller area does the "
+            "opposite. The conclusion can flip depending on where the study-area "
+            "boundary is drawn, so always supply STUDY_AREA explicitly when the "
+            "true planning boundary is known, and treat a bounding-box-derived "
+            "area as a rough default. Because this only tests first-order "
+            "(nearest-neighbor) structure, pair it with Ripley's K when patterns "
+            "might differ at larger scales - e.g. tight local clusters that are "
+            "themselves regularly spaced across the landscape."
         )
 
     def initAlgorithm(self, config=None):
