@@ -31,9 +31,9 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     SYNTHETIC_QA_PATH = "SYNTHETIC_QA_PATH"
     LOADED_LAYERS = "LOADED_LAYERS"
 
-    LAYER_NAME = "planx_geostats_izmir_neighborhoods"
+    LAYER_NAME = "izmir_fur_street_network"
     LOAD_OPTIONS = [
-        "Izmir planning sample",
+        "Izmir FUR street network sample",
         "Synthetic QA fixture",
         "Both datasets",
     ]
@@ -72,13 +72,17 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "Generates an HTML catalog of the two GeoPackages bundled with PlanX "
             "GeoStats Lab and can load either or both into the current QGIS "
             "project.\n\n"
-            "The Izmir planning sample (layer planx_geostats_izmir_neighborhoods, 237 "
-            "polygons, EPSG:5253) carries English-named heat, green-space, network, "
-            "population, and built-form indicators with real spatial structure - the "
-            "coastal-to-inland heat gradient is strong enough that Global Moran's I on "
-            "median_land_surface_temp_c returns a significant positive result, making "
-            "it a known-good baseline for confirming the toolchain works end to "
-            "end.\n\n"
+            "The Izmir FUR sample (layer izmir_fur_street_network, 391 polygons, "
+            "EPSG:5253) covers the Izmir Functional Urban Region with street-network "
+            "and space-syntax accessibility indicators - road density, intersection "
+            "and dead-end structure, block and lane geometry, reach and transit "
+            "accessibility, and network-topology/space-syntax measures (betweenness, "
+            "eigenvector centrality, NACH/NAIN, choice/integration). The spatial "
+            "structure is real and strong: Global Moran's I on road_density (KNN=8) "
+            "returns I = 0.63 with z > 27, making it a known-good baseline for "
+            "confirming the toolchain works end to end. All fields are numeric - "
+            "there is no name/id/category field, so reference features by fid in "
+            "example workflows.\n\n"
             "The synthetic QA fixture is a separate, compact GeoPackage built for edge "
             "cases rather than realism: a 100-point regular grid (qa_points_grid) for "
             "ANN and Ripley's K, a directional multiline layer "
@@ -87,8 +91,8 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "model-output layers (qa_ols_model_output through qa_mgwr_model_output) "
             "that exercise Model Comparison Matrix's field-detection logic for each "
             "regression family.\n\n"
-            "Loading mode controls which layers are added: the Izmir sample alone, "
-            "the QA fixture alone, or both. Use the Izmir sample for demonstrations "
+            "Loading mode controls which layers are added: the Izmir FUR sample alone, "
+            "the QA fixture alone, or both. Use the Izmir FUR sample for demonstrations "
             "and manual workflow checks; use the QA fixture when verifying that a "
             "change to a tool still handles isolated features, constant fields, or "
             "mixed geometry correctly before it reaches production data."
@@ -143,7 +147,7 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 loaded_layers.extend(
                     self._load_layers(
                         sample_path,
-                        [(self.LAYER_NAME, "PlanX GeoStats Sample - Izmir Neighborhoods")],
+                        [(self.LAYER_NAME, "PlanX GeoStats Sample - Izmir FUR Street Network")],
                         feedback,
                     )
                 )
@@ -167,7 +171,7 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def _sample_path(self) -> str:
         plugin_dir = os.path.dirname(os.path.dirname(__file__))
-        return os.path.join(plugin_dir, "sample_data", "planx_geostats_izmir_neighborhoods.gpkg")
+        return os.path.join(plugin_dir, "sample_data", "planx_geostats_izmir_fur.gpkg")
 
     def _synthetic_qa_path(self) -> str:
         plugin_dir = os.path.dirname(os.path.dirname(__file__))
@@ -188,10 +192,10 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def _write_html(self, path: str, sample_path: str, synthetic_qa_path: str) -> None:
         recommended = [
-            ("Heat pattern scan", "median_heat_island_index", "Global Moran, Gi*, Local Moran, and Incremental Autocorrelation."),
-            ("Green cooling model", "median_land_surface_temp_c", "OLS, GLR, GWR, MGWR, Spatial Lag, and Spatial Error with NDVI, parks, canopy, imperviousness, and building form."),
-            ("Model audit", "median_land_surface_temp_c", "Run several models, then compare their outputs with Model Comparison Matrix."),
-            ("Equity and vulnerability", "senior_65plus_population", "Hot spot and outlier workflows for vulnerable population concentration."),
+            ("Network pattern scan", "road_density", "Global Moran, Gi*, Local Moran, and Incremental Autocorrelation."),
+            ("Accessibility model", "transit_accessibility", "OLS, GLR, GWR, MGWR, Spatial Lag, and Spatial Error with road density, gridiron index, connectivity index, and circuity."),
+            ("Model audit", "transit_accessibility", "Run several models, then compare their outputs with Model Comparison Matrix."),
+            ("Connectivity equity", "road_density", "Hot spot and outlier workflows for under-connected peripheral zones."),
         ]
         qa_layers = [
             ("qa_points_grid", "Point", "ANN, Ripley's K, distance bands, KNN weights, GLR logistic/Poisson, and point-based regression smoke checks."),
@@ -242,15 +246,15 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <body>
 <div class="container">
 <h1>PlanX GeoStats Lab Sample Dataset</h1>
-<p class="subtitle">Layer: <strong>{self.LAYER_NAME}</strong> | Geometry: <strong>Polygon</strong> | CRS: <strong>EPSG:5253</strong> | Features: <strong>237</strong></p>
-<section class="summary">This curated sample dataset contains Izmir neighborhood polygons with English planning, climate, green-space, network, population, and built-form indicators. Use it as the default development and QA dataset for PlanX GeoStats workflows.</section>
+<p class="subtitle">Layer: <strong>{self.LAYER_NAME}</strong> | Geometry: <strong>Polygon</strong> | CRS: <strong>EPSG:5253</strong> | Features: <strong>391</strong></p>
+<section class="summary">This curated sample dataset covers the Izmir Functional Urban Region (FUR) with street-network and space-syntax accessibility indicators: road density, intersection and dead-end structure, block and lane geometry, reach and transit accessibility, and network-topology and space-syntax measures (betweenness, eigenvector centrality, NACH/NAIN, choice/integration). Use it as the default development and QA dataset for PlanX GeoStats workflows.</section>
 <h2>Sample Path</h2>
 <div class="path">{html.escape(sample_path)}</div>
 <h2>Loading Modes</h2>
 <table>
 <thead><tr><th>Mode</th><th>Loaded layers</th><th>Use when</th></tr></thead>
 <tbody>
-<tr><td><strong>Izmir planning sample</strong></td><td><code>{self.LAYER_NAME}</code></td><td>You want the default planning demo and regular manual workflow checks.</td></tr>
+<tr><td><strong>Izmir FUR street network sample</strong></td><td><code>{self.LAYER_NAME}</code></td><td>You want the default planning demo and regular manual workflow checks.</td></tr>
 <tr><td><strong>Synthetic QA fixture</strong></td><td><code>qa_points_grid</code>, <code>qa_lines_directional</code>, <code>qa_polygons_mini</code>, and exact model-output QA layers.</td><td>You want compact developer QA layers for edge-case testing.</td></tr>
 <tr><td><strong>Both datasets</strong></td><td>All bundled planning and QA layers.</td><td>You are preparing a full manual regression pass before release.</td></tr>
 </tbody>

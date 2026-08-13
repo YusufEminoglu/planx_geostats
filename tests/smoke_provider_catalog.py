@@ -30,7 +30,7 @@ EXPECTED_GROUPS = {
     "05 | Models and Scenarios",
 }
 
-MIN_EXPECTED_ALGORITHM_COUNT = 33
+MIN_EXPECTED_ALGORITHM_COUNT = 43
 
 
 def _module_tree(path: Path) -> ast.Module:
@@ -263,7 +263,7 @@ def test_workflow_advisor_covers_core_decision_sections() -> None:
         "Spatial Lag Regression",
         "Spatial Error Regression",
         "Model Comparison Matrix",
-        "median_land_surface_temp_c",
+        "road_density",
         "count_target",
         "qa_lines_directional",
         "QA_MANUAL_TEST_MATRIX.md",
@@ -273,7 +273,7 @@ def test_workflow_advisor_covers_core_decision_sections() -> None:
         "personalized_recommendation",
         "Bundled sample fields or layers to try",
         "Combination warnings",
-        "median_ndvi",
+        "transit_accessibility",
         "qa_ols_model_output",
     ]
     missing = [term for term in required_terms if term not in source]

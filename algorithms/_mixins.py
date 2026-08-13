@@ -42,6 +42,16 @@ HELP_SLUGS = {
     "multiscale_geographically_weighted_regression": "alg-mgwr",
     "sensitivity_test": "alg-sensitivity",
     "model_comparison_matrix": "alg-model-comparison",
+    "geary_c_autocorrelation": "alg-geary-c",
+    "join_count_statistics": "alg-join-count",
+    "global_bivariate_lee_l": "alg-global-lee-l",
+    "geodetector_q_statistic": "alg-geodetector-q",
+    "local_geary_c": "alg-local-geary-c",
+    "colocation_quotient": "alg-colocation-quotient",
+    "skater_regionalization": "alg-skater",
+    "lm_diagnostics": "alg-lm-diagnostics",
+    "spatial_durbin_model": "alg-spatial-durbin",
+    "esf_regression": "alg-esf",
 }
 
 

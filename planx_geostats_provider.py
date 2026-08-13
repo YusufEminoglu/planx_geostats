@@ -41,6 +41,16 @@ from .algorithms.alg_install_libraries import InstallGeoStatsLibrariesAlgorithm
 from .algorithms.alg_sample_data_guide import SampleDataGuideAlgorithm
 from .algorithms.alg_data_readiness_audit import DataReadinessAuditAlgorithm
 from .algorithms.alg_workflow_advisor import GeoStatsWorkflowAdvisorAlgorithm
+from .algorithms.alg_geary_c import GearyCAlgorithm
+from .algorithms.alg_join_count import JoinCountStatisticsAlgorithm
+from .algorithms.alg_global_lee_l import GlobalLeesLAlgorithm
+from .algorithms.alg_geodetector_q import GeodetectorQAlgorithm
+from .algorithms.alg_local_geary_c import LocalGearyCAlgorithm
+from .algorithms.alg_colocation_quotient import ColocationQuotientAlgorithm
+from .algorithms.alg_skater import SkaterAlgorithm
+from .algorithms.alg_lm_diagnostics import LMDiagnosticsAlgorithm
+from .algorithms.alg_spatial_durbin import SpatialDurbinAlgorithm
+from .algorithms.alg_esf_regression import ESFRegressionAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -79,6 +89,10 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(IncrementalAutocorrelationAlgorithm())
         self.addAlgorithm(RipleysKFunctionAlgorithm())
         self.addAlgorithm(AverageNearestNeighborAlgorithm())
+        self.addAlgorithm(GearyCAlgorithm())
+        self.addAlgorithm(JoinCountStatisticsAlgorithm())
+        self.addAlgorithm(GlobalLeesLAlgorithm())
+        self.addAlgorithm(GeodetectorQAlgorithm())
 
         # 03 | Hot Spots and Spatial Outliers
         self.addAlgorithm(GetisOrdAlgorithm())
@@ -87,6 +101,9 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(BivariateLeeLAlgorithm())
         self.addAlgorithm(MultivariateClusteringAlgorithm())
         self.addAlgorithm(SimilaritySearchAlgorithm())
+        self.addAlgorithm(LocalGearyCAlgorithm())
+        self.addAlgorithm(ColocationQuotientAlgorithm())
+        self.addAlgorithm(SkaterAlgorithm())
 
         # 04 | Centers, Direction and Dispersion
         self.addAlgorithm(MeanCenterAlgorithm())
@@ -98,11 +115,14 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
 
         # 05 | Models and Scenarios
         self.addAlgorithm(SpatialRegressionAlgorithm())
+        self.addAlgorithm(LMDiagnosticsAlgorithm())
         self.addAlgorithm(GeneralizedLinearRegressionAlgorithm())
         self.addAlgorithm(SpatialAutoregressionAlgorithm())
         self.addAlgorithm(SpatialErrorRegressionAlgorithm())
+        self.addAlgorithm(SpatialDurbinAlgorithm())
         self.addAlgorithm(ExploratoryRegressionAlgorithm())
         self.addAlgorithm(GWRAlgorithm())
         self.addAlgorithm(MGWRAlgorithm())
+        self.addAlgorithm(ESFRegressionAlgorithm())
         self.addAlgorithm(SensitivityTestAlgorithm())
         self.addAlgorithm(ModelComparisonAlgorithm())

@@ -13,10 +13,10 @@ import importlib.util
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAMPLE = ROOT / "sample_data" / "planx_geostats_izmir_neighborhoods.gpkg"
+SAMPLE = ROOT / "sample_data" / "planx_geostats_izmir_fur.gpkg"
 SYNTHETIC_QA = ROOT / "sample_data" / "planx_geostats_synthetic_qa.gpkg"
 SAMPLE_GUIDE = ROOT / "algorithms" / "alg_sample_data_guide.py"
-LAYER = "planx_geostats_izmir_neighborhoods"
+LAYER = "izmir_fur_street_network"
 
 
 def load_module(name: str, relative_path: str):
@@ -36,14 +36,14 @@ def quote_identifier(value: str, allowed: set[str]) -> str:
 
 
 def run_all() -> None:
-    test_izmir_sample_data()
+    test_izmir_fur_sample_data()
     test_synthetic_qa_sample_data()
     test_sample_guide_load_options_match_bundled_layers()
     test_sample_guide_html_mentions_all_loadable_layers()
     print("SAMPLE DATA SMOKE TESTS OK")
 
 
-def test_izmir_sample_data() -> None:
+def test_izmir_fur_sample_data() -> None:
     assert SAMPLE.exists(), f"Missing sample GeoPackage: {SAMPLE}"
     con = sqlite3.connect(SAMPLE)
     con.row_factory = sqlite3.Row
@@ -62,69 +62,69 @@ def test_izmir_sample_data() -> None:
         ).fetchone()
         assert geometry is not None
         assert geometry["column_name"] == "geom"
-        assert geometry["geometry_type_name"].upper() == "POLYGON"
+        assert geometry["geometry_type_name"].upper() == "MULTIPOLYGON"
 
         allowed_layers = {LAYER}
         layer_sql = quote_identifier(LAYER, allowed_layers)
         count = con.execute(f"select count(*) as n from {layer_sql}").fetchone()["n"]
-        assert int(count) == 237
+        assert int(count) == 391
 
         columns = {row["name"] for row in con.execute(f"pragma table_info({layer_sql})")}
         column_info = {row["name"]: row for row in con.execute(f"pragma table_info({layer_sql})")}
+
+        # Street-network / space-syntax accessibility indicators (İzmir FUR).
+        # This dataset has no name/id/categorical field at all - every field
+        # is numeric; reference features by fid in example workflows.
         required = {
-            "neighborhood_name",
-            "district_name",
-            "official_population",
-            "median_heat_island_index",
-            "median_land_surface_temp_c",
-            "median_ndvi",
-            "building_coverage_pct",
-            "park_m2_per_capita",
-            "street_connectivity",
-            "normalized_integration",
-            "urban_density_class",
+            "road_density",
+            "intersection_count",
+            "gridiron_index",
+            "transit_accessibility",
+            "ss_integration_median",
+            "nach_index",
+            "nain_index",
+            "betweenness_mean",
+            "eigenvector_mean",
+            "connectivity_index",
+            "orientation_entropy",
+            "circuity_mean",
         }
         assert required.issubset(columns)
         assert all(" " not in name and "-" not in name for name in columns)
+        assert not any(column_info[name]["type"].upper() in {"TEXT", "VARCHAR"} for name in columns), (
+            "İzmir FUR sample has no categorical/text field; a TEXT column would mean the bundled data changed"
+        )
 
-        numeric_required = {
-            "official_population",
-            "median_heat_island_index",
-            "median_land_surface_temp_c",
-            "median_ndvi",
-            "building_coverage_pct",
-            "park_m2_per_capita",
-            "street_connectivity",
-            "normalized_integration",
-            "neighborhood_area_m2",
-        }
-        for field in numeric_required:
-            assert field in column_info, f"Missing numeric field: {field}"
+        for field in required:
             assert column_info[field]["type"].upper() in {"INTEGER", "REAL", "FLOAT", "DOUBLE"}, field
 
-        text_required = {"neighborhood_name", "district_name", "urban_density_class"}
-        for field in text_required:
-            assert column_info[field]["type"].upper() in {"TEXT", "VARCHAR"}, field
+        # orientation_entropy is the only field with zero missing values across
+        # all 391 features; every other network field has a handful of nulls
+        # on peripheral/undeveloped FUR polygons (realistic zero-inflation,
+        # not a data defect - see Data Readiness Audit guidance in the manual).
+        field_sql = quote_identifier("orientation_entropy", columns)
+        missing = con.execute(f"select count(*) as n from {layer_sql} where {field_sql} is null").fetchone()["n"]
+        assert int(missing) == 0, "orientation_entropy should be complete across the bundled FUR sample"
 
-        critical_complete = [
-            "median_heat_island_index",
-            "median_land_surface_temp_c",
-            "median_ndvi",
-            "building_coverage_pct",
-            "street_connectivity",
-            "normalized_integration",
+        mostly_complete = [
+            "road_density", "betweenness_mean", "ss_integration_median",
+            "nach_index", "transit_accessibility", "connectivity_index",
         ]
-        for field in critical_complete:
+        for field in mostly_complete:
             field_sql = quote_identifier(field, columns)
             missing = con.execute(f"select count(*) as n from {layer_sql} where {field_sql} is null").fetchone()["n"]
-            assert int(missing) == 0, f"{field} should be complete in the bundled sample"
+            assert int(missing) <= 10, f"{field} should stay mostly complete (peripheral-zone nulls only)"
 
         range_checks = {
-            "median_ndvi": (-1.0, 1.0),
-            "building_coverage_pct": (0.0, 150.0),
-            "building_volume_density_pct": (0.0, 100.0),
-            "park_m2_per_capita": (0.0, 100000.0),
-            "median_land_surface_temp_c": (-30.0, 80.0),
+            "road_density": (0.0, 60.0),
+            "betweenness_mean": (0.0, 25.0),
+            "ss_integration_median": (0.0, 60.0),
+            "nach_index": (0.0, 0.15),
+            "nain_index": (0.0, 0.25),
+            "gridiron_index": (0.0, 1.0),
+            "transit_accessibility": (0.0, 90.0),
+            "orientation_entropy": (0.0, 1.0),
+            "circuity_mean": (1.0, 2.0),
         }
         for field, (lower, upper) in range_checks.items():
             field_sql = quote_identifier(field, columns)
@@ -136,12 +136,13 @@ def test_izmir_sample_data() -> None:
             assert lower <= float(row["mx"]) <= upper, f"{field} maximum is outside expected range"
 
         variation_fields = [
-            "median_heat_island_index",
-            "median_land_surface_temp_c",
-            "median_ndvi",
-            "park_m2_per_capita",
-            "normalized_integration",
-            "normalized_choice",
+            "road_density",
+            "betweenness_mean",
+            "ss_integration_median",
+            "gridiron_index",
+            "orientation_entropy",
+            "block_length_median",
+            "circuity_mean",
         ]
         for field in variation_fields:
             field_sql = quote_identifier(field, columns)
@@ -150,21 +151,23 @@ def test_izmir_sample_data() -> None:
             ).fetchone()["n"]
             assert int(unique_count) >= 10, f"{field} lacks enough variation for sample workflows"
 
-        street_sql = quote_identifier("street_connectivity", columns)
-        street_unique = con.execute(
-            f"select count(distinct {street_sql}) as n from {layer_sql} where {street_sql} is not null"
+        # Real, known data characteristic: pedestrian_ratio is constant (0.0)
+        # across every feature in this export - a deliberate regression check
+        # so Data Readiness Audit / constant-field guidance examples that cite
+        # it stay accurate if the bundled data is ever regenerated.
+        ped_sql = quote_identifier("pedestrian_ratio", columns)
+        ped_unique = con.execute(
+            f"select count(distinct {ped_sql}) as n from {layer_sql} where {ped_sql} is not null"
         ).fetchone()["n"]
-        assert int(street_unique) >= 4, "street_connectivity should retain ordinal network variation"
+        assert int(ped_unique) == 1, "pedestrian_ratio is expected to be constant in the bundled FUR sample"
 
-        density_sql = quote_identifier("urban_density_class", columns)
-        density_classes = {
-            row["urban_density_class"]
-            for row in con.execute(
-                f"select distinct {density_sql} as urban_density_class from {layer_sql} where {density_sql} is not null"
-            )
-        }
-        assert density_classes.issubset({"Low", "Moderate", "High", "Very High"})
-        assert len(density_classes) >= 3
+        # ~19% of polygons are peripheral/undeveloped FUR zones with a fully
+        # zero-filled network profile - a realistic zero-inflation example,
+        # not a data error. Regression-check that this characteristic holds.
+        zero_rows = con.execute(
+            f'select count(*) as n from {layer_sql} where "road_density" = 0 and "betweenness_mean" = 0'
+        ).fetchone()["n"]
+        assert 50 <= int(zero_rows) <= 120, "expected zero-inflated peripheral-zone share looks different than the bundled data"
     finally:
         con.close()
 
@@ -287,7 +290,7 @@ def test_synthetic_qa_sample_data() -> None:
 def test_sample_guide_load_options_match_bundled_layers() -> None:
     constants = _sample_guide_constants()
     assert constants["LOAD_OPTIONS"] == [
-        "Izmir planning sample",
+        "Izmir FUR street network sample",
         "Synthetic QA fixture",
         "Both datasets",
     ]
@@ -311,7 +314,7 @@ def test_sample_guide_html_mentions_all_loadable_layers() -> None:
     constants = _sample_guide_constants()
     required_phrases = [
         "Loading Modes",
-        "Izmir planning sample",
+        "Izmir FUR street network sample",
         "Synthetic QA fixture",
         "Both datasets",
         LAYER,

@@ -215,7 +215,7 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("Before analysis", "Data Readiness Audit", "Check CRS, geometry validity, missing values, constant fields, outliers, and correlation risk."),
             ("Before distance tools", "Calculate Distance Band", "Confirm projected units and avoid arbitrary thresholds."),
             ("Before advanced models", "GeoStats Library Status", "Confirm optional libraries are installed in the active QGIS Python environment."),
-            ("Before release/manual QA", "Sample Dataset Guide", "Load the Izmir planning sample, synthetic QA fixture, or both."),
+            ("Before release/manual QA", "Sample Dataset Guide", "Load the Izmir FUR street network sample, synthetic QA fixture, or both."),
             ("After modeling", "Model Comparison Matrix", "Compare fit, residual, and prediction fields across multiple model outputs."),
         ]
         selection_rows = [
@@ -244,10 +244,10 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("Comparing models by one metric", "AIC, R2, residual maps, and spatial diagnostics can disagree.", "Use Model Comparison Matrix and inspect residual spatial autocorrelation."),
         ]
         recipe_rows = [
-            ("Urban heat clustering", "Izmir sample", "median_land_surface_temp_c; median_heat_island_index", "Data Readiness Audit -> Incremental Autocorrelation -> Global Moran's I -> Getis-Ord Gi*"),
-            ("Spatial equity screen", "Izmir sample", "park_m2_per_capita or senior_65plus_population", "Data Readiness Audit -> Spatial Inequality (Gini and Spatial Gini) -> Local Moran's I"),
-            ("Green cooling relationship", "Izmir sample", "median_land_surface_temp_c with median_ndvi, park_m2_per_capita, tree_canopy_coverage_pct", "OLS -> GWR -> residual spatial autocorrelation -> Model Comparison Matrix"),
-            ("Vulnerable population concentration", "Izmir sample", "senior_65plus_population; child_population", "Global Moran's I -> Local Moran's I -> Getis-Ord Gi*"),
+            ("Street network clustering", "Izmir sample", "road_density; betweenness_mean", "Data Readiness Audit -> Incremental Autocorrelation -> Global Moran's I -> Getis-Ord Gi*"),
+            ("Accessibility equity screen", "Izmir sample", "transit_accessibility or road_density", "Data Readiness Audit -> Spatial Inequality (Gini and Spatial Gini) -> Local Moran's I"),
+            ("Network structure relationship", "Izmir sample", "transit_accessibility with road_density, gridiron_index, connectivity_index", "OLS -> GWR -> residual spatial autocorrelation -> Model Comparison Matrix"),
+            ("Peripheral connectivity gap", "Izmir sample", "road_density; betweenness_mean", "Global Moran's I -> Local Moran's I -> Getis-Ord Gi*"),
             ("Count model smoke test", "Synthetic QA fixture", "count_target with explanatory_a and explanatory_b", "Generalized Linear Regression with Poisson family"),
             ("Directional line QA", "Synthetic QA fixture", "qa_lines_directional", "Linear Directional Mean"),
         ]

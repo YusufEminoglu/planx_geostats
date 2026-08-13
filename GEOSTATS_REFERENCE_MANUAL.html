@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanX GeoStats Lab — Comprehensive Reference Manual v0.10.0</title>
+<title>PlanX GeoStats Lab — Comprehensive Reference Manual v1.0.0</title>
 <script>
 MathJax = {
   tex: {
@@ -659,7 +659,7 @@ main {
 <nav id="sidebar">
 <div class="sidebar-header">
   <div class="brand">PlanX GeoStats Lab<span>Spatial Statistics</span></div>
-  <div class="version">Reference Manual — v0.10.0</div>
+  <div class="version">Reference Manual — v1.0.0</div>
 </div>
 <div class="sidebar-nav">
   <a href="#overview">Overview &amp; Philosophy</a>
@@ -684,6 +684,10 @@ main {
   <a href="#alg-inc-autocorr">Incremental Autocorrelation</a>
   <a href="#alg-ripleys-k">Ripley's K-Function</a>
   <a href="#alg-ann">Avg Nearest Neighbor</a>
+  <a href="#alg-geary-c">Geary's C</a>
+  <a href="#alg-join-count">Join Count Statistics</a>
+  <a href="#alg-global-lee-l">Global Bivariate Lee's L</a>
+  <a href="#alg-geodetector-q">Geodetector Q-Statistic</a>
 
   <div class="group-label">03 — Hot Spots &amp; Outliers</div>
   <a href="#alg-getis-ord">Getis-Ord Gi*</a>
@@ -692,6 +696,9 @@ main {
   <a href="#alg-bivariate-lee">Bivariate Lee's L</a>
   <a href="#alg-multivar-cluster">Multivariate Clustering</a>
   <a href="#alg-similarity">Similarity Search</a>
+  <a href="#alg-local-geary-c">Local Geary's C</a>
+  <a href="#alg-colocation-quotient">Colocation Quotient</a>
+  <a href="#alg-skater">SKATER Regionalization</a>
 
   <div class="group-label">04 — Centers &amp; Dispersion</div>
   <a href="#alg-mean-center">Mean Center</a>
@@ -703,12 +710,15 @@ main {
 
   <div class="group-label">05 — Models &amp; Scenarios</div>
   <a href="#alg-ols">OLS Regression</a>
+  <a href="#alg-lm-diagnostics">LM Diagnostics</a>
   <a href="#alg-glr">Generalized Linear Reg.</a>
   <a href="#alg-spatial-lag">Spatial Lag (SAR)</a>
   <a href="#alg-spatial-error">Spatial Error (SEM)</a>
+  <a href="#alg-spatial-durbin">Spatial Durbin (SDM)</a>
   <a href="#alg-exploratory-reg">Exploratory Regression</a>
   <a href="#alg-gwr">GWR</a>
   <a href="#alg-mgwr">MGWR</a>
+  <a href="#alg-esf">Eigenvector Spatial Filtering</a>
   <a href="#alg-sensitivity">Sensitivity Test</a>
   <a href="#alg-model-comparison">Model Comparison</a>
 
@@ -736,8 +746,8 @@ main {
 </div>
 
 <div class="meta-row">
-    <span class="meta-chip">v0.10.0</span>
-    <span class="meta-chip">34 algorithms</span>
+    <span class="meta-chip">v1.0.0</span>
+    <span class="meta-chip">44 algorithms</span>
     <span class="meta-chip">6 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -753,9 +763,9 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">44</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">6</div><div class="stat-label">Analytical Groups</div></div>
-  <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Regression Variants</div></div>
+  <div class="stat-tile"><div class="stat-value">10</div><div class="stat-label">Regression Variants</div></div>
   <div class="stat-tile"><div class="stat-value">4</div><div class="stat-label">Weight Types</div></div>
   <div class="stat-tile"><div class="stat-value">3</div><div class="stat-label">Output Formats</div></div>
 </div>
@@ -1007,12 +1017,12 @@ Infrastructure tools for environment verification, optional library management, 
   </div>
 
   <h5>1. Theoretical Background</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The use of curated sample datasets in spatial analysis education traces its roots to the GeoDa workbook (Anselin, 2005; Anselin et al., 2006), which demonstrated that spatial statistics pedagogy requires datasets where the <em>expected</em> result is known. A student who runs Global Moran's I on an unfamiliar dataset cannot distinguish between a software bug and a genuinely random spatial pattern. The Sample Dataset Guide addresses this by bundling two GeoPackages with known properties: the <strong>Izmir planning sample</strong> (237 polygon features at EPSG:5253 with English-named fields covering heat, green-space, built-form, population, and network indicators) and the <strong>Synthetic QA fixture</strong> (9 compact layers with deliberately varied geometries and pre-computed model outputs).</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The use of curated sample datasets in spatial analysis education traces its roots to the GeoDa workbook (Anselin, 2005; Anselin et al., 2006), which demonstrated that spatial statistics pedagogy requires datasets where the <em>expected</em> result is known. A student who runs Global Moran's I on an unfamiliar dataset cannot distinguish between a software bug and a genuinely random spatial pattern. The Sample Dataset Guide addresses this by bundling two GeoPackages with known properties: the <strong>Izmir FUR street network sample</strong> (391 polygon features at EPSG:5253 covering the Izmir Functional Urban Region with street-network and space-syntax accessibility indicators) and the <strong>Synthetic QA fixture</strong> (9 compact layers with deliberately varied geometries and pre-computed model outputs).</p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.65;margin:8px 0;">The QA fixture implements the principle of <em>test-driven spatial analysis</em>: each layer exercises specific code paths. <code>qa_points_grid</code> (100-point regular grid) verifies ANN and Ripley's K under CSR. <code>qa_lines_directional</code> verifies Linear Directional Mean. Six model-output layers (<code>qa_ols_model_output</code> through <code>qa_mgwr_model_output</code>) verify that the Model Comparison Matrix correctly recognises residual, predicted, and fitted fields. This follows the scientific-software verification framework of Wilson et al. (2014), adapted to the spatial-statistics domain.</p>
 
   <h5>2. Mathematical Formulation</h5>
   <div class="formula-block">
-    $$ L_{\text{izmir}} = \{\text{planx\_geostats\_izmir\_neighborhoods}\} \quad\text{(1 layer, 237 polygons, EPSG:5253)} \tag{1} $$
+    $$ L_{\text{izmir}} = \{\text{izmir\_fur\_street\_network}\} \quad\text{(1 layer, 391 polygons, EPSG:5253)} \tag{1} $$
     $$ L_{\text{qa}} = \{\text{qa\_points\_grid}, \text{qa\_lines\_directional}, \dots, \text{qa\_mgwr\_model\_output}\} \quad\text{(9 layers)} \tag{2} $$
     $$ \text{load}(m) = \begin{cases} L_{\text{izmir}}, & m = 0 \\ L_{\text{qa}}, & m = 1 \\ L_{\text{izmir}} \cup L_{\text{qa}}, & m = 2 \end{cases} \tag{3} $$
     $$ \text{loaded} = \{l \in \text{load}(m) : \text{QgsVectorLayer}(\text{gpkg} + "\text{|layername=}" + l).\text{isValid}()\} \tag{4} $$
@@ -1023,7 +1033,7 @@ Infrastructure tools for environment verification, optional library management, 
     <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
     <tbody>
       <tr><td class="param-name">LOAD_IN_PROJECT</td><td class="param-type">Boolean</td><td class="param-default">true</td><td>Load sample layers into current QGIS project; set false to only generate the guide</td></tr>
-      <tr><td class="param-name">DATASET_TO_LOAD</td><td class="param-type">Enum</td><td class="param-default">0 (Izmir)</td><td>"Izmir planning sample" (0), "Synthetic QA fixture" (1), or "Both datasets" (2)</td></tr>
+      <tr><td class="param-name">DATASET_TO_LOAD</td><td class="param-type">Enum</td><td class="param-default">0 (Izmir)</td><td>"Izmir FUR street network sample" (0), "Synthetic QA fixture" (1), or "Both datasets" (2)</td></tr>
       <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">temp dir</td><td>Output path for the sample catalog guide</td></tr>
       <tr><td class="param-name">SAMPLE_PATH (output)</td><td class="param-type">String</td><td class="param-default">—</td><td>Filesystem path to the Izmir sample GeoPackage</td></tr>
       <tr><td class="param-name">SYNTHETIC_QA_PATH (output)</td><td class="param-type">String</td><td class="param-default">—</td><td>Filesystem path to the synthetic QA GeoPackage</td></tr>
@@ -1037,14 +1047,14 @@ Infrastructure tools for environment verification, optional library management, 
     <tbody>
       <tr><td class="param-name">HTML guide</td><td>Table of all 10 bundled layers with geometry type, feature count, recommended workflows, starter field suggestions</td></tr>
       <tr><td class="param-name">Loaded map layers</td><td>Up to 10 layers added to project with "PlanX GeoStats Sample" or "PlanX GeoStats QA" prefixes</td></tr>
-      <tr><td class="param-name">Recommended workflows</td><td>Four pre-configured analytical paths (heat scan, green cooling, equity, accessibility) pairing Izmir fields with GeoStats tools</td></tr>
+      <tr><td class="param-name">Recommended workflows</td><td>Four pre-configured analytical paths (network pattern scan, accessibility model, model audit, connectivity equity) pairing Izmir FUR fields with GeoStats tools</td></tr>
       <tr><td class="param-name">QA layer purpose matrix</td><td>Each QA layer cross-referenced to the algorithms and edge cases it exercises</td></tr>
     </tbody>
   </table>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">
-    <strong>Pedagogical use.</strong> Designed for classroom and workshop settings where each algorithm can be demonstrated with known-correct inputs. The Izmir sample contains realistic spatial structure — the heat-island gradient from coast to inland is strong and spatially autocorrelated, so Global Moran's I on <code>median_land_surface_temp_c</code> should return a significant positive result. This is a "known good" baseline confirming the toolchain functions.
+    <strong>Pedagogical use.</strong> Designed for classroom and workshop settings where each algorithm can be demonstrated with known-correct inputs. The Izmir FUR sample contains realistic spatial structure — <code>road_density</code> is strongly and genuinely spatially autocorrelated (Global Moran's I = 0.63, z &gt; 27 at KNN=8), so Global Moran's I on that field reliably returns a highly significant positive result. This is a "known good" baseline confirming the toolchain functions.
   </div>
   <div class="interp-box">
     <strong>QA edge cases.</strong> The synthetic QA layers contain deliberate challenges: isolated features (no neighbours under Queen contiguity), constant fields (zero standard deviation), mixed geometry types, and features with missing values. Run each GeoStats tool on the appropriate QA layer first to verify graceful handling before applying it to production data.
@@ -1059,9 +1069,9 @@ Infrastructure tools for environment verification, optional library management, 
   <p style="margin:4px 0;"><strong>Rey, S.J. &amp; Anselin, L.</strong> (2010). "PySAL: A Python Library of Spatial Analytical Methods." In <em>Handbook of Applied Spatial Analysis</em>, Springer, 175–193. DOI: <a href="https://doi.org/10.1007/978-3-642-03647-7_11">10.1007/978-3-642-03647-7_11</a> — Documents the PySAL test-data conventions that inspired the QA fixture structure.</p>
   <p style="margin:4px 0;"><strong>Sandve, G.K., Nekrutenko, A., Taylor, J. &amp; Hovig, E.</strong> (2013). "Ten Simple Rules for Reproducible Computational Research." <em>PLoS Computational Biology</em> 9(10): e1003285. DOI: <a href="https://doi.org/10.1371/journal.pcbi.1003285">10.1371/journal.pcbi.1003285</a> — Rule 1 ("For Every Result, Keep Track of How It Was Produced") — the sample dataset records the input.</p>
   <p style="margin:4px 0;"><strong>Peng, R.D.</strong> (2011). "Reproducible Research in Computational Science." <em>Science</em> 334(6060): 1226–1227. DOI: <a href="https://doi.org/10.1126/science.1213847">10.1126/science.1213847</a> — Reproducibility requires known inputs; the sample dataset provides them.</p>
-  <p style="margin:4px 0;"><strong>Fotheringham, A.S., Brunsdon, C. &amp; Charlton, M.</strong> (2002). <em>Geographically Weighted Regression.</em> Wiley. DOI: <a href="https://doi.org/10.1002/9780470027042">10.1002/9780470027042</a> — The GWR methodology exercised by the Izmir green-cooling workflow.</p>
-  <p style="margin:4px 0;"><strong>Getis, A. &amp; Ord, J.K.</strong> (1992). "The Analysis of Spatial Association by Use of Distance Statistics." <em>Geographical Analysis</em> 24(3): 189–206. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1992.tb00261.x">10.1111/j.1538-4632.1992.tb00261.x</a> — The Gi* method exercised by the Izmir heat-pattern workflow.</p>
-  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1995). "Local Indicators of Spatial Association — LISA." <em>Geographical Analysis</em> 27(2): 93–115. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00338.x">10.1111/j.1538-4632.1995.tb00338.x</a> — The LISA method exercised by the Izmir spatial-equity workflow.</p>
+  <p style="margin:4px 0;"><strong>Fotheringham, A.S., Brunsdon, C. &amp; Charlton, M.</strong> (2002). <em>Geographically Weighted Regression.</em> Wiley. DOI: <a href="https://doi.org/10.1002/9780470027042">10.1002/9780470027042</a> — The GWR methodology exercised by the Izmir network-structure-relationship workflow.</p>
+  <p style="margin:4px 0;"><strong>Getis, A. &amp; Ord, J.K.</strong> (1992). "The Analysis of Spatial Association by Use of Distance Statistics." <em>Geographical Analysis</em> 24(3): 189–206. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1992.tb00261.x">10.1111/j.1538-4632.1992.tb00261.x</a> — The Gi* method exercised by the Izmir street-network-clustering workflow.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1995). "Local Indicators of Spatial Association — LISA." <em>Geographical Analysis</em> 27(2): 93–115. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00338.x">10.1111/j.1538-4632.1995.tb00338.x</a> — The LISA method exercised by the Izmir accessibility-equity workflow.</p>
   </div>
 </div>
 </article>
@@ -1230,7 +1240,7 @@ Infrastructure tools for environment verification, optional library management, 
     <strong>Decision tree is a starting point, not a straitjacket.</strong> The Workflow Advisor encodes the most common analytical paths; it does not know your specific planning question, data quality, or theoretical framework. If the advisor recommends OLS and your outcome is a rate bounded at [0, 100], transform it (logit or arcsine-square-root) before proceeding. The advisor's value is in preventing the most common mistakes and surfacing the dependency chain between tools.
   </div>
   <div class="interp-box">
-    <strong>Sample field suggestions are opt-in.</strong> Each recommendation includes bundled sample fields referencing the Izmir sample dataset and synthetic QA fixture. These exist so the analyst can verify the recommended tool sequence on known-good data before applying it to their own — a built-in reproducibility check.
+    <strong>Sample field suggestions are opt-in.</strong> Each recommendation includes bundled sample fields referencing the Izmir FUR sample dataset and synthetic QA fixture. These exist so the analyst can verify the recommended tool sequence on known-good data before applying it to their own — a built-in reproducibility check.
   </div>
 
   <h5>6. Literature</h5>
@@ -1434,7 +1444,7 @@ Tools that define the spatial framework within which all subsequent analyses ope
   <h3>Urban Pattern Scan</h3>
 </div>
 <p style="color:var(--gs-slate-600);font-size:.88rem;margin-bottom:28px;">
-Global spatial statistics that characterize the overall structure of a spatial variable. These are screening tools — they answer "is there a pattern worth investigating?" before local tools answer "where is it?" Each tool in this group tests a different aspect of spatial structure: autocorrelation (Moran's I), inequality decomposition (Spatial Gini), high/low clustering (General G), scale-dependence (Incremental Autocorrelation), point-process intensity (Ripley's K), and first-order dispersion (Nearest Neighbor).
+Global spatial statistics that characterize the overall structure of a spatial variable. These are screening tools — they answer "is there a pattern worth investigating?" before local tools answer "where is it?" Each tool in this group tests a different aspect of spatial structure: autocorrelation (Moran's I, Geary's C), inequality decomposition (Spatial Gini), high/low clustering (General G), scale-dependence (Incremental Autocorrelation), point-process intensity (Ripley's K), first-order dispersion (Nearest Neighbor), categorical/binary clustering (Join Count Statistics), spatial co-clustering between two fields (Global Bivariate Lee's L), and spatial stratified heterogeneity from a categorical partition (Geodetector Q-statistic).
 </p>
 
 <!-- Global Moran's I -->
@@ -2308,6 +2318,451 @@ Global spatial statistics that characterize the overall structure of a spatial v
 </div>
 </article>
 
+<!-- Geary's C -->
+<article class="alg-card" id="alg-geary-c">
+<div class="alg-card-header">
+  <div class="alg-icon">📐</div>
+  <div class="alg-info">
+    <h4>Geary's C (Spatial Autocorrelation)</h4>
+    <div class="alg-id">geary_c_autocorrelation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-geary-c" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Geary's C is the sum-of-squared-differences alternative to Global Moran's I (Geary, 1954; formalized by Cliff &amp; Ord, 1973, 1981). Where Moran's I compares each value's deviation from the global mean to its neighbors' deviations, Geary's C compares each pair of neighboring values <em>directly</em> to one another — making it more sensitive to local dissimilarity and less dependent on the global mean as a reference point. Geary's C uses the opposite direction convention from every other autocorrelation statistic in this plugin: values <strong>below</strong> 1.0 indicate positive spatial autocorrelation (clustering of similar values), values <strong>above</strong> 1.0 indicate negative spatial autocorrelation (dissimilar values adjacent), and 1.0 is the no-autocorrelation reference point. Significance is assessed by permutation inference (999 Monte Carlo shuffles by default) rather than the Cliff-Ord closed-form randomization variance, sidestepping that formula's own distributional assumptions.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Robert Geary introduced the contiguity ratio in a 1954 paper in <em>The Incorporated Statistician</em>, four years after Patrick Moran's 1950 paper introduced what became Moran's I. Geary's statistic was built around a fundamentally different comparison: instead of asking "how does each value's deviation from the mean relate to its neighbors' deviations" (Moran's approach), Geary asked "how large is the squared difference between each pair of neighboring values, compared to the overall variance." This local, pairwise construction gives Geary's C a distinct sensitivity profile — it responds strongly to sharp local contrasts even when the broader spatial trend (captured by Moran's I) is weak.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Formalization.</strong> Cliff and Ord (1973, then more completely in their 1981 monograph <em>Spatial Processes: Models &amp; Applications</em>) placed Geary's C on the same rigorous footing as Moran's I, deriving its expectation and randomization variance and establishing it as a standard member of the "join statistics" family alongside Moran's I and the Join Count Statistics implemented elsewhere in this group. Sokal and Oden (1978) further popularized Geary's C in biological and ecological spatial analysis, where its sensitivity to fine-grained local structure proved valuable for detecting patchy, small-scale spatial processes that a global-mean-referenced statistic like Moran's I can average away.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why the two statistics can disagree.</strong> Moran's I is dominated by how far each value sits from the <em>global</em> mean; a strong overall gradient (e.g., a monotonic decline in accessibility from the urban core to the periphery) produces a large positive Moran's I even if adjacent pairs of features are individually quite similar. Geary's C, by contrast, only looks at neighbor-to-neighbor differences — it can register significant local dissimilarity in a field where Moran's I sees a smooth, unremarkable global trend, or conversely stay close to 1.0 in a field with a strong global gradient but very smooth local transitions. Reporting both statistics together — as this plugin recommends via the cross-references below — captures a fuller picture of spatial structure than either alone.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Permutation inference over closed-form variance.</strong> Cliff and Ord (1981) derive an exact closed-form randomization variance for Geary's C, but that formula carries assumptions (specifically about the symmetry and higher-order moment structure of the weights matrix) that are easy to violate silently with irregular polygon geometries and mixed weight specifications (KNN, distance bands). This plugin instead uses Monte Carlo permutation inference: the field values are randomly reshuffled across locations (holding the spatial weights fixed) 999 times by default, and the observed C is compared against this empirical null distribution. This is standard, citable practice (see Anselin's LISA framework, used throughout Group 03) and avoids relying on assumptions that are hard to verify for an arbitrary input layer.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let <em>N</em> be the number of valid features, \(y_i\) the field value at location <em>i</em>, \(\bar{y}\) its mean, and \(w_{ij}\) the spatial weight between <em>i</em> and <em>j</em> (row-standardized, per the plugin's weights convention).</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Observed Geary's C statistic:</strong></p>
+  $$C = \frac{(N-1) \sum_{i}\sum_{j} w_{ij}(y_i - y_j)^2}{2 \, S_0 \sum_{i}(y_i - \bar{y})^2} \tag{1}$$
+  <p style="margin:6px 0;">where \(S_0 = \sum_i \sum_j w_{ij}\) is the sum of all spatial weights.</p>
+
+  <p style="margin:8px 0;"><strong>Expectation under no spatial autocorrelation:</strong></p>
+  $$\mathbb{E}[C] = 1.0 \tag{2}$$
+  <p style="margin:6px 0;">This is the fixed reference value regardless of <em>N</em> or the weights structure — a key practical difference from Moran's I, whose expectation \(-1/(N-1)\) depends on sample size.</p>
+
+  <p style="margin:8px 0;"><strong>Permutation inference procedure:</strong></p>
+  $$C^{(p)} = \text{Geary's C computed on a random permutation of } \{y_1, \ldots, y_N\} \text{, for } p = 1, \ldots, P \tag{3}$$
+  $$z = \frac{C_{\text{obs}} - \overline{C^{(p)}}}{\text{sd}(C^{(p)})}, \qquad p_{\text{value}} = \frac{\#\{p : |C^{(p)} - \overline{C^{(p)}}| \ge |C_{\text{obs}} - \overline{C^{(p)}}|\} + 1}{P + 1} \tag{4}$$
+  <p style="margin:6px 0;">The weights and spatial structure are held fixed while the field values are reshuffled across locations; the "+1" in numerator and denominator is the standard Monte Carlo p-value adjustment (Davison &amp; Hinkley, 1997), which prevents a p-value of exactly zero regardless of permutation count.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_geary_c</code>) builds the pairwise index/weight arrays directly from the neighbor and weight dictionaries returned by <code>build_weights_matrix()</code>, so any of the four weight-type options (Queen, Rook, KNN, Distance Band) can be used interchangeably. Validated on synthetic 10×10 grid fixtures with known ground truth: a clustered row-gradient returns C ≈ 0.03 (p = 0.002, correctly detecting strong positive autocorrelation), while an independently random field returns C ≈ 0.95 (p = 0.42, correctly failing to reject the null).
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Must have variation</td><td>Target field to test for spatial autocorrelation</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the weights matrix</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">5</td><td>≥ 1</td><td>Number of neighbors (KNN weights only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band weights only)</td></tr>
+      <tr><td class="param-name">PERMUTATIONS</td><td class="param-type">Integer</td><td class="param-default">999</td><td>99–9999</td><td>Number of Monte Carlo permutations for significance testing</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed for reproducible permutation results</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">observed_c</td><td class="param-type">Double</td><td>Observed Geary's C statistic</td></tr>
+    <tr><td class="param-name">expected_c</td><td class="param-type">Double</td><td>Expected C under no spatial autocorrelation (always 1.0)</td></tr>
+    <tr><td class="param-name">permuted_mean</td><td class="param-type">Double</td><td>Mean of C across the permutation distribution</td></tr>
+    <tr><td class="param-name">permuted_std</td><td class="param-type">Double</td><td>Standard deviation of C across the permutation distribution</td></tr>
+    <tr><td class="param-name">z_score</td><td class="param-type">Double</td><td>Standardized z-score relative to the permutation distribution</td></tr>
+    <tr><td class="param-name">p_value</td><td class="param-type">Double</td><td>Two-tailed Monte Carlo p-value</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading Geary's C — note the reversed direction convention.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Condition</th><th>Meaning</th><th>Spatial Pattern</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>C &lt; 1.0, p &lt; 0.05</td><td>Squared differences between neighbors are smaller than expected</td><td><strong>Positive autocorrelation (clustered)</strong></td><td>Run Local Moran's I or Getis-Ord Gi* to locate where the clustering occurs.</td></tr>
+      <tr><td>C &gt; 1.0, p &lt; 0.05</td><td>Squared differences between neighbors are larger than expected</td><td><strong>Negative autocorrelation (dispersed)</strong></td><td>Check whether the dispersion is a genuine repulsion process or a data-coding artifact (e.g. alternating survey zones).</td></tr>
+      <tr><td>C ≈ 1.0, p ≥ 0.05</td><td>Cannot reject the no-autocorrelation null</td><td><strong>Random</strong></td><td>Compare against Global Moran's I; a disagreement between the two is itself informative about the scale of the pattern.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Geary's C vs. Moran's I — run both, not either.</strong> Because the two statistics weight local vs. global structure differently, treating them as interchangeable risks missing real spatial pattern. A field with a smooth citywide gradient and noisy local transitions can show a strong Moran's I alongside a Geary's C close to 1.0; a field with sharp local contrasts embedded in an otherwise flat citywide average can show the reverse. When the two disagree, the disagreement itself is diagnostic of <em>which scale</em> the spatial process operates at — investigate with Local Moran's I (Group 03) to resolve the ambiguity.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-global-moran">Global Moran's I</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a> &middot; <a href="#alg-getis-ord">Getis-Ord Gi*</a> &middot; <a href="#alg-join-count">Join Count Statistics</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Geary, R.C.</strong> (1954). "The Contiguity Ratio and Statistical Mapping." <em>The Incorporated Statistician</em> 5(3): 115–146. — The original paper introducing the contiguity ratio, now known as Geary's C.</p>
+  <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1973). <em>Spatial Autocorrelation.</em> London: Pion. ISBN: 978-0850860200 — First rigorous derivation of Geary's C's expectation and randomization variance alongside Moran's I.</p>
+  <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1981). <em>Spatial Processes: Models &amp; Applications.</em> London: Pion. ISBN: 978-0850860818 — The definitive monograph-length treatment; establishes Geary's C within the broader join-statistics framework used throughout this plugin.</p>
+  <p style="margin:4px 0;"><strong>Sokal, R.R. &amp; Oden, N.L.</strong> (1978). "Spatial Autocorrelation in Biology: 1. Methodology." <em>Biological Journal of the Linnean Society</em> 10(2): 199–228. DOI: <a href="https://doi.org/10.1111/j.1095-8312.1978.tb00013.x">10.1111/j.1095-8312.1978.tb00013.x</a> — Popularized Geary's C for ecological and biological spatial analysis; contrasts its local sensitivity against Moran's I.</p>
+  <p style="margin:4px 0;"><strong>Getis, A. &amp; Ord, J.K.</strong> (1992). "The Analysis of Spatial Association by Use of Distance Statistics." <em>Geographical Analysis</em> 24(3): 189–206. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1992.tb00261.x">10.1111/j.1538-4632.1992.tb00261.x</a> — Companion reading on the General G statistic (Group 02), useful for contrasting directional (high/low) clustering tests against Geary's C's symmetric dissimilarity test.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (2019). "A Local Indicator of Multivariate Spatial Association: Extending Geary's c." <em>Geographical Analysis</em> 51(2): 133–150. DOI: <a href="https://doi.org/10.1111/gean.12164">10.1111/gean.12164</a> — Extends Geary's C to a local, multivariate LISA form; the local complement (Group 03) to the global statistic implemented here.</p>
+  <p style="margin:4px 0;"><strong>Davison, A.C. &amp; Hinkley, D.V.</strong> (1997). <em>Bootstrap Methods and Their Application.</em> Cambridge: Cambridge University Press. ISBN: 978-0521574716 — Standard reference for the Monte Carlo p-value "+1" adjustment used in the permutation inference procedure.</p>
+  </div>
+</div>
+</article>
+
+<!-- Join Count Statistics -->
+<article class="alg-card" id="alg-join-count">
+<div class="alg-card-header">
+  <div class="alg-icon">🔲</div>
+  <div class="alg-info">
+    <h4>Join Count Statistics (BB/WW/BW)</h4>
+    <div class="alg-id">join_count_statistics</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-join-count" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Every other spatial-autocorrelation tool in this plugin requires a continuous numeric field. Join Count Statistics (Cliff &amp; Ord, 1973, 1981; building on Dacey, 1968) is the tool built for <strong>binary and categorical</strong> data — presence/absence, zoning class, a threshold-coded indicator — testing spatial clustering by counting how often neighboring feature pairs ("joins") share the same category versus differ. Three join counts are reported: Black-Black (BB, both match the category), White-White (WW, both don't), and Black-White (BW, the pair differs). Each has its own permutation-based significance test. Unlike every weights-based tool in this plugin, Join Counts use the <strong>raw, unstandardized</strong> adjacency graph rather than row-standardized weights, since the count of actual shared edges — not a per-feature average — is what the statistic needs.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Join count statistics trace to Michael Dacey's 1968 review of contiguity measures for categorical (color-coded) maps, one of the earliest formal approaches to testing spatial pattern in qualitative data. Cliff and Ord (1973, 1981) placed join counts on the same rigorous inferential footing as Moran's I and Geary's C, deriving expectations and randomization variances for the BB, WW, and BW counts under both free sampling (with replacement) and non-free sampling (without replacement) schemes. Together with Moran's I and Geary's C, join counts complete the classical triad of global spatial-pattern statistics — one for continuous data compared to the mean (Moran), one for continuous data compared pairwise (Geary), and one for categorical/binary data (Join Counts).
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>What the three counts measure.</strong> Consider a binary coding where each feature is either "Black" (matches a category of interest) or "White" (doesn't). A BB join is a pair of adjacent Black features; a WW join is a pair of adjacent White features; a BW join is an adjacent Black-White pair. If the category is spatially clustered, BB and WW joins will be more frequent than chance and BW joins less frequent. If the category is spatially <em>interspersed</em> — checkerboarded — the reverse holds: BW joins dominate. This makes Join Count Statistics able to detect a form of spatial pattern (checkerboarding / fine-grained interspersion) that continuous-field autocorrelation statistics are not designed to test directly.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Binary adjacency, not row-standardized weights.</strong> Every other tool in this plugin row-standardizes its spatial weights (each neighbor's weight is \(1/k_i\) for \(k_i\) neighbors) so that spatial lags behave as local averages. Join Count Statistics deliberately break this convention: the classical formulation counts <em>edges</em> in the adjacency graph, not weighted averages, so unstandardized binary adjacency (1 if neighbors, 0 otherwise) is the mathematically correct input. Using row-standardized weights here would silently and incorrectly deflate the join counts for high-degree features.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Binarization strategy.</strong> When the chosen field is already categorical, the plugin uses its most frequent category as "Black" (everything else "White"). When the field is numeric/continuous, the plugin binarizes at the field's median (values above the median become "Black"). A meaningful, planning-relevant threshold (a regulatory cutoff, a policy-defined category) should always be preferred over an arbitrary median split when one exists — the median split is a reasonable default, not a universally correct choice.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(x_i \in \{0, 1\}\) be the binary code at location <em>i</em> (1 = Black, 0 = White), and let \(J\) be the set of unique unordered neighbor pairs \((i,j)\) derived from the binary adjacency graph (each undirected edge counted once).</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Observed join counts:</strong></p>
+  $$BB = \sum_{(i,j) \in J} \mathbb{1}[x_i = 1 \wedge x_j = 1], \quad WW = \sum_{(i,j) \in J} \mathbb{1}[x_i = 0 \wedge x_j = 0], \quad BW = |J| - BB - WW \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Permutation inference (per join type):</strong></p>
+  $$BB^{(p)}, WW^{(p)}, BW^{(p)} = \text{join counts on a random permutation of } \{x_1, \ldots, x_N\} \text{, for } p = 1, \ldots, P \tag{2}$$
+  $$z_{BB} = \frac{BB_{\text{obs}} - \overline{BB^{(p)}}}{\text{sd}(BB^{(p)})}, \qquad p_{BB} = \frac{\#\{p : |BB^{(p)} - \overline{BB^{(p)}}| \ge |BB_{\text{obs}} - \overline{BB^{(p)}}|\} + 1}{P + 1} \tag{3}$$
+  <p style="margin:6px 0;">The same procedure applies independently to WW and BW. Category sizes (\(N_1\) Black, \(N_0\) White) are preserved exactly by each permutation, matching Cliff and Ord's free-sampling randomization scheme.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_join_counts</code>) deduplicates the neighbor graph into unordered pairs before counting, so asymmetric weight builders (e.g. KNN, where <em>i</em> being a neighbor of <em>j</em> does not guarantee the reverse) do not double-count or drop edges. Validated on synthetic checkerboard and left/right-split 10×10 grid fixtures: a checkerboard returns BB = 0, WW = 0, BW = 180 (100% of joins), exactly matching the theoretical extreme; a left/right split returns BB far above its permutation expectation (p = 0.002) and BW far below it, correctly identifying clustering.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Field</td><td class="param-default">—</td><td>Numeric or text</td><td>Field converted to a binary Black/White category</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the binary adjacency graph</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">5</td><td>≥ 1</td><td>Number of neighbors (KNN adjacency only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band adjacency only)</td></tr>
+      <tr><td class="param-name">PERMUTATIONS</td><td class="param-type">Integer</td><td class="param-default">999</td><td>99–9999</td><td>Number of Monte Carlo permutations per join type</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed for reproducible permutation results</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">total_joins</td><td class="param-type">Integer</td><td>Total number of unique neighbor pairs in the adjacency graph</td></tr>
+    <tr><td class="param-name">n1 / n0</td><td class="param-type">Integer</td><td>Count of Black (1) and White (0) features after binarization</td></tr>
+    <tr><td class="param-name">bb / ww / bw</td><td class="param-type">Object</td><td>Per-join-type result: observed count, permuted mean, permuted std., z-score, p-value</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading the three join counts together.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>BB significant, above expectation</td><td><strong>The category clusters together</strong></td><td>Map matching features directly, or run Local Moran's I / Getis-Ord Gi* on a continuous proxy for the same category.</td></tr>
+      <tr><td>WW significant, above expectation</td><td><strong>The complement clusters together</strong></td><td>Consider whether the complement itself is the more policy-relevant category to map.</td></tr>
+      <tr><td>BW significant, above expectation</td><td><strong>Category is interspersed / checkerboarded</strong></td><td>Investigate whether this reflects a genuine fine-grained mixed pattern or a data-coding artifact (e.g. alternating parcel or survey IDs).</td></tr>
+      <tr><td>None significant</td><td><strong>Random spatial arrangement</strong></td><td>No further spatial follow-up needed for this coding; consider a different threshold or field if clustering is expected but not detected.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A non-significant BW is not confirmation of clustering.</strong> A common misreading is to treat "BW is not significant" as proof the category clusters. It is not — BW near its expected value under CSR is simply uninformative on its own. Clustering is established by a significant BB (or WW) count, not by the absence of a significant BW. Always report the full trio, not a single count in isolation.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-geary-c">Geary's C</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a> &middot; <a href="#alg-data-readiness">Data Readiness Audit</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Dacey, M.F.</strong> (1968). "A Review on Measures of Contiguity for Two and K-Color Maps." In B.J.L. Berry &amp; D.F. Marble (eds.), <em>Spatial Analysis: A Reader in Statistical Geography</em>, pp. 479–495. Englewood Cliffs: Prentice-Hall. — Earliest systematic review of contiguity/join-count measures for categorical maps.</p>
+  <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1973). <em>Spatial Autocorrelation.</em> London: Pion. ISBN: 978-0850860200 — Formal derivation of BB/WW/BW join-count expectations and variances under free and non-free sampling.</p>
+  <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1981). <em>Spatial Processes: Models &amp; Applications.</em> London: Pion. ISBN: 978-0850860818 — Definitive treatment placing join counts alongside Moran's I and Geary's C in a unified inferential framework.</p>
+  <p style="margin:4px 0;"><strong>Moran, P.A.P.</strong> (1948). "The Interpretation of Statistical Maps." <em>Journal of the Royal Statistical Society, Series B</em> 10(2): 243–251. — Early precedent for testing categorical spatial pattern on maps, predating the formal join-count framework.</p>
+  <p style="margin:4px 0;"><strong>Upton, G.J.G. &amp; Fingleton, B.</strong> (1985). <em>Spatial Data Analysis by Example, Volume 1: Point Pattern and Quantitative Data.</em> Chichester: Wiley. ISBN: 978-0471900830 — Accessible worked examples of join count statistics alongside other categorical spatial-pattern tests.</p>
+  <p style="margin:4px 0;"><strong>Davison, A.C. &amp; Hinkley, D.V.</strong> (1997). <em>Bootstrap Methods and Their Application.</em> Cambridge: Cambridge University Press. ISBN: 978-0521574716 — Standard reference for the Monte Carlo p-value "+1" adjustment used in the permutation inference procedure.</p>
+  </div>
+</div>
+</article>
+
+<!-- Global Bivariate Lee's L -->
+<article class="alg-card" id="alg-global-lee-l">
+<div class="alg-card-header">
+  <div class="alg-icon">🧲</div>
+  <div class="alg-info">
+    <h4>Global Bivariate Lee's L</h4>
+    <div class="alg-id">global_bivariate_lee_l</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-global-lee-l" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    A single study-area-wide summary of the same spatial co-clustering measure that the plugin's <a href="#alg-bivariate-lee">Bivariate Spatial Association (Lee's L)</a> tool computes feature by feature (Lee, 2001). Global Lee's L is the Global/Local pairing that Global Moran's I has to Local Moran's I, applied to a two-variable relationship rather than one. It asks a different question than a plain Pearson correlation: whether X at one location predicts Y at <em>nearby</em> locations, not just Y at the same location. Under this plugin's row-standardized weights convention, Global L is mathematically exactly the mean of the local \(\ell_i\) values computed by the existing local tool — run that afterward on a significant field pair to see where the co-clustering concentrates.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Sang-Il Lee introduced the bivariate spatial association measure in a 2001 paper in the <em>Journal of Geographical Systems</em>, explicitly designed to integrate Pearson's correlation coefficient with Moran's I into a single statistic. Lee's decomposition, \(L_{XY} = r_{XY} \cdot \sqrt{I_X \cdot I_Y}\), shows that Lee's L can only be large when both fields are individually spatially autocorrelated <em>and</em> correlated with each other — a more stringent joint test than either component alone. This plugin's existing local implementation (Group 03) already exploits this decomposition at the feature level; this global tool completes the pair by providing the single study-area summary.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Screening before mapping.</strong> Local Lee's L is descriptive/diagnostic (the plugin's existing local implementation does not currently include permutation-based significance per feature); Global Lee's L, by contrast, is given a formal permutation significance test here. This makes the recommended workflow: run Global Lee's L first as a screening step, and proceed to feature-level Local Lee's L mapping only when the global figure is significant — a non-significant Global L means local co-clustering, if any, is likely too weak or spatially scattered to interpret with confidence.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why co-clustering differs from correlation.</strong> Two fields can be spatially co-clustered (high Global L) even with a weak or zero simple Pearson correlation, if their relationship only emerges once neighboring values are pooled together — a hallmark of spatially structured confounding or an omitted spatial process. Conversely, a strong simple correlation can coexist with a low Global L if the relationship, though real, has no spatial coherence (it holds equally everywhere, with no clustering of the correlated pairs). Reporting both a plain Pearson correlation and Global Lee's L side by side surfaces this distinction directly.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(z_x(i) = (x_i - \bar{x})/\sigma_x\) and \(z_y(j) = (y_j - \bar{y})/\sigma_y\) be standardized values, and \(w_{ij}\) the row-standardized spatial weight between <em>i</em> and <em>j</em>.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Local Lee's L (reused from the existing engine):</strong></p>
+  $$\ell_i = z_x(i) \cdot \sum_j w_{ij} \, z_y(j) \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Global Lee's L, under row-standardized weights:</strong></p>
+  $$L_{XY} = \frac{1}{N}\sum_{i=1}^{N} \ell_i \tag{2}$$
+  <p style="margin:6px 0;">This plugin's engine computes the global statistic exactly this way — as the mean of the local \(\ell_i\) values already produced by the plugin's local Lee's L engine — rather than re-deriving the global cross-product formula independently. This guarantees the two tools agree by construction; the plugin's own synthetic validation confirms the mean of the local values equals the reported global statistic to full numerical precision.</p>
+
+  <p style="margin:8px 0;"><strong>Permutation inference (holding X and spatial structure fixed):</strong></p>
+  $$L_{XY}^{(p)} = \text{Global Lee's L computed with Y randomly permuted, for } p = 1, \ldots, P \tag{3}$$
+  $$z = \frac{L_{XY,\text{obs}} - \overline{L_{XY}^{(p)}}}{\text{sd}(L_{XY}^{(p)})}, \qquad p_{\text{value}} = \frac{\#\{p : |L_{XY}^{(p)} - \overline{L_{XY}^{(p)}}| \ge |L_{XY,\text{obs}} - \overline{L_{XY}^{(p)}}|\} + 1}{P + 1} \tag{4}$$
+  <p style="margin:6px 0;">Shuffling only Y (not X) tests specifically whether the observed spatial pairing of X and Y is distinguishable from a random pairing, given each field's own spatial structure — the standard approach for bivariate spatial permutation tests (Anselin, 1995, extended for bivariate LISA by Anselin, Syabri &amp; Smirnov, 2002).</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_global_lee_l</code>) calls <code>calculate_bivariate_lee_l()</code> from <code>stats_engines.py</code> — the same engine backing the local tool — once per permutation, taking the mean of the returned local values each time. Validated on synthetic 10×10 grid fixtures: a correlated and spatially clustered field pair returns L ≈ 0.96 (p = 0.002); an independent random pair returns L ≈ −0.05 (p = 0.38, correctly non-significant); critically, mean(local ℓ) was confirmed to equal the reported global L to full precision, verifying the local-to-global decomposition.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELD_X</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Must have variation</td><td>Primary variable X</td></tr>
+      <tr><td class="param-name">FIELD_Y</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Different from Field X</td><td>Neighbor-lag variable Y</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the weights matrix</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">5</td><td>≥ 1</td><td>Number of neighbors (KNN weights only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band weights only)</td></tr>
+      <tr><td class="param-name">PERMUTATIONS</td><td class="param-type">Integer</td><td class="param-default">999</td><td>99–9999</td><td>Number of Monte Carlo permutations for significance testing</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed for reproducible permutation results</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">observed_l</td><td class="param-type">Double</td><td>Observed Global Lee's L statistic (mean of the local ℓ values)</td></tr>
+    <tr><td class="param-name">permuted_mean</td><td class="param-type">Double</td><td>Mean of L across the permutation distribution</td></tr>
+    <tr><td class="param-name">permuted_std</td><td class="param-type">Double</td><td>Standard deviation of L across the permutation distribution</td></tr>
+    <tr><td class="param-name">z_score</td><td class="param-type">Double</td><td>Standardized z-score relative to the permutation distribution</td></tr>
+    <tr><td class="param-name">p_value</td><td class="param-type">Double</td><td>Two-tailed Monte Carlo p-value</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading Global Lee's L.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Condition</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>L &gt; 0, p &lt; 0.05</td><td><strong>Positive spatial co-clustering</strong> — high X near high Y, low X near low Y</td><td>Run Local Bivariate Lee's L on the same pair to map where the co-clustering concentrates.</td></tr>
+      <tr><td>L &lt; 0, p &lt; 0.05</td><td><strong>Negative spatial co-clustering</strong> — high X near low Y</td><td>Run Local Bivariate Lee's L to map where the inverse relationship concentrates.</td></tr>
+      <tr><td>p ≥ 0.05</td><td><strong>No significant spatial co-clustering</strong></td><td>Check a plain Pearson correlation as a sanity comparison; a non-spatial relationship will show up there but not here.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Not a causal test.</strong> A significant Global L establishes that two fields are spatially co-patterned; it does not establish that one causes the other, nor which direction the influence runs. Treat it as a screening and description tool — the same caveat that applies to Pearson correlation applies here, with the added spatial dimension.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-bivariate-lee">Bivariate Spatial Association (Lee's L)</a> &middot; <a href="#alg-bivariate-lisa">Bivariate LISA</a> &middot; <a href="#alg-global-moran">Global Moran's I</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Lee, S.-I.</strong> (2001). "Developing a Bivariate Spatial Association Measure: An Integration of Pearson's r and Moran's I." <em>Journal of Geographical Systems</em> 3(4): 369–385. DOI: <a href="https://doi.org/10.1007/s101090100064">10.1007/s101090100064</a> — The foundational paper introducing Lee's L; Equation 2 of this card's decomposition is drawn directly from this work.</p>
+  <p style="margin:4px 0;"><strong>Lee, S.-I.</strong> (2009). "A Generalized Randomization Approach to Local Measures of Spatial Association." <em>Geographical Analysis</em> 41(3): 221–248. DOI: <a href="https://doi.org/10.1111/j.1538-4632.2009.00755.x">10.1111/j.1538-4632.2009.00755.x</a> — Permutation inference framework for Lee's L, the basis for this tool's significance test.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1995). "Local Indicators of Spatial Association — LISA." <em>Geographical Analysis</em> 27(2): 93–115. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00338.x">10.1111/j.1538-4632.1995.tb00338.x</a> — Establishes the local-to-global decomposition principle (sum of local statistics proportional to the global one) that this tool's Global/Local pairing follows.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L., Syabri, I. &amp; Smirnov, O.</strong> (2002). "Visualizing Multivariate Spatial Correlation with Dynamically Linked Windows." In L. Anselin &amp; S. Rey (eds.), <em>New Tools for Spatial Data Analysis</em>. Santa Barbara: CSISS, UCSB. — Bivariate permutation methodology (shuffle one variable, hold the other and spatial structure fixed), the approach adopted here.</p>
+  <p style="margin:4px 0;"><strong>Wartenberg, D.</strong> (1985). "Multivariate Spatial Correlation: A Method for Exploratory Geographical Analysis." <em>Geographical Analysis</em> 17(4): 263–283. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1985.tb00849.x">10.1111/j.1538-4632.1985.tb00849.x</a> — Precursor multivariate spatial correlation coefficient that Lee's L builds on and generalizes.</p>
+  <p style="margin:4px 0;"><strong>Davison, A.C. &amp; Hinkley, D.V.</strong> (1997). <em>Bootstrap Methods and Their Application.</em> Cambridge: Cambridge University Press. ISBN: 978-0521574716 — Standard reference for the Monte Carlo p-value "+1" adjustment used in the permutation inference procedure.</p>
+  </div>
+</div>
+</article>
+
+<!-- Geodetector Q-Statistic -->
+<article class="alg-card" id="alg-geodetector-q">
+<div class="alg-card-header">
+  <div class="alg-icon">🥧</div>
+  <div class="alg-info">
+    <h4>Geodetector Q-Statistic (Spatial Stratified Heterogeneity)</h4>
+    <div class="alg-id">geodetector_q_statistic</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-geodetector-q" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    A fundamentally different analytical paradigm from every other tool in this group: instead of asking "are nearby features similar" (spatial autocorrelation), the Geodetector Q-statistic (Wang et al., 2010; Wang, Zhang &amp; Fu, 2016) asks "does this partition of the study area into categories explain the variance I see" (spatial stratified heterogeneity). No spatial weights matrix is built at all — the test compares within-stratum variance to total variance for a categorical zoning/district/classification field against a continuous outcome. Q ranges from 0 (the stratification explains nothing) to 1 (each stratum is internally uniform). The tool accepts either an existing categorical field or a continuous field to quantile-bin into strata first.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Jin-Feng Wang and colleagues introduced the Geodetector (地理探测器) framework in a 2010 paper in the <em>International Journal of Geographical Information Science</em>, applying it to neural tube defect risk assessment in the Heshun region of China. The framework's core insight is that spatial heterogeneity — the tendency for a process to differ systematically across sub-regions — is a distinct phenomenon from spatial autocorrelation, and needed its own formal statistic rather than being treated as a byproduct of weights-based methods. Wang, Zhang and Fu's 2016 paper in <em>Ecological Indicators</em> is the canonical methodological reference for the single-factor Q-statistic implemented here, formalizing it as a general measure of "spatial stratified heterogeneity" applicable well beyond the original epidemiological context.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A different paradigm, not a competing one.</strong> Every autocorrelation statistic in this plugin (Moran's I, Geary's C, Getis-Ord Gi*, Join Counts) implicitly assumes that "spatial structure" means "value similarity decays with distance." Spatial stratified heterogeneity is a different kind of structure: a categorical partition — administrative boundaries, zoning classes, soil types, historical development eras — can explain variance in an outcome even without any smooth distance-decay relationship. A zoning field can produce a high Geodetector Q (each zone internally homogeneous, zones very different from each other) while producing an unremarkable Moran's I if the zones themselves are scattered rather than contiguous. The two paradigms are complementary, not substitutes.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The single-factor detector, and what's out of scope.</strong> The full Geodetector framework (Wang &amp; Xu, 2017) includes four detectors: the factor detector (implemented here — does one stratification explain variance), the interaction detector (do two stratifications explain more together than separately), the risk detector (which strata differ significantly from each other), and the ecological detector (do two factors have significantly different explanatory power). This plugin implements the factor detector as a first release; the interaction and risk detectors are natural, well-scoped extensions for a future version rather than a fundamentally different technique.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Permutation inference over the classical F-approximation.</strong> Wang et al.'s original papers derive an approximate F-test for Q under the assumption of no within-stratum spatial autocorrelation. That assumption is frequently violated in planning data — features within the same zoning class are often themselves spatially clustered, which the F-approximation does not account for and which is known to make the F-test overly liberal (rejecting the null too often). This plugin instead uses permutation inference: strata labels are randomly reshuffled (holding category sizes fixed) to build an empirical null distribution for Q, sidestepping the F-test's spatial-independence assumption entirely.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let <em>N</em> be the number of valid features, \(y_i\) the outcome field value, and the study area partitioned into <em>H</em> strata (categories) with stratum <em>h</em> containing \(N_h\) features.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The Q-statistic:</strong></p>
+  $$q = 1 - \frac{\sum_{h=1}^{H} N_h \, \sigma_h^2}{N \, \sigma^2} \tag{1}$$
+  <p style="margin:6px 0;">where \(\sigma_h^2\) is the variance of <em>y</em> within stratum <em>h</em>, and \(\sigma^2\) is the total variance of <em>y</em> across the whole study area. The numerator is the total within-stratum sum of squares (weighted by stratum size); the denominator is the total sum of squares.</p>
+
+  <p style="margin:8px 0;"><strong>Interpretation of the bounds:</strong></p>
+  $$q = 0 \iff \text{strata explain nothing (within-stratum variance} = \text{total variance)}, \qquad q = 1 \iff \text{each stratum is perfectly homogeneous} \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Permutation inference (one-tailed — only large Q is of interest):</strong></p>
+  $$q^{(p)} = \text{Q-statistic computed with strata labels randomly permuted (stratum sizes fixed), for } p = 1, \ldots, P \tag{3}$$
+  $$z = \frac{q_{\text{obs}} - \overline{q^{(p)}}}{\text{sd}(q^{(p)})}, \qquad p_{\text{value}} = \frac{\#\{p : q^{(p)} \ge q_{\text{obs}}\} + 1}{P + 1} \tag{4}$$
+  <p style="margin:6px 0;">The p-value is one-tailed because only a Q <em>larger</em> than chance is evidence of stratified heterogeneity; a Q smaller than chance has no comparable substantive interpretation.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_geodetector_q</code>) computes per-stratum variance directly from NumPy array masks — no spatial weights matrix is constructed. The <code>bin_into_quantiles()</code> helper turns a continuous field into strata via quantile edges when no ready-made categorical field is available. Validated on synthetic 10×10 grid fixtures: a perfect row-based stratification (rows are internally uniform, values differ sharply between rows) returns q = 1.0 (p = 0.002); an irrelevant column-based stratification of the same field returns q = 0.0 (p = 1.0), correctly failing to detect explanatory power where none exists.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELD_Y</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Must have variation</td><td>Continuous outcome field to explain</td></tr>
+      <tr><td class="param-name">STRATA_MODE</td><td class="param-type">Enum</td><td class="param-default">Use existing categorical field</td><td>Existing field / Quantile-bin a continuous field</td><td>Source of the stratification</td></tr>
+      <tr><td class="param-name">FIELD_STRATA</td><td class="param-type">Field</td><td class="param-default">—</td><td>Different from Field Y</td><td>Stratification field (categorical, or continuous to bin)</td></tr>
+      <tr><td class="param-name">N_BINS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>2–20</td><td>Number of quantile bins (Quantile-bin mode only)</td></tr>
+      <tr><td class="param-name">PERMUTATIONS</td><td class="param-type">Integer</td><td class="param-default">999</td><td>99–9999</td><td>Number of Monte Carlo permutations for significance testing</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed for reproducible permutation results</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">q_statistic</td><td class="param-type">Double</td><td>Observed Q-statistic (0–1)</td></tr>
+    <tr><td class="param-name">n_strata</td><td class="param-type">Integer</td><td>Number of strata used</td></tr>
+    <tr><td class="param-name">permuted_mean</td><td class="param-type">Double</td><td>Mean of Q across the permutation distribution</td></tr>
+    <tr><td class="param-name">permuted_std</td><td class="param-type">Double</td><td>Standard deviation of Q across the permutation distribution</td></tr>
+    <tr><td class="param-name">z_score</td><td class="param-type">Double</td><td>Standardized z-score relative to the permutation distribution</td></tr>
+    <tr><td class="param-name">p_value</td><td class="param-type">Double</td><td>One-tailed Monte Carlo p-value</td></tr>
+    <tr><td class="param-name">per_stratum</td><td class="param-type">Object</td><td>Per-stratum sample size, mean, and standard deviation</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading the Q-statistic.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Condition</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>q ≥ 0.5, p &lt; 0.05</td><td><strong>Strong spatial stratified heterogeneity</strong></td><td>Report per-stratum means/variances to identify which categories drive the outcome; consider this factor in Multiple Regression or GWR.</td></tr>
+      <tr><td>0 &lt; q &lt; 0.5, p &lt; 0.05</td><td><strong>Significant but modest heterogeneity</strong></td><td>Test alternative stratifications, or combine with continuous predictors in a regression model.</td></tr>
+      <tr><td>p ≥ 0.05</td><td><strong>No significant stratified heterogeneity</strong></td><td>Try a different stratification (finer/coarser bins, or a different categorical field) before concluding no spatial stratified structure exists.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Avoid near-unique strata.</strong> A stratification field with as many categories as there are features (e.g. a parcel ID mistakenly used as the strata field) will trivially inflate Q toward 1.0, since each "stratum" contains a single value and therefore has zero internal variance by construction. This is not evidence of meaningful stratified heterogeneity — it is a definitional artifact. The tool warns when the stratification field has an unusually high number of distinct categories relative to the feature count; always sanity-check per-stratum sample sizes in the output before trusting the result.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-data-readiness">Data Readiness Audit</a> &middot; <a href="#alg-ols">Multiple Regression Analysis</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Wang, J.-F., Li, X.-H., Christakos, G., Liao, Y.-L., Zhang, T., Gu, X. &amp; Zheng, X.-Y.</strong> (2010). "Geographical Detectors-Based Health Risk Assessment and Its Application in the Neural Tube Defects Study of the Heshun Region, China." <em>International Journal of Geographical Information Science</em> 24(1): 107–127. DOI: <a href="https://doi.org/10.1080/13658810802443457">10.1080/13658810802443457</a> — The original Geodetector paper; introduces the factor, interaction, risk, and ecological detectors.</p>
+  <p style="margin:4px 0;"><strong>Wang, J.-F., Zhang, T.-L. &amp; Fu, B.-J.</strong> (2016). "A Measure of Spatial Stratified Heterogeneity." <em>Ecological Indicators</em> 67: 250–256. DOI: <a href="https://doi.org/10.1016/j.ecolind.2016.02.052">10.1016/j.ecolind.2016.02.052</a> — The canonical methodological reference for the single-factor Q-statistic implemented in this tool; generalizes Geodetector beyond its original epidemiological application.</p>
+  <p style="margin:4px 0;"><strong>Wang, J.-F. &amp; Xu, C.-D.</strong> (2017). "Geodetector: Principle and Prospective." <em>Acta Geographica Sinica</em> 72(1): 116–134. DOI: <a href="https://doi.org/10.11821/dlxb201701010">10.11821/dlxb201701010</a> — Overview of the full four-detector framework; describes the interaction, risk, and ecological detectors that are natural future extensions of this tool.</p>
+  <p style="margin:4px 0;"><strong>Wang, J.-F., Hu, Y.</strong> (2012). "Environmental Health Risk Detection with GeogDetector." <em>Environmental Modelling &amp; Software</em> 33: 114–115. DOI: <a href="https://doi.org/10.1016/j.envsoft.2012.01.015">10.1016/j.envsoft.2012.01.015</a> — Introduces the open-source GeoDetector software implementation, establishing the method's software-tool precedent.</p>
+  <p style="margin:4px 0;"><strong>Davison, A.C. &amp; Hinkley, D.V.</strong> (1997). <em>Bootstrap Methods and Their Application.</em> Cambridge: Cambridge University Press. ISBN: 978-0521574716 — Standard reference for the Monte Carlo p-value "+1" adjustment used in the permutation inference procedure.</p>
+  </div>
+</div>
+</article>
+
 <!-- ════════════════════════════════════════════════════════════════ -->
 <!--  GROUP 03 — HOT SPOTS AND SPATIAL OUTLIERS                     -->
 <!-- ════════════════════════════════════════════════════════════════ -->
@@ -2317,7 +2772,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <h3>Hot Spots and Spatial Outliers</h3>
 </div>
 <p style="color:var(--gs-slate-600);font-size:.88rem;margin-bottom:28px;">
-Local spatial statistics that identify <em>where</em> patterns occur — the specific features or neighborhoods that drive the global patterns detected in group 02. Each tool maps a different aspect of local spatial structure: magnitude-based hot spots (Gi*), value-based clusters and outliers (LISA), cross-variable spatial association (Bivariate LISA, Lee's L), multivariate similarity groups (K-Means), and feature-level similarity search.
+Local spatial statistics that identify <em>where</em> patterns occur — the specific features or neighborhoods that drive the global patterns detected in group 02. Each tool maps a different aspect of local spatial structure: magnitude-based hot spots (Gi*), value-based clusters and outliers (LISA, Local Geary's C), cross-variable spatial association (Bivariate LISA, Lee's L), categorical point co-location (Colocation Quotient), multivariate similarity groups (K-Means), spatially contiguous regionalization (SKATER), and feature-level similarity search.
 </p>
 
 <!-- Getis-Ord Gi* -->
@@ -3680,6 +4135,331 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
 </div>
 </article>
 
+<!-- Local Geary's C -->
+<article class="alg-card" id="alg-local-geary-c">
+<div class="alg-card-header">
+  <div class="alg-icon">🔴</div>
+  <div class="alg-info">
+    <h4>Cluster and Outlier Analysis (Local Geary's C)</h4>
+    <div class="alg-id">local_geary_c</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-local-geary-c" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    The local, per-feature complement to Group 02's global Geary's C — Anselin's (2019) Local Geary's C tests each feature's dissimilarity from its immediate neighbors, using the same sum-of-squared-differences construction as the global statistic rather than Local Moran's I's deviation-from-mean-cross-product construction. It gives Local Moran's I a genuine second opinion: because Local Geary responds to sharp local contrast directly rather than to distance from the study-area mean, it can flag a local outlier that Local Moran misses, or vice versa. Output uses the same HH/LL/HL/LH vocabulary as Local Moran's I for direct comparability, with significance from conditional permutation rather than an analytical formula.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Luc Anselin's 1995 paper that introduced the LISA (Local Indicators of Spatial Association) framework focused on Local Moran's I, but explicitly noted the framework generalizes to any global statistic with a valid local decomposition. Anselin returned to this in a 2019 paper in <em>Geographical Analysis</em>, "A Local Indicator of Multivariate Spatial Association: Extending Geary's c," formally deriving the local Geary's C decomposition (alongside a multivariate extension this plugin does not implement) and establishing conditional permutation as the practical inference approach, since the exact analytical variance for the local statistic involves higher-order moments that are considerably harder to get right than Local Moran's already-intricate Anselin (1995) formula.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>What makes it different from Local Moran's I.</strong> Local Moran's I for feature <em>i</em> is proportional to \((y_i - \bar{y}) \cdot \sum_j w_{ij}(y_j - \bar{y})\) — a cross-product of deviations from the <em>global</em> mean. Local Geary's C for feature <em>i</em> is \(\sum_j w_{ij}(y_i - y_j)^2\) — a sum of squared differences between <em>i</em> and each of its neighbors directly, with no reference to the global mean at all. A feature can be an extreme Local Geary outlier (very different from its immediate neighbors) while sitting close to the global mean itself, a configuration Local Moran's I is structurally unable to flag since its statistic is built entirely from mean-deviations.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Classification logic.</strong> Because Local Geary's C only measures dissimilarity magnitude, this plugin combines it with the same sign-based quadrant test Local Moran's I uses: compare the feature's own value and its spatial lag (neighbor mean) against the global mean to assign HH/LL/HL/LH, but only when the conditional-permutation p-value is significant. In the typical case this alignment is automatic — a small local C (similar to neighbors) naturally corresponds to matching signs (HH/LL), and a large local C (dissimilar) naturally corresponds to opposite signs (HL/LH) — but the two pieces of information (magnitude significance and sign) are genuinely separate tests, unlike Local Moran's I where the classification and the significance test both flow from the same cross-product sign.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A real, documented power limitation.</strong> Synthetic validation of this plugin's implementation surfaced a genuine and important caveat: on a small, near-binary field (e.g. a sharp two-value split), conditional permutation can fail to reach significance even at the exact transition boundary, because roughly half of all possible random neighbor draws already come from the "other" value — the permutation null itself has high variance under a 50/50 split. This is not a bug; it is a documented property of local statistics with small effective sample sizes, and a reason to prefer a continuous field or a larger dataset when precise local significance matters.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(y_i\) be the field value at location <em>i</em>, \(\bar{y}\) the global mean, and \(w_{ij}\) the row-standardized spatial weight between <em>i</em> and neighbor <em>j</em>.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Local Geary's C for feature i:</strong></p>
+  $$c_i = \sum_{j} w_{ij}(y_i - y_j)^2 \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Spatial lag (for quadrant classification):</strong></p>
+  $$\text{lag}_i = \sum_j w_{ij} \, y_j \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Conditional permutation inference:</strong></p>
+  $$c_i^{(p)} = \text{Local Geary's C at } i \text{ with its neighbor set resampled from the other } N{-}1 \text{ observations, for } p = 1, \ldots, P \tag{3}$$
+  $$z_i = \frac{c_i - \overline{c_i^{(p)}}}{\text{sd}(c_i^{(p)})}, \qquad p_i = \frac{\#\{p : |c_i^{(p)} - \overline{c_i^{(p)}}| \ge |c_i - \overline{c_i^{(p)}}|\} + 1}{P + 1} \tag{4}$$
+  <p style="margin:6px 0;">\(y_i\) itself is held fixed; only its neighbor set is resampled — this is the "conditional" in conditional permutation, matching the plugin's existing Local Moran's I and Bivariate LISA convention (Anselin, 1995, p.97).</p>
+
+  <p style="margin:8px 0;"><strong>Quadrant classification (only when \(p_i < 0.05\)):</strong></p>
+  $$\text{Class}(i) = \begin{cases} \text{HH} & y_i > \bar{y} \text{ and } \text{lag}_i > \bar{y} \\ \text{LL} & y_i < \bar{y} \text{ and } \text{lag}_i < \bar{y} \\ \text{HL} & y_i > \bar{y} \text{ and } \text{lag}_i < \bar{y} \\ \text{LH} & y_i < \bar{y} \text{ and } \text{lag}_i > \bar{y} \end{cases} \tag{5}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_local_geary_c</code>) reuses this plugin's existing deterministic per-feature permutation generator (the same lightweight PRNG that powers <code>calculate_bivariate_local_moran</code>), needed because the nested feature × permutation loop calls a random shuffle far more times than a general-purpose NumPy generator can service efficiently. Validated on synthetic grid fixtures: a localized attribute anomaly embedded in a smooth gradient is correctly flagged HH at its interior; a purely random field produces a false-positive rate close to the expected ~5% at p&lt;0.05.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Must have variation</td><td>Target field to analyze</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the weights matrix</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">5</td><td>≥ 1</td><td>Number of neighbors (KNN weights only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band weights only)</td></tr>
+      <tr><td class="param-name">PERMUTATIONS</td><td class="param-type">Integer</td><td class="param-default">199</td><td>99–1999</td><td>Conditional permutations run per feature (feature × permutation cost multiplies quickly)</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed for reproducible permutation results</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path; auto-styled by class</td><td>Output layer with Local Geary's C fields and categorized styling</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">lgc_c</td><td class="param-type">Double</td><td>Local Geary's C statistic (sum of neighbor squared differences)</td></tr>
+    <tr><td class="param-name">lgc_z</td><td class="param-type">Double</td><td>Permutation-based z-score</td></tr>
+    <tr><td class="param-name">lgc_p</td><td class="param-type">Double</td><td>Two-tailed conditional-permutation p-value</td></tr>
+    <tr><td class="param-name">quadrant</td><td class="param-type">String</td><td>HH, LL, HL, LH, or Not Significant</td></tr>
+    <tr><td class="param-name">lgc_nbrs</td><td class="param-type">Integer</td><td>Valid neighbor count used for the local statistic</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading Local Geary's C alongside Local Moran's I.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>HH or LL, significant</td><td><strong>Local cluster</strong> — feature and neighbors are unusually similar and jointly high or low</td><td>Compare against Local Moran's I HH/LL classification at the same feature for corroboration.</td></tr>
+      <tr><td>HL or LH, significant</td><td><strong>Local outlier</strong> — feature and neighbors are unusually dissimilar</td><td>Flags the same kind of spatial outlier as Local Moran's I HL/LH, but driven by direct neighbor contrast rather than mean-deviation.</td></tr>
+      <tr><td>Not Significant, but Local Moran's I IS significant at the same feature</td><td>The two tests disagree</td><td>Investigate manually — this combination is itself informative about whether the anomaly is a global-mean effect or a purely local contrast effect.</td></tr>
+      <tr><td>Not Significant, small/near-binary field</td><td>Likely a genuine power limitation, not absence of pattern</td><td>Re-run on a continuous field or a larger sample before concluding no local structure exists.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-geary-c">Geary's C</a> &middot; <a href="#alg-local-moran">Local Moran's I (LISA)</a> &middot; <a href="#alg-getis-ord">Getis-Ord Gi*</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (2019). "A Local Indicator of Multivariate Spatial Association: Extending Geary's c." <em>Geographical Analysis</em> 51(2): 133–150. DOI: <a href="https://doi.org/10.1111/gean.12164">10.1111/gean.12164</a> — The paper this tool implements; formally derives the local Geary's C decomposition.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1995). "Local Indicators of Spatial Association — LISA." <em>Geographical Analysis</em> 27(2): 93–115. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00338.x">10.1111/j.1538-4632.1995.tb00338.x</a> — Establishes the LISA framework and the conditional-randomization justification (p.97) this tool's permutation procedure follows.</p>
+  <p style="margin:4px 0;"><strong>Geary, R.C.</strong> (1954). "The Contiguity Ratio and Statistical Mapping." <em>The Incorporated Statistician</em> 5(3): 115–146. — The original global statistic this tool localizes.</p>
+  <p style="margin:4px 0;"><strong>Cliff, A.D. &amp; Ord, J.K.</strong> (1981). <em>Spatial Processes: Models &amp; Applications.</em> London: Pion. ISBN: 978-0850860818 — Classical treatment of Geary's C alongside Moran's I in a unified framework.</p>
+  <p style="margin:4px 0;"><strong>Ord, J.K. &amp; Getis, A.</strong> (1995). "Local Spatial Autocorrelation Statistics: Distributional Issues and an Application." <em>Geographical Analysis</em> 27(4): 286–306. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1995.tb00912.x">10.1111/j.1538-4632.1995.tb00912.x</a> — General distributional issues for local statistics, including the multiple-testing caveat that also applies here.</p>
+  <p style="margin:4px 0;"><strong>Davison, A.C. &amp; Hinkley, D.V.</strong> (1997). <em>Bootstrap Methods and Their Application.</em> Cambridge: Cambridge University Press. ISBN: 978-0521574716 — Standard reference for the Monte Carlo p-value "+1" adjustment used in the permutation procedure.</p>
+  </div>
+</div>
+</article>
+
+<!-- Colocation Quotient -->
+<article class="alg-card" id="alg-colocation-quotient">
+<div class="alg-card-header">
+  <div class="alg-icon">🔺</div>
+  <div class="alg-info">
+    <h4>Colocation Quotient (CLQ)</h4>
+    <div class="alg-id">colocation_quotient</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-colocation-quotient" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Every other hot-spot/outlier tool in this group needs a continuous numeric field. The Colocation Quotient (Leslie &amp; Kronenfeld, 2011) is built for categorical point data: it tests whether one category of features (Category B) is over- or under-represented among another category's (Category A) K nearest neighbors, relative to B's overall share of the dataset. CLQ = 1 is the no-relationship reference point; CLQ &gt; 1 signals attraction, CLQ &lt; 1 signals avoidance. Uniquely among this plugin's colocation-adjacent tools (Join Count Statistics uses polygon adjacency; this uses point K-nearest-neighbors), and uniquely ASYMMETRIC — CLQ(A→B) is not generally equal to CLQ(B→A).
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Timothy Leslie and Jennifer Kronenfeld introduced the Colocation Quotient in a 2011 paper in <em>Geographical Analysis</em>, motivated by a genuine gap in the point-pattern toolkit: existing cross-K and bivariate join-count methods either required binary presence/absence coding or produced a single symmetric summary that couldn't distinguish "A attracts B" from "B attracts A." Their original formulation used each Category A point's single nearest neighbor; this plugin implements the K-nearest-neighbor generalization used by Cromley, Hanink and Bentley (2014) in their "local colocation quotient" extension, giving the analyst control over the interaction scale via K rather than being locked to the single-nearest-neighbor case.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why asymmetry matters.</strong> Consider a small number of hospitals (Category A) and a much larger number of pharmacies (Category B). Every hospital may have several pharmacies nearby (high CLQ(hospital→pharmacy)), simply because pharmacies are common everywhere — but a typical pharmacy is unlikely to have a hospital among its nearest neighbors (low CLQ(pharmacy→hospital)), since hospitals are rare. A symmetric measure like Ripley's cross-K would blend these two very different findings into one number; CLQ keeps them separate by construction, which is exactly the point of computing both directions when the underlying relationship isn't obviously one-way.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Self-colocation.</strong> Setting Category B equal to Category A is a valid and meaningful special case: CLQ(A→A) tests whether a single category clusters with itself, similar in spirit to the plugin's Join Count Statistics BB count but computed on true point locations via K-nearest-neighbors rather than polygon adjacency. A CLQ(A→A) well above 1.0 indicates the category has a strong tendency to co-locate with its own kind — a useful screening step before investigating relationships with other categories.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Scale sensitivity.</strong> Like every K-nearest-neighbor-based method in this plugin, CLQ's result depends on the chosen K. A very small K captures only the tightest local interactions; a K approaching the size of the whole dataset pulls every local CLQ toward 1.0 regardless of genuine local structure, since at that scale "nearest neighbors" starts to resemble a random sample of the whole layer. There is no universal correct K — it should match the spatial scale at which the analyst believes the categorical interaction actually operates (e.g. walking-distance co-location vs. district-wide co-location).
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let <em>N</em> be the total point count, \(N_A\) and \(N_B\) the counts of Category A and Category B respectively, and \(NN_B(i)\) the number of point <em>i</em>'s K nearest neighbors labeled Category B.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Local CLQ for a single Category A point i (Cromley, Hanink &amp; Bentley, 2014):</strong></p>
+  $$\text{local\_CLQ}_i(A \to B) = \frac{NN_B(i) / K}{N_B / (N-1)} \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Global/summary CLQ (this tool's headline statistic):</strong></p>
+  $$\text{CLQ}(A \to B) = \frac{1}{N_A}\sum_{i \in A} \text{local\_CLQ}_i(A \to B) \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Permutation inference:</strong></p>
+  $$\text{CLQ}^{(p)}(A \to B) = \text{CLQ computed with category labels randomly reshuffled across the fixed point locations, for } p = 1, \ldots, P \tag{3}$$
+  $$z = \frac{\text{CLQ}_{\text{obs}} - \overline{\text{CLQ}^{(p)}}}{\text{sd}(\text{CLQ}^{(p)})}, \qquad p_{\text{value}} = \frac{\#\{p : |\text{CLQ}^{(p)} - \overline{\text{CLQ}^{(p)}}| \ge |\text{CLQ}_{\text{obs}} - \overline{\text{CLQ}^{(p)}}|\} + 1}{P + 1} \tag{4}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_colocation_quotient</code>) reuses this plugin's existing scikit-learn-KDTree-with-NumPy-fallback pattern (the same one backing Average Nearest Neighbor) for the K-nearest-neighbor search. Validated on synthetic point fixtures: two categories placed in the same tight region return CLQ ≈ 2.0 (p = 0.005, correctly detecting attraction); the same categories placed in disjoint, non-overlapping regions return CLQ = 0.0 (p = 0.005, correctly detecting total avoidance); self-colocation on a spatially separated single category returns CLQ ≈ 1.98 (correctly detecting strong self-clustering).
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type (reduced to centroids)</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Field</td><td class="param-default">—</td><td>Any type</td><td>Category field</td></tr>
+      <tr><td class="param-name">CATEGORY_A</td><td class="param-type">String</td><td class="param-default">—</td><td>Must exist in FIELD</td><td>Reference category value (A)</td></tr>
+      <tr><td class="param-name">CATEGORY_B</td><td class="param-type">String</td><td class="param-default">—</td><td>Must exist in FIELD</td><td>Target category value to test for co-location with A</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">5</td><td>≥ 1</td><td>Number of nearest neighbors (K)</td></tr>
+      <tr><td class="param-name">PERMUTATIONS</td><td class="param-type">Integer</td><td class="param-default">999</td><td>99–9999</td><td>Number of Monte Carlo permutations</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed for reproducible permutation results</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">clq</td><td class="param-type">Double</td><td>Observed CLQ(A→B)</td></tr>
+    <tr><td class="param-name">n_a / n_b / n_total</td><td class="param-type">Integer</td><td>Category A count, Category B count, total valid features</td></tr>
+    <tr><td class="param-name">permuted_mean / permuted_std</td><td class="param-type">Double</td><td>Permutation-distribution mean and standard deviation</td></tr>
+    <tr><td class="param-name">z_score / p_value</td><td class="param-type">Double</td><td>Standardized z-score and two-tailed Monte Carlo p-value</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading CLQ.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Condition</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>CLQ &gt; 1, p &lt; 0.05</td><td><strong>Positive co-location (attraction)</strong></td><td>Map the qualifying Category A features; consider computing the reverse direction CLQ(B→A) too.</td></tr>
+      <tr><td>CLQ &lt; 1, p &lt; 0.05</td><td><strong>Negative co-location (avoidance)</strong></td><td>Investigate whether this reflects a real repulsion process (e.g. zoning separation) or a coverage artifact.</td></tr>
+      <tr><td>p ≥ 0.05</td><td><strong>No significant co-location</strong></td><td>Try a different K before concluding no relationship exists — CLQ is scale-sensitive.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Always consider computing both directions.</strong> CLQ(A→B) alone answers "does A attract B"; it says nothing about whether B attracts A. When the planning question doesn't have an obvious direction (e.g. "do coffee shops and co-working spaces co-locate?"), run the tool twice with Category A and B swapped and report both quotients — a large asymmetry between the two directions is itself a substantive finding.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-join-count">Join Count Statistics</a> &middot; <a href="#alg-ann">Average Nearest Neighbor</a> &middot; <a href="#alg-getis-ord">Getis-Ord Gi*</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Leslie, T.F. &amp; Kronenfeld, B.J.</strong> (2011). "The Colocation Quotient: A New Measure of Spatial Association Between Categorical Subsets of Points." <em>Geographical Analysis</em> 43(3): 306–326. DOI: <a href="https://doi.org/10.1111/j.1538-4632.2011.00821.x">10.1111/j.1538-4632.2011.00821.x</a> — The foundational paper; introduces the asymmetric CLQ and its nearest-neighbor formulation.</p>
+  <p style="margin:4px 0;"><strong>Cromley, R.G., Hanink, D.M. &amp; Bentley, G.C.</strong> (2014). "Geographically Weighted Colocation Quotients: Specification and Application." <em>The Professional Geographer</em> 66(1): 138–148. DOI: <a href="https://doi.org/10.1080/00330124.2013.768130">10.1080/00330124.2013.768130</a> — The K-nearest-neighbor local CLQ generalization this tool implements.</p>
+  <p style="margin:4px 0;"><strong>Ripley, B.D.</strong> (1976). "The Second-Order Analysis of Stationary Point Processes." <em>Journal of Applied Probability</em> 13(2): 255–266. DOI: <a href="https://doi.org/10.2307/3212829">10.2307/3212829</a> — The symmetric cross-K precedent that CLQ's asymmetry improves on for categorical co-location questions.</p>
+  <p style="margin:4px 0;"><strong>Cressie, N.A.C.</strong> (1993). <em>Statistics for Spatial Data</em> (revised ed.). New York: Wiley. ISBN: 978-0471002550 — Standard reference on point-pattern statistics and bivariate spatial association.</p>
+  <p style="margin:4px 0;"><strong>Getis, A. &amp; Franklin, J.</strong> (1987). "Second-Order Neighborhood Analysis of Mapped Point Patterns." <em>Ecology</em> 68(3): 473–477. DOI: <a href="https://doi.org/10.2307/1938452">10.2307/1938452</a> — Precedent for neighborhood-based (rather than distance-band) point-pattern association measures.</p>
+  <p style="margin:4px 0;"><strong>Davison, A.C. &amp; Hinkley, D.V.</strong> (1997). <em>Bootstrap Methods and Their Application.</em> Cambridge: Cambridge University Press. ISBN: 978-0521574716 — Standard reference for the Monte Carlo p-value "+1" adjustment used in the permutation procedure.</p>
+  </div>
+</div>
+</article>
+
+<!-- SKATER Spatially Constrained Regionalization -->
+<article class="alg-card" id="alg-skater">
+<div class="alg-card-header">
+  <div class="alg-icon">🌳</div>
+  <div class="alg-info">
+    <h4>Spatially Constrained Regionalization (SKATER)</h4>
+    <div class="alg-id">skater_regionalization</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-skater" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Partitions the study area into K spatially CONTIGUOUS regions — the direct fix for the plugin's Multivariate Clustering (K-Means) tool's biggest limitation: K-Means groups by attribute similarity alone, with no guarantee cluster members are geographically near each other. SKATER (Spatial 'K'luster Analysis by Tree Edge Removal; Assunção et al., 2006) builds a minimum spanning tree over the spatial contiguity graph and greedily cuts the K-1 edges that most reduce total within-cluster sum of squares, guaranteeing every output region is a single connected area. Ships as a native NumPy + Prim's-algorithm implementation with no optional-library dependency.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Renato Assunção and colleagues introduced SKATER in a 2006 paper in the <em>International Journal of Geographical Information Science</em>, addressing a problem regional scientists had worked around for decades: standard clustering methods (K-Means, hierarchical clustering) group by attribute similarity with no spatial-contiguity guarantee, forcing analysts to either accept scattered "clusters" or hand-edit results into contiguous regions. SKATER instead builds contiguity into the algorithm itself via a graph-theoretic construction — a minimum spanning tree — so every candidate partition considered during the procedure is contiguous by construction, not by post-hoc correction.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The divisive tree-cutting procedure.</strong> SKATER is a divisive method — the reverse of hierarchical agglomerative clustering. It starts with the entire study area as one region (whose internal structure is the minimum spanning tree over the spatial contiguity graph, edge-weighted by attribute dissimilarity), then repeatedly removes the single tree edge whose removal most reduces the total within-cluster sum of squares (SSD) across all current regions, stopping after K-1 cuts have produced K regions. Because each cut only ever splits an existing connected sub-tree into two connected sub-trees, contiguity is preserved at every step — there is no way for a SKATER region to end up spatially fragmented.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why a minimum spanning tree specifically.</strong> The MST is the sparsest possible connected subgraph of the full contiguity graph that still spans every feature, using the lowest-dissimilarity edges available. Working from the MST rather than the full graph is what makes the "find the best edge to cut" search tractable — a tree with <em>N</em> nodes has exactly <em>N</em>-1 edges to evaluate at each step, versus potentially far more edges in the full contiguity graph. Assunção et al. prove that restricting the search to the MST does not sacrifice solution quality: the optimal K-way contiguous partition of the MST is provably a good approximation to the optimal K-way contiguous partition of the full graph for this class of problem.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Native implementation, not an optional-dependency wrapper.</strong> SKATER is available in the PySAL ecosystem via the <code>spopt</code> package (built on <code>libpysal</code>), and an earlier draft of this plugin's development plan considered wrapping that implementation the way Spatial Autoregression and Spatial Error Regression wrap <code>spreg</code>. This tool ships instead as a fully native NumPy + stdlib <code>heapq</code> implementation (Prim's algorithm for the MST, then a direct greedy tree-cutting search) — it works with zero additional installs and carries no risk of the numba/NumPy ABI version conflicts that already affect this plugin's other optional-dependency tools (see GeoStats Library Status). The trade-off is runtime: the greedy cut search is <em>O(K</em> &times; <em>E)</em> where <em>E</em> is the number of tree edges, which is fast for the hundreds-of-features layers this plugin is built around but will slow down noticeably into the low thousands of features.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(z_i \in \mathbb{R}^p\) be the Z-score-standardized attribute vector for feature <em>i</em> across the <em>p</em> selected fields, and let the spatial contiguity graph connect <em>i</em> and <em>j</em> whenever they are neighbors under the chosen weight type.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Edge dissimilarity (squared Euclidean distance in standardized attribute space):</strong></p>
+  $$d_{ij} = \lVert z_i - z_j \rVert^2 = \sum_{k=1}^{p}(z_{ik} - z_{jk})^2 \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Minimum spanning tree (Prim's algorithm):</strong></p>
+  $$T = \arg\min_{T' \text{ spans all nodes}} \sum_{(i,j) \in T'} d_{ij} \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Within-cluster sum of squares (SSD) for a candidate region R:</strong></p>
+  $$\text{SSD}(R) = \sum_{i \in R} \lVert z_i - \bar{z}_R \rVert^2, \qquad \bar{z}_R = \frac{1}{|R|}\sum_{i \in R} z_i \tag{3}$$
+
+  <p style="margin:8px 0;"><strong>Greedy edge-removal objective at each of the K-1 steps:</strong></p>
+  $$(R^*, e^*) = \arg\max_{R,\, e \in T_R} \Big[ \text{SSD}(R) - \big(\text{SSD}(R_1(e)) + \text{SSD}(R_2(e))\big) \Big] \tag{4}$$
+  <p style="margin:6px 0;">where <em>R</em> ranges over all currently-formed regions, <em>e</em> ranges over that region's internal tree edges, and \(R_1(e), R_2(e)\) are the two connected components produced by removing edge <em>e</em> from region <em>R</em>'s internal tree. The chosen cut is the one that maximizes the total SSD reduction across the whole current partition.</p>
+
+  <p style="margin:8px 0;"><strong>Final objective (minimized, indirectly, by the greedy procedure):</strong></p>
+  $$\text{Total SSD} = \sum_{k=1}^{K} \text{SSD}(R_k) \tag{5}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_skater</code>) builds the MST via a standard binary-heap Prim's algorithm, then performs the greedy cut search by temporarily removing each candidate edge and re-running a small breadth-first traversal to identify the two resulting components — an approach chosen for correctness and readability over the more elaborate incremental-update schemes described in the original paper, which matter more at MST sizes far beyond this plugin's typical layer sizes. A connectivity check runs before the MST step: if the input spatial-weights graph is not a single connected component, the tool raises a clear error naming how many features are unreachable, rather than silently producing an MST that spans only part of the data. Validated on a synthetic grid fixture with a sharp left/right attribute discontinuity aligned to spatial position: SKATER recovers the exact left/right partition at K=2, and a disconnected contiguity graph correctly raises the connectivity error.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">FIELDS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Analysis fields (Z-score standardized before clustering)</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial contiguity graph used to constrain regions</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">5</td><td>≥ 1</td><td>Number of neighbors (KNN contiguity only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band contiguity only)</td></tr>
+      <tr><td class="param-name">K_CLUSTERS</td><td class="param-type">Integer</td><td class="param-default">3</td><td>≥ 2</td><td>Number of spatially contiguous regions</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path; auto-styled by region</td><td>Output regionalized layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">region_id</td><td class="param-type">Integer</td><td>SKATER region identifier (0 to K-1), spatially contiguous by construction</td></tr>
+    <tr><td class="param-name">region_size</td><td class="param-type">Integer</td><td>Number of complete records assigned to this region</td></tr>
+    <tr><td class="param-name">region_ssd</td><td class="param-type">Double</td><td>Standardized within-region sum of squared deviations</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Choosing K.</strong> As with K-Means, run SKATER at several K values and examine total SSD (printed to the Processing log) for a diminishing-returns "elbow" rather than committing to a single run. Because SKATER's regions are contiguous, the natural sanity check K-Means lacks is available here for free: simply look at the map — every region should visually read as one connected area, which it always will by construction, so the real question when comparing K values is whether the additional regions correspond to genuinely distinct attribute profiles or are just splitting an already-homogeneous area for no analytical gain.
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>SKATER vs. Multivariate Clustering — which to run.</strong> Use SKATER whenever the output needs to be a usable set of planning regions (a proposed district boundary, a service-area redesign, a zoning revision) — contiguity is not optional in those contexts. Use Multivariate Clustering (K-Means) when the question is purely about attribute-profile similarity and geographic proximity is irrelevant or actively undesirable to enforce (e.g. finding all neighborhoods citywide with a similar demographic profile, regardless of where they are). Running both on the same fields and comparing region_id against cluster_id is itself informative: heavy disagreement between the two indicates the attribute clusters are not spatially coherent to begin with.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-multivar-cluster">Multivariate Clustering</a> &middot; <a href="#alg-distance-band">Calculate Distance Band</a> &middot; <a href="#alg-similarity">Similarity Search</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Assunção, R.M., Neves, M.C., Câmara, G. &amp; Freitas, C.C.</strong> (2006). "Efficient Regionalization Techniques for Socio-economic Geographical Units Using Minimum Spanning Trees." <em>International Journal of Geographical Information Science</em> 20(7): 797–811. DOI: <a href="https://doi.org/10.1080/13658810600665111">10.1080/13658810600665111</a> — The original SKATER paper.</p>
+  <p style="margin:4px 0;"><strong>Duque, J.C., Anselin, L. &amp; Rey, S.J.</strong> (2012). "The Max-p-Regions Problem." <em>Journal of Regional Science</em> 52(3): 397–419. DOI: <a href="https://doi.org/10.1111/j.1467-9787.2011.00743.x">10.1111/j.1467-9787.2011.00743.x</a> — A related spatially constrained regionalization method with a size-threshold constraint instead of a fixed K, useful further reading for regionalization variants.</p>
+  <p style="margin:4px 0;"><strong>Prim, R.C.</strong> (1957). "Shortest Connection Networks and Some Generalizations." <em>Bell System Technical Journal</em> 36(6): 1389–1401. DOI: <a href="https://doi.org/10.1002/j.1538-7305.1957.tb01515.x">10.1002/j.1538-7305.1957.tb01515.x</a> — The minimum spanning tree algorithm this tool's engine implements.</p>
+  <p style="margin:4px 0;"><strong>Openshaw, S.</strong> (1977). "A Geographical Solution to Scale and Aggregation Problems in Region-Building, Partitioning and Spatial Modelling." <em>Transactions of the Institute of British Geographers</em> 2(4): 459–472. DOI: <a href="https://doi.org/10.2307/622300">10.2307/622300</a> — Foundational work on the general region-building problem SKATER solves.</p>
+  <p style="margin:4px 0;"><strong>Guo, D.</strong> (2008). "Regionalization with Dynamically Constrained Agglomerative Clustering and Partitioning (REDCAP)." <em>International Journal of Geographical Information Science</em> 22(7): 801–823. DOI: <a href="https://doi.org/10.1080/13658810701674970">10.1080/13658810701674970</a> — A closely related family of spatially constrained clustering methods, useful comparative reading.</p>
+  <p style="margin:4px 0;"><strong>Duque, J.C., Ramos, R. &amp; Suriñach, J.</strong> (2007). "Supervised Regionalization Methods: A Survey." <em>International Regional Science Review</em> 30(3): 195–220. DOI: <a href="https://doi.org/10.1177/0160017607301605">10.1177/0160017607301605</a> — Broad survey placing SKATER among the wider family of regionalization techniques.</p>
+  </div>
+</div>
+</article>
+
 <!-- ════════════════════════════════════════════════════════════════ -->
 <!--  GROUP 04 — CENTERS, DIRECTION AND DISPERSION                  -->
 <!-- ════════════════════════════════════════════════════════════════ -->
@@ -4226,7 +5006,7 @@ Descriptive spatial statistics that characterize the central tendency, direction
   <h3>Models and Scenarios</h3>
 </div>
 <p style="color:var(--gs-slate-600);font-size:.88rem;margin-bottom:28px;">
-Spatial econometric and regression models that estimate relationships between a dependent variable and explanatory variables, with explicit treatment of spatial dependence and spatial heterogeneity. This group progresses from aspatial screening (OLS, Exploratory Regression) through spatial dependence diagnostics (Spatial Lag, Spatial Error) to local and multiscale models (GWR, MGWR), with tools for sensitivity testing and model comparison.
+Spatial econometric and regression models that estimate relationships between a dependent variable and explanatory variables, with explicit treatment of spatial dependence and spatial heterogeneity. This group progresses from aspatial screening (OLS, Exploratory Regression) through a formal specification test (Lagrange Multiplier Diagnostics) to spatial dependence models (Spatial Lag, Spatial Error, Spatial Durbin), an eigenvector-based alternative that avoids estimating an autoregressive parameter entirely (Eigenvector Spatial Filtering), and local and multiscale models (GWR, MGWR), with tools for sensitivity testing and model comparison.
 </p>
 
 <div class="callout callout-warn">
@@ -4331,6 +5111,125 @@ Spatial econometric and regression models that estimate relationships between a 
     <p>10. <strong>White, H.</strong> (1980). "A Heteroskedasticity-Consistent Covariance Matrix Estimator and a Direct Test for Heteroskedasticity." <em>Econometrica</em> 48(4): 817–838. DOI: <a href="https://doi.org/10.2307/1912934">10.2307/1912934</a></p>
     <p>11. <strong>Anselin, L. &amp; Bera, A.K.</strong> (1998). "Spatial Dependence in Linear Regression Models with an Introduction to Spatial Econometrics." In <em>Handbook of Applied Economic Statistics</em>, Marcel Dekker, pp. 237–289. DOI: <a href="https://doi.org/10.1201/9781482273847">10.1201/9781482273847</a></p>
     <p>12. <strong>LeSage, J. &amp; Pace, R.K.</strong> (2009). <em>Introduction to Spatial Econometrics.</em> CRC Press, Boca Raton. DOI: <a href="https://doi.org/10.1201/9781420064254">10.1201/9781420064254</a></p>
+  </div>
+</div>
+</article>
+
+<!-- Lagrange Multiplier Diagnostics -->
+<article class="alg-card" id="alg-lm-diagnostics">
+<div class="alg-card-header">
+  <div class="alg-icon">🌿</div>
+  <div class="alg-info">
+    <h4>Lagrange Multiplier Diagnostics (Spatial Model Selection)</h4>
+    <div class="alg-id">lm_diagnostics</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-lm-diagnostics" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    The formal test this plugin's OLS, Spatial Lag, and Spatial Error tools have always referenced but never provided: Anselin, Bera, Florax and Yoon's (1996) Lagrange Multiplier battery, which tests OLS residuals for two distinct forms of spatial dependence — a missing spatially lagged dependent variable (LM-lag) and spatially correlated errors (LM-error) — and provides ROBUST versions of each that remain valid even when the other form of dependence is also present. This is the formal answer to "should I use Spatial Lag or Spatial Error," replacing guesswork or a residual-map eyeball test with a citable chi-square(1) hypothesis test and an explicit decision rule.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Luc Anselin had already derived the individual LM-lag and LM-error tests in his 1988 textbook <em>Spatial Econometrics: Methods and Models</em>, building on the general Lagrange Multiplier testing framework of Breusch and Pagan (1980). The 1996 paper with Bera, Florax and Yoon, published in <em>Regional Science and Urban Economics</em>, solved a specific practical problem: the classic LM-lag and LM-error tests each have poor power when the OTHER form of dependence is present but ignored — LM-lag can appear significant purely because of unmodeled spatial error correlation, and vice versa. Their robust versions correct each test for the presence of the other, making the four-statistic battery together a genuinely reliable specification-search tool rather than two easily-confused single tests.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why this fills a real gap in the plugin.</strong> This plugin's OLS Regression tool already reports residual Moran's I and explicitly recommends a spatial specification when it is significant; its Spatial Autoregression and Spatial Error Regression tools both explain the theoretical difference between a spillover process (favoring SAR) and nuisance spatially-structured omitted variables (favoring SEM) — but neither ever gave the analyst a formal statistical test to make that choice. Significant residual Moran's I alone cannot distinguish a lag process from an error process; the LM battery can.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The information-matrix structure.</strong> Both the classic and robust LM statistics are built from the same three quantities: the two "scores" (\(e'Wy\) and \(e'We\), how strongly OLS residuals correlate with the spatial lags of \(y\) and of the residuals themselves) and two information-matrix terms \(T\) and \(D\) that depend on the spatial weights matrix and, for \(D\), on the fitted values. \(T\) is common to both the lag and error tests (it appears as the LM-error denominator and as part of the LM-lag denominator \(D\)), which is precisely why the robust corrections take the clean algebraic form they do — each robust statistic subtracts off exactly the contribution the OTHER score would explain given this shared structure.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A mathematical identity used to validate this implementation.</strong> LM-lag + Robust LM-error is algebraically guaranteed to equal LM-error + Robust LM-lag — both expressions equal the joint "SARMA" statistic testing for lag AND error dependence simultaneously (a chi-square(2) test). This plugin's engine was validated against this exact identity (to floating-point precision) on multiple synthetic datasets, plus directional checks confirming that a true spatial-lag data-generating process produces a large, significant LM-lag AND Robust LM-lag with a small, non-significant Robust LM-error, and symmetrically for a true spatial-error process — the textbook-predicted behavior in both cases.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(e\) be the OLS residual vector, \(\hat{y}\) the OLS fitted values, \(\sigma^2 = e'e/n\), \(W\) the row-standardized spatial weights matrix, and \(M = I - X(X'X)^{-1}X'\) the OLS residual-maker matrix.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Common building blocks:</strong></p>
+  $$T = \text{tr}(W'W + W^2), \qquad D = T + \frac{(W\hat{y})'M(W\hat{y})}{\sigma^2} \tag{1}$$
+  $$S_\rho = \frac{e'Wy}{\sigma^2} \quad \text{(lag score)}, \qquad S_\lambda = \frac{e'We}{\sigma^2} \quad \text{(error score)} \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Classic LM tests (each ignores the other form of dependence):</strong></p>
+  $$LM_{\text{error}} = \frac{S_\lambda^2}{T}, \qquad LM_{\text{lag}} = \frac{S_\rho^2}{D} \tag{3}$$
+
+  <p style="margin:8px 0;"><strong>Robust LM tests (each corrected for the presence of the other):</strong></p>
+  $$RLM_{\text{lag}} = \frac{(S_\rho - S_\lambda)^2}{D - T}, \qquad RLM_{\text{error}} = \frac{\left(S_\lambda - \frac{T}{D}S_\rho\right)^2}{T\left(1 - \frac{T}{D}\right)} \tag{4}$$
+
+  <p style="margin:8px 0;"><strong>Joint SARMA test and the validating identity:</strong></p>
+  $$SARMA = LM_{\text{lag}} + RLM_{\text{error}} = LM_{\text{error}} + RLM_{\text{lag}} \sim \chi^2(2) \tag{5}$$
+
+  <p style="margin:8px 0;"><strong>p-values (exact, not approximated):</strong></p>
+  $$p_{\chi^2(1)}(x) = 1 - \text{erf}\left(\sqrt{x/2}\right), \qquad p_{\chi^2(2)}(x) = e^{-x/2} \tag{6}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_lm_diagnostics</code>) fits OLS internally via the normal equations, builds a dense weights matrix from the plugin's standard neighbor/weight dictionaries, and computes \((W\hat{y})'M(W\hat{y})\) without ever forming the full \(n \times n\) matrix \(M\) explicitly (using the algebraic identity \(a'Ma = a'a - (a'X)(X'X)^{-1}(X'a)\)). Validated on synthetic spatial-lag and spatial-error data-generating processes on an 8×8 grid: the true-lag DGP returned LM-lag=47.1 (p&lt;0.0001), Robust LM-lag=33.3 (p&lt;0.0001), Robust LM-error=0.03 (p=0.87); the true-error DGP returned LM-error=8.8 (p=0.003), Robust LM-error=7.3 (p=0.007), Robust LM-lag=0.03 (p=0.87) — the textbook-predicted directional pattern in both cases, and the SARMA identity held to floating-point precision throughout.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">DEP_VAR</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Dependent variable field</td></tr>
+      <tr><td class="param-name">INDEPENDENTS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Independent variable fields</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the weights matrix</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Number of neighbors (KNN weights only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band weights only)</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">lm_lag / lm_lag_p</td><td class="param-type">Double</td><td>Classic LM-lag statistic and chi-square(1) p-value</td></tr>
+    <tr><td class="param-name">lm_error / lm_error_p</td><td class="param-type">Double</td><td>Classic LM-error statistic and chi-square(1) p-value</td></tr>
+    <tr><td class="param-name">rlm_lag / rlm_lag_p</td><td class="param-type">Double</td><td>Robust LM-lag statistic and chi-square(1) p-value</td></tr>
+    <tr><td class="param-name">rlm_error / rlm_error_p</td><td class="param-type">Double</td><td>Robust LM-error statistic and chi-square(1) p-value</td></tr>
+    <tr><td class="param-name">sarma / sarma_p</td><td class="param-type">Double</td><td>Joint SARMA statistic and chi-square(2) p-value</td></tr>
+    <tr><td class="param-name">recommendation</td><td class="param-type">String</td><td>Plain-language specification recommendation following Anselin's classification rule</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Anselin's classification rule.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Pattern</th><th>Recommended Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Neither LM-lag nor LM-error significant</td><td><strong>OLS is adequate</strong> — no spatial specification indicated</td></tr>
+      <tr><td>Only LM-lag significant</td><td><strong>Spatial Lag (SAR)</strong> or Spatial Durbin</td></tr>
+      <tr><td>Only LM-error significant</td><td><strong>Spatial Error (SEM)</strong></td></tr>
+      <tr><td>Both significant, only Robust LM-lag significant</td><td><strong>Spatial Lag (SAR)</strong> or Spatial Durbin</td></tr>
+      <tr><td>Both significant, only Robust LM-error significant</td><td><strong>Spatial Error (SEM)</strong></td></tr>
+      <tr><td>Both significant, both robust tests significant</td><td><strong>Spatial Durbin Model</strong> or another combined lag+error specification</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Do not skip straight to the robust tests.</strong> The robust corrections exist specifically to resolve ambiguity when BOTH classic tests are significant; when only one classic test is significant, that result alone is already sufficient and reliable — checking the robust versions in that case adds no information and, applied incorrectly as the primary criterion, can needlessly override a clear classic-test signal.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-spatial-lag">Spatial Lag Regression (SAR)</a> &middot; <a href="#alg-spatial-error">Spatial Error Regression (SEM)</a> &middot; <a href="#alg-spatial-durbin">Spatial Durbin Model</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Anselin, L., Bera, A.K., Florax, R. &amp; Yoon, M.J.</strong> (1996). "Simple Diagnostic Tests for Spatial Dependence." <em>Regional Science and Urban Economics</em> 26(1): 77–104. DOI: <a href="https://doi.org/10.1016/0166-0462(95)02111-6">10.1016/0166-0462(95)02111-6</a> — The paper this tool implements; introduces the robust LM tests and the classification decision rule.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1988). <em>Spatial Econometrics: Methods and Models.</em> Dordrecht: Kluwer. DOI: <a href="https://doi.org/10.1007/978-94-015-7799-1">10.1007/978-94-015-7799-1</a> — Derives the original (non-robust) LM-lag and LM-error tests this paper's robust versions build on.</p>
+  <p style="margin:4px 0;"><strong>Breusch, T.S. &amp; Pagan, A.R.</strong> (1980). "The Lagrange Multiplier Test and Its Applications to Model Specification in Econometrics." <em>Review of Economic Studies</em> 47(1): 239–253. DOI: <a href="https://doi.org/10.2307/2297111">10.2307/2297111</a> — The general LM testing framework this spatial application is built on.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L. &amp; Rey, S.</strong> (1991). "Properties of Tests for Spatial Dependence in Linear Regression Models." <em>Geographical Analysis</em> 23(2): 112–131. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1991.tb00228.x">10.1111/j.1538-4632.1991.tb00228.x</a> — Monte Carlo evidence on the power of the classic (non-robust) LM tests, motivating the robust extension.</p>
+  <p style="margin:4px 0;"><strong>Florax, R.J.G.M., Folmer, H. &amp; Rey, S.J.</strong> (2003). "Specification Searches in Spatial Econometrics: The Relevance of Hendry's Methodology." <em>Regional Science and Urban Economics</em> 33(5): 557–579. DOI: <a href="https://doi.org/10.1016/S0166-0462(03)00002-4">10.1016/S0166-0462(03)00002-4</a> — Discusses the LM-based specification search as a systematic model-building strategy.</p>
+  <p style="margin:4px 0;"><strong>LeSage, J. &amp; Pace, R.K.</strong> (2009). <em>Introduction to Spatial Econometrics.</em> Boca Raton: CRC Press. DOI: <a href="https://doi.org/10.1201/9781420064254">10.1201/9781420064254</a> — Textbook treatment situating LM diagnostics within the broader spatial model selection workflow, including the Spatial Durbin alternative.</p>
   </div>
 </div>
 </article>
@@ -4619,6 +5518,112 @@ Spatial econometric and regression models that estimate relationships between a 
     <p>10. <strong>Elhorst, J.P.</strong> (2014). <em>Spatial Econometrics: From Cross-Sectional Data to Spatial Panels.</em> Springer. DOI: <a href="https://doi.org/10.1007/978-3-642-40340-8">10.1007/978-3-642-40340-8</a></p>
     <p>11. <strong>Burridge, P.</strong> (1980). "On the Cliff-Ord Test for Spatial Correlation." <em>Journal of the Royal Statistical Society, Series B</em> 42(1): 107–108. DOI: <a href="https://doi.org/10.1111/j.2517-6161.1980.tb01108.x">10.1111/j.2517-6161.1980.tb01108.x</a></p>
     <p>12. <strong>Pace, R.K. &amp; LeSage, J.P.</strong> (2008). "A Spatial Hausman Test." <em>Economics Letters</em> 101(3): 282–284. DOI: <a href="https://doi.org/10.1016/j.econlet.2008.09.002">10.1016/j.econlet.2008.09.002</a></p>
+  </div>
+</div>
+</article>
+
+<!-- Spatial Durbin Model -->
+<article class="alg-card" id="alg-spatial-durbin">
+<div class="alg-card-header">
+  <div class="alg-icon">🔗</div>
+  <div class="alg-info">
+    <h4>Spatial Durbin Model (SDM)</h4>
+    <div class="alg-id">spatial_durbin_model</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-spatial-durbin" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Lags both the dependent variable and every explanatory variable: \(y = \rho Wy + X\beta + WX\theta + \varepsilon\) (LeSage &amp; Pace, 2009). SDM nests Spatial Lag (SAR) as the restricted case \(\theta = 0\), and a restricted form of Spatial Error (SEM) as the case \(\theta = -\rho\beta\) — making it the natural specification when Lagrange Multiplier Diagnostics flags BOTH robust LM-lag and robust LM-error as significant, since neither a pure lag nor a pure error model can then fully resolve the dependence. Estimated by Spatial Two-Stage Least Squares (Kelejian &amp; Prucha, 1998) rather than Maximum Likelihood, trading a small amount of asymptotic efficiency for a much smaller, closed-form correctness surface with no eigenvalue/log-determinant machinery and no optional dependency required.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> James LeSage and Robert Kelley Pace's 2009 textbook <em>Introduction to Spatial Econometrics</em> popularized the Spatial Durbin Model as the preferred default specification for applied spatial regression, arguing (in work extending Harry Kelejian and Ingmar Prucha's earlier spatial-econometrics program) that SDM's flexibility — nesting both SAR and a restricted SEM — makes it a safer starting point than committing to either pure specification upfront. The name honors James Durbin's 1960s work on including lagged regressors alongside a lagged dependent variable in time-series models; the spatial version applies the identical logic across a cross-sectional neighborhood structure instead of a time lag.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The nesting relationships, precisely.</strong> Setting \(\theta = 0\) collapses SDM to the plugin's existing Spatial Autoregression (SAR) tool exactly. The SEM nesting is more subtle: SDM reduces to SEM's reduced form only under the "common factor" restriction \(\theta = -\rho\beta\), a testable constraint (the classical common-factor / Common Factor Hypothesis test, not implemented in this release) rather than an automatic equivalence. In practice this means SDM is best understood as a genuine third, more general specification rather than a mechanical combination of the other two — its own coefficient estimates and fit should be evaluated on their own terms.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why 2SLS instead of Maximum Likelihood.</strong> \(Wy\) is endogenous in this specification: because \(y\) appears on both sides of the equation through the spatial lag, \(Wy\) is correlated with \(\varepsilon\) through the simultaneous feedback loop each observation has with its neighbors, and OLS applied directly would be inconsistent. The standard fix in the literature is either Maximum Likelihood (requiring the log-determinant of \(I - \rho W\), typically via the eigenvalues of \(W\)) or Instrumental Variables / 2SLS (requiring a valid instrument for \(Wy\)). This plugin uses spatial 2SLS with \([WX, W^2X]\) as instruments — the standard, well-established instrument set from Kelejian and Prucha (1998), later refined by Lee (2003) — because it avoids computing eigenvalues of a potentially non-symmetric row-standardized \(W\) (which can have complex eigenvalues in general, complicating a naive log-determinant computation) in favor of ordinary closed-form linear algebra.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Coefficients are not marginal effects.</strong> Because \(\rho Wy\) on the right-hand side creates feedback (a change in one location's \(X\) ripples through its neighbors, then back through \(\rho\), and so on), the raw \(\beta\) and \(\theta\) coefficients in SDM do NOT directly measure "the effect of a one-unit change in \(X_j\) on \(y\)" the way an OLS coefficient does. LeSage and Pace's direct/indirect/total impact decomposition — which integrates out this feedback using the matrix \((I - \rho W)^{-1}\) — is the theoretically correct way to recover interpretable marginal effects from an SDM fit, and is a natural, well-scoped extension for a future plugin version. Until then, treat this tool's coefficient table as a specification and significance screen, not a final marginal-effects report.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(X\) include an intercept column, \(p\) the number of explanatory variables, and \(W\) the row-standardized spatial weights matrix.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Model specification:</strong></p>
+  $$y = \rho Wy + X\beta + WX\theta + \varepsilon \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Stacked regressor and instrument matrices:</strong></p>
+  $$Z = [X,\; WX,\; Wy], \qquad H = [X,\; WX,\; W^2X] \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Spatial 2SLS estimator:</strong></p>
+  $$\hat{Z} = H(H'H)^{-1}H'Z, \qquad \hat{\delta} = \left(\hat{Z}'Z\right)^{-1}\hat{Z}'y, \qquad \delta = [\beta_0, \beta, \theta, \rho] \tag{3}$$
+
+  <p style="margin:8px 0;"><strong>Residuals and variance (using the ORIGINAL, not projected, Z for consistency):</strong></p>
+  $$e = y - Z\hat{\delta}, \qquad \hat{\sigma}^2 = \frac{e'e}{n-k}, \qquad \text{Var}(\hat{\delta}) = \hat{\sigma}^2 \left(\hat{Z}'\hat{Z}\right)^{-1} \tag{4}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::calculate_spatial_durbin</code>) forms the projection \(\hat{Z} = H(H'H)^{-1}H'Z\) via the Moore-Penrose pseudoinverse for numerical stability, then solves the 2SLS normal equations directly. Validated on a synthetic 8×8 grid with a known true SDM data-generating process (\(\rho=0.6\), known \(\beta\), known \(\theta\)): the estimator recovered \(\hat{\rho}=0.517\) (true 0.6), coefficient estimates within a small finite-sample-bias margin of their true values, and correct signs throughout, with R² = 0.95 — consistent with expected 2SLS finite-sample behavior at n=64, not evidence of an implementation error.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">DEP_VAR</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Dependent variable field</td></tr>
+      <tr><td class="param-name">INDEPENDENTS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Independent variable fields</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the weights matrix</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Number of neighbors (KNN weights only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band weights only)</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output layer with residual/fitted fields</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">residual</td><td class="param-type">Double</td><td>Observed minus fitted dependent value</td></tr>
+    <tr><td class="param-name">fitted</td><td class="param-type">Double</td><td>Fitted (predicted) dependent value</td></tr>
+  </tbody>
+  </table>
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">The HTML report additionally lists coefficients (Intercept, each X variable, each WX variable, and rho) with standard errors, t-statistics, and p-values.</p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading rho and the WX terms together.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Pattern</th><th>Interpretation</th></tr></thead>
+    <tbody>
+      <tr><td>rho significant and positive</td><td>Genuine spatial spillover/feedback in \(y\) beyond what WX alone explains — supports retaining the full SDM specification over a simpler alternative.</td></tr>
+      <tr><td>rho not significant, WX terms significant</td><td>The spatial structure may be adequately captured by lagged X alone — compare against a plain OLS-with-WX (SLX) specification.</td></tr>
+      <tr><td>Both rho and WX terms weak</td><td>Reconsider whether a spatial specification is needed at all — re-check Lagrange Multiplier Diagnostics.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-lm-diagnostics">Lagrange Multiplier Diagnostics</a> &middot; <a href="#alg-spatial-lag">Spatial Lag Regression (SAR)</a> &middot; <a href="#alg-spatial-error">Spatial Error Regression (SEM)</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>LeSage, J. &amp; Pace, R.K.</strong> (2009). <em>Introduction to Spatial Econometrics.</em> Boca Raton: CRC Press. DOI: <a href="https://doi.org/10.1201/9781420064254">10.1201/9781420064254</a> — The primary reference for the Spatial Durbin Model and its nesting relationships, plus the direct/indirect/total impact decomposition.</p>
+  <p style="margin:4px 0;"><strong>Kelejian, H.H. &amp; Prucha, I.R.</strong> (1998). "A Generalized Spatial Two-Stage Least Squares Procedure for Estimating a Spatial Autoregressive Model with Autoregressive Disturbances." <em>Journal of Real Estate Finance and Economics</em> 17(1): 99–121. DOI: <a href="https://doi.org/10.1023/A:1007707430416">10.1023/A:1007707430416</a> — The 2SLS estimation approach and instrument set this tool implements.</p>
+  <p style="margin:4px 0;"><strong>Lee, L.F.</strong> (2003). "Best Spatial Two-Stage Least Squares Estimators for a Spatial Autoregressive Model with Autoregressive Disturbances." <em>Econometric Reviews</em> 22(4): 307–335. DOI: <a href="https://doi.org/10.1081/ETC-120025891">10.1081/ETC-120025891</a> — Refines the choice of instrument set for spatial 2SLS, motivating the \([WX, W^2X]\) instruments used here.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1988). <em>Spatial Econometrics: Methods and Models.</em> Dordrecht: Kluwer. DOI: <a href="https://doi.org/10.1007/978-94-015-7799-1">10.1007/978-94-015-7799-1</a> — Establishes the SAR/SEM/SDM model family this tool's specification sits within.</p>
+  <p style="margin:4px 0;"><strong>Elhorst, J.P.</strong> (2010). "Applied Spatial Econometrics: Raising the Bar." <em>Spatial Economic Analysis</em> 5(1): 9–28. DOI: <a href="https://doi.org/10.1080/17421770903541772">10.1080/17421770903541772</a> — Argues for SDM as a safer general starting specification than committing to SAR or SEM directly, the practical motivation echoed in this card.</p>
+  <p style="margin:4px 0;"><strong>Kelejian, H.H. &amp; Prucha, I.R.</strong> (1999). "A Generalized Moments Estimator for the Autoregressive Parameter in a Spatial Model." <em>International Economic Review</em> 40(2): 509–533. DOI: <a href="https://doi.org/10.1111/1468-2354.00027">10.1111/1468-2354.00027</a> — Companion estimation-theory paper in the same spatial-2SLS/GMM research program.</p>
   </div>
 </div>
 </article>
@@ -5027,6 +6032,113 @@ Spatial econometric and regression models that estimate relationships between a 
     <strong>[MGWR-10]</strong> Fotheringham, A.S. &amp; Brunsdon, C. (1999). "Local Forms of Spatial Analysis." <em>Geographical Analysis</em> 31(4): 340–358. <a href="https://doi.org/10.1111/j.1538-4632.1999.tb00989.x" target="_blank" rel="noopener">doi:10.1111/j.1538-4632.1999.tb00989.x</a><br>
     <strong>[MGWR-11]</strong> Burnham, K.P. &amp; Anderson, D.R. (2002). <em>Model Selection and Multimodel Inference: A Practical Information-Theoretic Approach</em> (2nd ed.). New York: Springer. <a href="https://doi.org/10.1007/b97636" target="_blank" rel="noopener">doi:10.1007/b97636</a><br>
     <strong>[MGWR-12]</strong> Sugiura, N. (1978). "Further Analysis of the Data by Akaike's Information Criterion and the Finite Corrections." <em>Communications in Statistics &ndash; Theory and Methods</em> 7(1): 13–26. <a href="https://doi.org/10.1080/03610927808827599" target="_blank" rel="noopener">doi:10.1080/03610927808827599</a>
+  </div>
+</div>
+</article>
+
+<!-- Eigenvector Spatial Filtering -->
+<article class="alg-card" id="alg-esf">
+<div class="alg-card-header">
+  <div class="alg-icon">🌊</div>
+  <div class="alg-info">
+    <h4>Eigenvector Spatial Filtering (ESF) Regression</h4>
+    <div class="alg-id">esf_regression</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-esf" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Griffith's (2003) alternative to the entire Maximum-Likelihood spatial regression family: rather than estimating an autoregressive parameter (rho or lambda) to model spatial dependence directly, ESF adds a small set of data-driven "spatial filter" eigenvectors of the spatial weights matrix as extra OLS predictors, then fits the whole augmented model by ordinary least squares. Selection is a forward stepwise procedure that stops once residual Global Moran's I is no longer significant. The appeal: zero endogeneity, no log-determinant/Jacobian term, no numerical optimization over an autoregressive parameter — once eigenvectors are selected, it is exactly OLS, so every standard OLS diagnostic and standard-error formula applies unmodified.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Origins.</strong> Daniel Griffith introduced eigenvector spatial filtering in his 2003 monograph <em>Spatial Autocorrelation and Spatial Filtering</em>, building on the observation (later formalized by Tiefelsdorf and Griffith, 2007) that the eigenvectors of a doubly-centered, symmetrized spatial weights matrix form an orthogonal basis of achievable spatial patterns, each with a known, exact relationship to the Moran's I coefficient that pattern would produce under the same weights. This gives ESF a genuinely different theoretical foundation from SAR/SEM/SDM: rather than modeling autocorrelation through a single scalar autoregressive parameter multiplying the whole weights matrix, ESF represents spatial structure as a linear combination of a small number of these orthogonal patterns, selected empirically to match what the data actually needs.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The Moran Eigenvector Map (MEM).</strong> The candidate eigenvector set is built from \(M_C = (I - \mathbf{11}'/n)\,W\,(I - \mathbf{11}'/n)\), symmetrized. The projection matrix \((I - \mathbf{11}'/n)\) removes the constant (mean) component, so every eigenvector of \(M_C\) is automatically orthogonal to an intercept — the resulting decomposition is often called a Moran Eigenvector Map (MEM) in the spatial-ecology and spatial-econometrics literature, since each eigenvector's eigenvalue is directly proportional to the Moran's I coefficient that eigenvector achieves under \(W\). This plugin restricts the candidate set to POSITIVE eigenvalues only (Griffith's standard practical convention), since negative-eigenvalue eigenvectors represent negative/checkerboard autocorrelation patterns rarely relevant to the smooth, positively-autocorrelated processes typical of planning data.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Forward stepwise selection, not a fixed count.</strong> Rather than selecting a pre-specified number of eigenvectors, this tool's engine adds them one at a time — always the remaining candidate most correlated with the CURRENT residual, not a fixed rank ordering by eigenvalue — refitting OLS after each addition and re-checking residual Global Moran's I via this plugin's own existing residual-autocorrelation diagnostic. Selection stops as soon as residual autocorrelation is no longer significant (or a user-set maximum eigenvector count is reached), which tends to select fewer eigenvectors than a naive "take the top-K by eigenvalue" rule when the data's actual autocorrelation is weaker than the full candidate set's theoretical maximum.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Eigenvectors are a control, not an explanation.</strong> A selected eigenvector is a mathematical basis function that happens to correlate with whatever unmodeled spatial process is present in the residuals — it is not itself a measured variable with a substantive planning interpretation, the way a lagged X variable or an explicit spatial-lag term is. ESF's proper use is to CONTROL for nuisance spatial autocorrelation so that the X-variable coefficients (and their standard errors, which OLS otherwise understates in the presence of unmodeled spatial dependence) can be trusted, not to explain WHY the spatial pattern exists in the first place.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(W\) be the row-standardized spatial weights matrix and \(\mathbf{1}\) the length-\(n\) vector of ones.</p>
+
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Doubly-centered, symmetrized weights matrix:</strong></p>
+  $$M_C = \left(I - \frac{\mathbf{1}\mathbf{1}'}{n}\right) W \left(I - \frac{\mathbf{1}\mathbf{1}'}{n}\right), \qquad M_C \leftarrow \frac{M_C + M_C'}{2} \tag{1}$$
+
+  <p style="margin:8px 0;"><strong>Eigendecomposition and candidate restriction:</strong></p>
+  $$M_C = E \Lambda E', \qquad \text{candidates} = \{E_k : \lambda_k > 0\} \tag{2}$$
+
+  <p style="margin:8px 0;"><strong>Forward stepwise selection (repeated until the stopping rule triggers):</strong></p>
+  $$k^* = \arg\max_{k \in \text{remaining candidates}} \left| \text{corr}(E_k, \, r^{(t)}) \right|, \qquad r^{(t)} = y - \left[X, E_{\text{selected so far}}\right]\hat{\gamma}^{(t)} \tag{3}$$
+
+  <p style="margin:8px 0;"><strong>Final model (ordinary OLS on the augmented design):</strong></p>
+  $$y = X\beta + E_{\text{selected}}\gamma + \varepsilon \tag{4}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The engine (<code>core/advanced_stats_engines.py::select_esf_eigenvectors</code>) uses <code>numpy.linalg.eigh</code> (the symmetric-matrix eigensolver, guaranteeing real eigenvalues and orthonormal eigenvectors with no numerical risk of complex results) and reuses this plugin's existing <code>residual_spatial_autocorrelation_summary</code> for the stopping check rather than a new formula, minimizing new-code correctness surface. Validated on a synthetic 8×8 grid with a strong true spatial-error process: residual Global Moran's I dropped from 0.285 (p=0.001, significant) to 0.120 (p=0.14, non-significant) after selecting 6 eigenvectors — the intended behavior, confirming both the selection order and the stopping rule work correctly together.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">DEP_VAR</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Dependent variable field</td></tr>
+      <tr><td class="param-name">INDEPENDENTS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Independent variable fields</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Spatial relationship used to build the weights matrix</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Number of neighbors (KNN weights only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band weights only)</td></tr>
+      <tr><td class="param-name">MAX_EIGENVECTORS</td><td class="param-type">Integer</td><td class="param-default">10</td><td>1–50</td><td>Maximum spatial filter eigenvectors to select</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output layer with residual/fitted/spatial_filter fields</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Optional path; auto-temp if omitted</td><td>Output diagnostic report</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">residual</td><td class="param-type">Double</td><td>Observed minus fitted dependent value</td></tr>
+    <tr><td class="param-name">fitted</td><td class="param-type">Double</td><td>Fitted (predicted) dependent value, including the spatial filter contribution</td></tr>
+    <tr><td class="param-name">spatial_filter</td><td class="param-type">Double</td><td>Contribution of the selected eigenvectors alone to the fitted value - the isolated spatial-structure component, useful to map on its own</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading the ESF report.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>Residual Moran's I significant before, non-significant after</td><td><strong>Filter succeeded</strong> — X coefficients and standard errors are now trustworthy</td><td>Report the filtered X coefficients; map spatial_filter to see the isolated spatial structure the filter absorbed.</td></tr>
+      <tr><td>Zero eigenvectors selected</td><td>Residual autocorrelation was already non-significant, or MAX_EIGENVECTORS is too low</td><td>If Lagrange Multiplier Diagnostics indicated spatial dependence but ESF selected nothing, raise MAX_EIGENVECTORS before concluding no filtering is needed.</td></tr>
+      <tr><td>A large fraction of MAX_EIGENVECTORS selected</td><td>The filter may be doing too much work relative to sample size</td><td>Check residual degrees of freedom and compare adjusted fit against a simpler SAR/SEM/SDM specification via Model Comparison Matrix.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ols">OLS Regression</a> &middot; <a href="#alg-lm-diagnostics">Lagrange Multiplier Diagnostics</a> &middot; <a href="#alg-spatial-durbin">Spatial Durbin Model</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Griffith, D.A.</strong> (2003). <em>Spatial Autocorrelation and Spatial Filtering: Gaining Understanding Through Theory and Scientific Visualization.</em> Berlin: Springer. DOI: <a href="https://doi.org/10.1007/978-3-540-24806-4">10.1007/978-3-540-24806-4</a> — The foundational monograph introducing eigenvector spatial filtering.</p>
+  <p style="margin:4px 0;"><strong>Tiefelsdorf, M. &amp; Griffith, D.A.</strong> (2007). "Semiparametric Filtering of Spatial Autocorrelation: The Eigenvector Approach." <em>Environment and Planning A</em> 39(5): 1193–1221. DOI: <a href="https://doi.org/10.1068/a37378">10.1068/a37378</a> — Formalizes the Moran Eigenvector Map relationship and the eigenvalue-to-Moran's-I correspondence this tool's candidate restriction relies on.</p>
+  <p style="margin:4px 0;"><strong>Griffith, D.A. &amp; Peres-Neto, P.R.</strong> (2006). "Spatial Modeling in Ecology: The Flexibility of Eigenfunction Spatial Analyses." <em>Ecology</em> 87(10): 2603–2613. DOI: <a href="https://doi.org/10.1890/0012-9658(2006)87[2603:SMIETF]2.0.CO;2">10.1890/0012-9658(2006)87[2603:SMIETF]2.0.CO;2</a> — Cross-disciplinary application of the same eigenvector-filtering logic in spatial ecology (where it is often called Moran's Eigenvector Maps, MEM).</p>
+  <p style="margin:4px 0;"><strong>Dray, S., Legendre, P. &amp; Peres-Neto, P.R.</strong> (2006). "Spatial Modelling: A Comprehensive Framework for Principal Coordinate Analysis of Neighbour Matrices (PCNM)." <em>Ecological Modelling</em> 196(3–4): 483–493. DOI: <a href="https://doi.org/10.1016/j.ecolmodel.2006.02.015">10.1016/j.ecolmodel.2006.02.015</a> — Closely related eigenvector-based spatial modeling framework, useful comparative reading.</p>
+  <p style="margin:4px 0;"><strong>Chun, Y. &amp; Griffith, D.A.</strong> (2013). <em>Spatial Statistics and Geostatistics: Theory and Applications for Geographic Information Science and Technology.</em> London: SAGE. ISBN: 978-1-4462-1183-1 — Accessible textbook treatment of ESF alongside classical spatial autoregression.</p>
+  <p style="margin:4px 0;"><strong>Griffith, D.A.</strong> (2000). "A Linear Regression Solution to the Spatial Autocorrelation Problem." <em>Journal of Geographical Systems</em> 2(2): 141–156. DOI: <a href="https://doi.org/10.1007/PL00011451">10.1007/PL00011451</a> — Earlier statement of the core idea: solving spatial autocorrelation within a linear regression framework rather than through an autoregressive parameter.</p>
   </div>
 </div>
 </article>
@@ -5486,7 +6598,7 @@ Spatial econometric and regression models that estimate relationships between a 
 <!--  FOOTER                                                        -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <footer class="refman-footer">
-  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v0.10.0.</strong><br>
+  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v1.0.0.</strong><br>
   Developed by Yusuf Eminoğlu with feedback from educational workflows at Dokuz Eylül University, Department of City and Regional Planning.<br>
   Licensed under GPL-3.0. Source repository: <a href="https://github.com/YusufEminoglu/planx_geostats" style="color:var(--gs-teal-600);">github.com/YusufEminoglu/planx_geostats</a>.<br>
   <em>All methods are documented with their primary academic references. The plugin implements its own engines for core computations; advanced models delegate to community-vetted Python packages with full version transparency.</em>

@@ -11,14 +11,14 @@
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
 [![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
 [![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://github.com/YusufEminoglu/PlanX)
-[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-34_algorithms-2c6e6a)](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
+[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-44_algorithms-2c6e6a)](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
-**30+ Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
+**40+ Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 34 algorithms, 6 groups, 215+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on GitHub Pages with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 44 algorithms, 6 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on GitHub Pages with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
@@ -33,7 +33,7 @@ From *"is this clustered?"* to *"which model explains it?"* —
 | 🧭 **It guides, not just computes** | A **Workflow Advisor** recommends a tool sequence for your analysis goal; a **Data Readiness Audit** checks geometry validity, CRS risk, outliers and multicollinearity *before* you model. Every report explains assumptions, pitfalls and safer moves. |
 | 📊 **Full method ladder** | Global pattern scans → local hot spots/outliers → centers & direction → OLS/GLR → spatial lag & error models → GWR/**MGWR** → model comparison → Monte Carlo sensitivity. One provider, one consistent reporting style. |
 | 🧪 **Reproducible & honest** | Permutation inference where it matters, CSV/JSON exports for audit handoffs, and HTML analyst guidance attached to results — interpretation included, not implied. |
-| 🏙 **Planner-first** | Bundled **İzmir neighbourhoods** dataset (237 polygons, heat/vegetation/population/park/street-network indicators) so every tool is try-able in one click. |
+| 🏙 **Planner-first** | Bundled **İzmir Functional Urban Region (FUR)** dataset (391 polygons, street-network and space-syntax accessibility indicators) so every tool is try-able in one click. |
 | 🔌 **Honest dependencies** | Core tools run on pure QGIS. Advanced methods (PySAL/MGWR/scikit-learn) are optional — a **Library Status** tool diagnoses the QGIS Python environment and a transparent installer previews the exact pip command before touching anything. |
 
 ---
@@ -54,17 +54,23 @@ Export Attributes · Calculate Distance Band (neighbour-distance selection)
 | Average Nearest Neighbor | Are my points clustered or dispersed? |
 | Ripley's K | …and at which distances? |
 | Global Moran's I | Is the attribute spatially autocorrelated? |
+| Geary's C | …and how sensitive is that to sharp local contrast rather than the global mean? |
 | Incremental Spatial Autocorrelation | At what scale does clustering peak? |
 | Getis-Ord General G | Do high or low values dominate the clustering? |
 | Bivariate Lee's L | Do two indicators co-cluster in space? |
 | **Spatial Inequality (Gini + Spatial Gini)** | How unequal is the distribution — and how much of that inequality is *spatial*? |
+| Join Count Statistics | Does a categorical/binary field cluster or checkerboard? |
+| Geodetector Q-Statistic | Does a categorical partition explain variance in an outcome? |
 
 ### `03` Hot Spots & Spatial Outliers *(local statistics)*
 | Tool | Output |
 |---|---|
 | Hot Spot Analysis (Getis-Ord Gi\*) | Statistically significant hot/cold spots |
 | Cluster & Outlier Analysis (Local Moran's I / LISA) | HH·LL clusters, HL·LH outliers |
+| Local Geary's C | A second local-outlier test, sensitive to sharp neighbor contrast |
+| Colocation Quotient | Does one point category attract or avoid another (asymmetric)? |
 | Multivariate Clustering | K-means feature groups across several indicators |
+| **SKATER Regionalization** | K spatially *contiguous* regions, not just attribute-similar groups |
 | Similarity Search | Features most similar to your reference feature |
 
 ### `04` Centers, Direction & Dispersion
@@ -74,11 +80,14 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 | Tool | Method |
 |---|---|
 | Ordinary Least Squares | Baseline regression + residual diagnostics |
+| **Lagrange Multiplier Diagnostics** | Formal SAR-vs-SEM specification test |
 | Generalized Linear Regression | Gaussian/binary/count families |
 | Exploratory Regression | Search candidate variable combinations |
 | Spatial Lag Regression | Spatial dependence in the outcome |
 | Spatial Error Regression | Spatial dependence in the residuals |
+| Spatial Durbin Model | Lags both the outcome *and* the predictors |
 | GWR / **MGWR** | Local — and *multiscale* local — relationships |
+| Eigenvector Spatial Filtering | Spatial control without estimating an autoregressive parameter |
 | Model Comparison | Score competing models side by side |
 | Monte Carlo Sensitivity Test | How robust is the result to perturbation? |
 
@@ -114,7 +123,7 @@ Core tools are pure QGIS. Advanced methods use, when present:
 
 | Dataset | Contents | Use it for |
 |---|---|---|
-| **İzmir neighbourhoods** (`planx_geostats_izmir_neighborhoods.gpkg`) | 237 polygons; heat, vegetation, population, parks, street-network structure, building form, model-QA fields — English schema | Realistic end-to-end workflow practice |
+| **İzmir FUR street network** (`planx_geostats_izmir_fur.gpkg`) | 391 polygons; road density, intersections, block/lane geometry, reach and transit accessibility, space-syntax and network-topology indicators — all-numeric schema | Realistic end-to-end workflow practice |
 | **Synthetic QA fixture** (`planx_geostats_synthetic_qa.gpkg`) | Deterministic point/line/polygon + model-output layers | Edge cases: KNN weights, multipart lines, binary/count models |
 
 Load either (or both) via `00 → Sample Dataset Guide`, then run `Data Readiness Audit` for suggested analysis roles and starter sequences.
@@ -124,7 +133,7 @@ Load either (or both) via `00 → Sample Dataset Guide`, then run `Data Readines
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 34 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 44 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://github.com/YusufEminoglu/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -155,7 +164,7 @@ py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 0.10.0
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 1.0.0
 ```
 
 </details>
@@ -168,7 +177,7 @@ py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --
 
 - **30+ araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analizi, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata modelleri, keşifsel regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
 - **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.
-- **Örnek veri dahildir:** 237 mahalleli **İzmir** veri seti (ısı, bitki örtüsü, nüfus, park, sokak ağı göstergeleri) ve sentetik QA veri seti — her araç tek tıkla denenebilir.
+- **Örnek veri dahildir:** 391 poligonluk **İzmir İşlevsel Kentsel Bölgesi (FUR)** sokak ağı veri seti (yol yoğunluğu, erişilebilirlik, space-syntax ve ağ topolojisi göstergeleri) ve sentetik QA veri seti — her araç tek tıkla denenebilir.
 - **Dürüst bağımlılık yönetimi:** Çekirdek araçlar saf QGIS ile çalışır; gelişmiş yöntemler için PySAL/MGWR/scikit-learn kurulumunu, çalıştırmadan önce pip komutunu aynen gösteren şeffaf bir kurulum aracı üstlenir.
 
 Kurulum: QGIS → *Eklentiler → Eklentileri Yönet ve Kur* → **PlanX GeoStats Lab** aratın; araçlar İşlem Araç Kutusu'nda görünür.

@@ -23,7 +23,7 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
     outcome_label = _option(OUTCOME_OPTIONS, outcome, 1)
 
     warnings = []
-    samples = ["Run Sample Dataset Guide and load the Izmir planning sample for planning workflows."]
+    samples = ["Run Sample Dataset Guide and load the Izmir FUR street network sample for planning workflows."]
 
     if geometry == 1 and goal not in {3}:
         warnings.append("Line geometry is only directly supported by a subset of GeoStats tools; convert line summaries to points or use Linear Directional Mean when the line direction is the analytical target.")
@@ -35,7 +35,7 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
     if goal == 2:
         steps = ["Data Readiness Audit", "Calculate Distance Band", "Incremental Spatial Autocorrelation", "Sensitivity Test"]
         summary = "Start with distance-band selection before running local or global spatial statistics."
-        samples = ["Izmir: median_land_surface_temp_c", "Synthetic QA: qa_points_grid"]
+        samples = ["Izmir: road_density", "Synthetic QA: qa_points_grid"]
     elif goal == 6:
         steps = [
             "Data Readiness Audit",
@@ -45,8 +45,8 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
         ]
         summary = "Measure overall inequality first, then check whether that inequality is spatially organized and where it concentrates."
         samples = [
-            "Izmir: park_m2_per_capita",
-            "Izmir: senior_65plus_population or other non-negative burden/access fields",
+            "Izmir: road_density",
+            "Izmir: transit_accessibility or other non-negative burden/access fields",
         ]
     elif goal == 3 and geometry == 1:
         steps = ["Data Readiness Audit", "Linear Directional Mean", "Directional Distribution if converted to representative points"]
@@ -55,7 +55,7 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
     elif goal == 3:
         steps = ["Data Readiness Audit", "Mean Center", "Median Center", "Standard Distance", "Directional Distribution"]
         summary = "Use descriptive geography tools to summarize center, spread, and directional tendency."
-        samples = ["Izmir: official_population as optional weight", "Izmir: neighborhood polygons as centroid-derived summaries"]
+        samples = ["Izmir: road_density as optional weight", "Izmir: FUR polygons as centroid-derived summaries"]
     elif goal == 4 or has_explanatory:
         if outcome == 2:
             first_model = "Generalized Linear Regression with Logistic family"
@@ -65,7 +65,7 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
             samples = ["Synthetic QA: count_target with explanatory_a and explanatory_b"]
         else:
             first_model = "OLS Regression"
-            samples = ["Izmir: median_land_surface_temp_c with median_ndvi, park_m2_per_capita, tree_canopy_coverage_pct, impervious_surface_pct"]
+            samples = ["Izmir: transit_accessibility with road_density, gridiron_index, connectivity_index, circuity_mean"]
         steps = ["Data Readiness Audit", first_model, "Residual spatial autocorrelation review", "GWR or MGWR", "Spatial Lag or Spatial Error Regression", "Model Comparison Matrix"]
         summary = f"Build a transparent global baseline for a {outcome_label.lower()} outcome, then compare spatial alternatives."
     elif goal == 5:
@@ -75,7 +75,7 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
     elif goal == 1:
         steps = ["Data Readiness Audit", "Calculate Distance Band", "Getis-Ord Gi*", "Local Moran's I", "Bivariate Lee's L if comparing two variables"]
         summary = "Use local statistics to locate hot spots, cold spots, and spatial outliers."
-        samples = ["Izmir: median_land_surface_temp_c", "Izmir: senior_65plus_population", "Izmir: median_elevation_m with median_land_surface_temp_c for Lee's L"]
+        samples = ["Izmir: betweenness_mean", "Izmir: ss_integration_median", "Izmir: road_density with betweenness_mean for Lee's L"]
     elif geometry == 0 and outcome == 0:
         steps = ["Data Readiness Audit", "Average Nearest Neighbor", "Ripley's K"]
         summary = "Use point-pattern tools because no analysis field is available."
@@ -83,7 +83,7 @@ def personalized_recommendation(goal: int, geometry: int, outcome: int, has_expl
     else:
         steps = ["Data Readiness Audit", "Calculate Distance Band", "Global Moran's I", "Incremental Spatial Autocorrelation", "Getis-Ord Gi* or Local Moran's I"]
         summary = "Screen the global pattern first, then move to local statistics if spatial structure is present."
-        samples = ["Izmir: median_land_surface_temp_c", "Izmir: median_heat_island_index", "Izmir: median_ndvi"]
+        samples = ["Izmir: road_density", "Izmir: betweenness_mean", "Izmir: ss_integration_median"]
 
     checks = [
         f"Geometry context: {geometry_label}.",

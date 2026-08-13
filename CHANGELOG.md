@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.0] - 2026-08-13
+
+- New **İzmir Functional Urban Region (FUR)** street-network / space-syntax sample dataset (391 features, 34 real fields — `road_density`, `betweenness_mean`, `ss_integration_median`, `gridiron_index`, `transit_accessibility`, and more), replacing the old population/heat-map sample. Every example workflow, the Workflow Advisor's recipes, the Sample Dataset Guide, and the manual's own walkthroughs were rewritten to match the new data, grounded in real computed statistics (not assumed).
+- Added **10 new advanced spatial-statistics tools**, taking the plugin from 34 to 44 algorithms:
+  - **02 | Urban Pattern Scan**: Geary's C, Join Count Statistics (BB/WW/BW), Global Bivariate Lee's L, Geodetector Q-Statistic (spatial stratified heterogeneity).
+  - **03 | Hot Spots and Spatial Outliers**: Local Geary's C, Colocation Quotient (CLQ), SKATER spatially constrained regionalization (shipped as a native NumPy + Prim's-algorithm implementation, no optional dependency required).
+  - **05 | Models and Scenarios**: Lagrange Multiplier Diagnostics (the formal SAR-vs-SEM specification test), Spatial Durbin Model (Spatial 2SLS), Eigenvector Spatial Filtering Regression.
+  - All 4 new global statistics and the local/colocation tools use Monte Carlo permutation inference rather than closed-form variance formulas that are easy to get subtly wrong; the Lagrange Multiplier Diagnostics engine was independently validated against a hard mathematical identity (LM-lag + Robust LM-error = LM-error + Robust LM-lag) plus directional checks against known synthetic spatial-lag and spatial-error processes.
+  - Each new tool ships with a full elite-depth reference-manual entry (Theoretical Background, Mathematical Formulation, Parameters, Output, Interpretation Guide, Literature) and a unique algorithm icon.
+- Redesigned the main plugin icon: the previous teal-gradient rings/dots/grid motif collapsed into an unreadable smear at real QGIS toolbar sizes (16-24px). Replaced with a bolder spatial-weights network glyph, verified legible at 16px.
+- Manual hero stats, README tool catalog, and release-gate test thresholds updated for 44 algorithms and 300+ citations.
+
 ## [0.10.0] - 2026-08-13
 
 - Deepened every algorithm's in-GUI help text (`shortHelpString`) with concrete field-by-field interpretation guidance, thresholds, and cross-tool recommendations — previously 30-150 words each, now 180-310 words.
