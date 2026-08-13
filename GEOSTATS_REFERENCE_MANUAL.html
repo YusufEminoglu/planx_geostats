@@ -600,6 +600,8 @@ main {
   to   { background: transparent; }
 }
 .alg-card:target { animation: target-flash 1.5s ease-out; }
+.video-embed { position: relative; width: 100%; padding-top: 56.25%; margin: 4px 0 28px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #000; }
+.video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 </style>
 </head>
 <body>
@@ -680,7 +682,11 @@ main {
 <div class="hero-inner">
   <h1>PlanX <em>GeoStats</em> Lab</h1>
   <p class="tagline">Comprehensive spatial statistics and econometrics for urban planning analysis — from exploratory pattern detection to multiscale regression modeling, purpose-built for QGIS Processing workflows.</p>
-  <div class="meta-row">
+  <div class="video-embed">
+  <iframe src="https://www.youtube-nocookie.com/embed/4AmhX6redWk" title="PlanX GeoStats Lab &mdash; video walkthrough" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+</div>
+
+<div class="meta-row">
     <span class="meta-chip">v0.9.20</span>
     <span class="meta-chip">34 algorithms</span>
     <span class="meta-chip">6 analytical groups</span>
