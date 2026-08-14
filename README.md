@@ -18,7 +18,7 @@ From *"is this clustered?"* to *"which model explains it?"* —
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 44 algorithms, 6 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on GitHub Pages with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 81 algorithms, 9 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on GitHub Pages with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
@@ -88,8 +88,30 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 | Spatial Durbin Model | Lags both the outcome *and* the predictors |
 | GWR / **MGWR** | Local — and *multiscale* local — relationships |
 | Eigenvector Spatial Filtering | Spatial control without estimating an autoregressive parameter |
+| **Spatial Regime Regression** | Separate coefficients per district/category, with a Chow test |
+| **Quantile Regression** | Model a chosen quantile (e.g. the upper tail), not just the mean |
+| **Geographically Weighted Summary Statistics** | Local mean/std/skew of a field, GWR-kernel style |
 | Model Comparison | Score competing models side by side |
 | Monte Carlo Sensitivity Test | How robust is the result to perturbation? |
+
+### `06` Machine Learning & Explainable AI *(new in v2.0.0)*
+| Tool | Question it answers |
+|---|---|
+| Random Forest / Extra Trees / SVM / Neural Network (Regression & Classification) | Predict a continuous or categorical outcome |
+| Gradient Boosting (scikit-learn / XGBoost / LightGBM, Regression & Classification) | The strongest tabular predictor, three interchangeable engines |
+| Spatial k-Fold Cross-Validation Evaluator | An honest, spatially-blocked out-of-sample score |
+| Permutation Feature Importance · Partial Dependence Report | Model-agnostic importance and direction of effect |
+| ML Model Comparison (Leaderboard) | Rank every model family on the same, spatially cross-validated basis |
+| **SHAP Global / Spatial Attribution Map / Local Explanation** | Which field matters, **where** it matters (mapped), and why for one record |
+| Model Residual Spatial Autocorrelation Check | Has the ML model left real spatial structure unexplained? |
+| Prediction Uncertainty Map | Where is a Random Forest/Extra Trees prediction least trustworthy? |
+| DBSCAN · HDBSCAN · Gaussian Mixture | Density-based and probabilistic clustering alternatives to K-Means |
+
+### `07` Network Centrality & Space Syntax *(new in v2.0.0)*
+Network Connectivity Diagnostics · Betweenness / Closeness / Straightness Centrality · Network Reach — classical graph-theory centrality on a street-line layer (not angular-segment space syntax).
+
+### `08` Accessibility *(new in v2.0.0)*
+Two-Step Floating Catchment Area (2SFCA) · Gravity-Based Accessibility Index · Nearest-Facility Coverage Gap — demand/supply layer accessibility scoring.
 
 ---
 
@@ -113,7 +135,7 @@ Each report ends with **interpretation guidance** — what the statistic assumes
 
 Core tools are pure QGIS. Advanced methods use, when present:
 
-`libpysal` · `esda` · `spreg` · `mgwr` · `scikit-learn` · `numba`
+`libpysal` · `esda` · `spreg` · `mgwr` · `scikit-learn` · `numba` · `xgboost` · `lightgbm` · `shap` · `networkx`
 
 > **The honest installer:** QGIS plugins run inside QGIS's own Python — installing into Anaconda or a system Python won't help. *GeoStats Library Status* shows exactly which interpreter QGIS uses and what's missing; *Install/Update GeoStats Libraries* previews the full pip command and only runs it after an explicit confirmation checkbox. Restart QGIS afterwards.
 
@@ -125,15 +147,18 @@ Core tools are pure QGIS. Advanced methods use, when present:
 |---|---|---|
 | **İzmir FUR street network** (`planx_geostats_izmir_fur.gpkg`) | 391 polygons; road density, intersections, block/lane geometry, reach and transit accessibility, space-syntax and network-topology indicators — all-numeric schema | Realistic end-to-end workflow practice |
 | **Synthetic QA fixture** (`planx_geostats_synthetic_qa.gpkg`) | Deterministic point/line/polygon + model-output layers | Edge cases: KNN weights, multipart lines, binary/count models |
+| **Network QA fixture** (`planx_geostats_network_qa.gpkg`) *(v2.0.0)* | 65-segment connected street grid | Group `07` Network Centrality tools |
+| **Classification QA fixture** (`planx_geostats_classification_qa.gpkg`) *(v2.0.0)* | 120 points, numeric fields + `density_class` category | ML classification tools, Spatial Regime Regression |
+| **Accessibility QA fixture** (`planx_geostats_accessibility_qa.gpkg`) *(v2.0.0)* | Demand (150 pts) + supply (10 pts) point layers | Group `08` Accessibility tools |
 
-Load either (or both) via `00 → Sample Dataset Guide`, then run `Data Readiness Audit` for suggested analysis roles and starter sequences.
+Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness Audit` for suggested analysis roles and starter sequences.
 
 ---
 
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 44 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 81 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://github.com/YusufEminoglu/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -164,7 +189,7 @@ py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 1.0.0
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 2.0.0
 ```
 
 </details>
@@ -175,9 +200,10 @@ py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --
 
 **PlanX GeoStats Lab**, QGIS İşlem Araç Kutusu (Processing) içinde çalışan, plancılar için tasarlanmış bir **mekânsal istatistik laboratuvarıdır**:
 
-- **30+ araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analizi, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata modelleri, keşifsel regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
+- **81 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analizi, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
+- **v2.0.0 ile yeni:** Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06) — Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM), SVM, Sinir Ağı, mekânsal k-katlamalı çapraz doğrulama ve **SHAP tabanlı açıklanabilirlik** (özellikle her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**); Ağ Merkeziliği ve Space Syntax (07); Erişilebilirlik — 2SFCA, kütle-çekim modeli, en yakın tesis kapsama analizi (08).
 - **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.
-- **Örnek veri dahildir:** 391 poligonluk **İzmir İşlevsel Kentsel Bölgesi (FUR)** sokak ağı veri seti (yol yoğunluğu, erişilebilirlik, space-syntax ve ağ topolojisi göstergeleri) ve sentetik QA veri seti — her araç tek tıkla denenebilir.
+- **Örnek veri dahildir:** 391 poligonluk **İzmir İşlevsel Kentsel Bölgesi (FUR)** sokak ağı veri seti (yol yoğunluğu, erişilebilirlik, space-syntax ve ağ topolojisi göstergeleri), sentetik QA veri seti ve yeni ağ/sınıflandırma/erişilebilirlik QA veri setleri — her araç tek tıkla denenebilir.
 - **Dürüst bağımlılık yönetimi:** Çekirdek araçlar saf QGIS ile çalışır; gelişmiş yöntemler için PySAL/MGWR/scikit-learn kurulumunu, çalıştırmadan önce pip komutunu aynen gösteren şeffaf bir kurulum aracı üstlenir.
 
 Kurulum: QGIS → *Eklentiler → Eklentileri Yönet ve Kur* → **PlanX GeoStats Lab** aratın; araçlar İşlem Araç Kutusu'nda görünür.

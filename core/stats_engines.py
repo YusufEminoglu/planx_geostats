@@ -1737,6 +1737,125 @@ def calculate_glr(
     raise ValueError("Unsupported GLR family. Use gaussian, logistic, or poisson.")
 
 
+def calculate_quantile_regression(
+    y: np.ndarray,
+    X_data: np.ndarray,
+    tau: float = 0.5,
+    max_iter: int = 100,
+    tol: float = 1e-6,
+) -> dict:
+    """Linear quantile regression via iteratively reweighted least squares
+    (a Schlossmacher-style majorize-minimize scheme on the pinball loss):
+    each iteration re-weights observations by tau/|residual| (residual >= 0)
+    or (1-tau)/|residual| (residual < 0) and re-solves weighted least
+    squares, converging to the tau-quantile fit. No asymptotic standard
+    errors are produced - only coefficients, fitted values, and a pseudo-R2
+    (Koenker & Machado 1999 R1) comparing model pinball loss to an
+    intercept-only (unconditional quantile) model."""
+    n = len(y)
+    p = X_data.shape[1]
+    if n <= p + 1:
+        raise ValueError("Quantile regression requires more observations than model parameters.")
+    if not (0.0 < tau < 1.0):
+        raise ValueError("Quantile (tau) must be strictly between 0 and 1.")
+
+    X = np.column_stack((np.ones(n), X_data))
+    beta = np.linalg.pinv(X.T @ X) @ X.T @ y
+    eps = 1e-6
+    converged = False
+    iteration = 0
+    for iteration in range(1, max_iter + 1):
+        residuals = y - X @ beta
+        abs_resid = np.maximum(np.abs(residuals), eps)
+        asymmetric = np.where(residuals >= 0, tau, 1.0 - tau)
+        weights = asymmetric / abs_resid
+        xtw = X.T * weights
+        new_beta = np.linalg.pinv(xtw @ X) @ xtw @ y
+        if np.max(np.abs(new_beta - beta)) < tol:
+            beta = new_beta
+            converged = True
+            break
+        beta = new_beta
+
+    fitted = X @ beta
+    residuals = y - fitted
+
+    def _pinball_loss(resid: np.ndarray) -> float:
+        return float(np.sum(np.where(resid >= 0, tau * resid, (tau - 1.0) * resid)))
+
+    null_fit = np.quantile(y, tau)
+    null_loss = _pinball_loss(y - null_fit)
+    model_loss = _pinball_loss(residuals)
+    pseudo_r2 = (1.0 - model_loss / null_loss) if null_loss > 0 else None
+
+    return {
+        "tau": tau,
+        "coefficients": beta,
+        "fitted": fitted,
+        "residuals": residuals,
+        "pseudo_r2": pseudo_r2,
+        "iterations": iteration,
+        "converged": converged,
+    }
+
+
+def calculate_gw_summary_stats(
+    values: np.ndarray,
+    coords: np.ndarray,
+    bandwidth: float,
+    kernel_type: str = "adaptive_bisquare",
+) -> dict:
+    """Geographically weighted local mean/std/skew of one field, using the
+    same kernel families as calculate_gwr (fixed_gaussian, fixed_bisquare,
+    adaptive_bisquare) so bandwidth intuition carries over from GWR/MGWR.
+    Also reports each point's Kish effective sample size (w_sum^2 /
+    sum(w^2)) - a rough count of how many observations are really informing
+    that point's local statistics, useful for spotting sparse-data areas
+    where the local estimate should be trusted less."""
+    n = len(values)
+    diff = coords[:, None, :] - coords[None, :, :]
+    dists_matrix = np.sqrt(np.sum(diff ** 2, axis=2))
+
+    local_mean = np.full(n, np.nan)
+    local_std = np.full(n, np.nan)
+    local_skew = np.full(n, np.nan)
+    effective_n = np.zeros(n)
+
+    for i in range(n):
+        dists = dists_matrix[i]
+        if kernel_type == "fixed_gaussian":
+            w = np.exp(-0.5 * (dists / bandwidth) ** 2)
+        elif kernel_type == "fixed_bisquare":
+            w = np.zeros(n)
+            mask = dists < bandwidth
+            w[mask] = (1.0 - (dists[mask] / bandwidth) ** 2) ** 2
+        elif kernel_type == "adaptive_bisquare":
+            k = int(bandwidth)
+            d_k = np.sort(dists)[min(k - 1, n - 1)]
+            w = np.zeros(n)
+            if d_k > 0:
+                mask = dists < d_k
+                w[mask] = (1.0 - (dists[mask] / d_k) ** 2) ** 2
+        else:
+            raise ValueError(f"Unknown kernel_type: {kernel_type}")
+
+        w_sum = float(np.sum(w))
+        if w_sum <= 0:
+            continue
+        weights_norm = w / w_sum
+        mean_i = float(np.sum(weights_norm * values))
+        var_i = float(np.sum(weights_norm * (values - mean_i) ** 2))
+        std_i = math.sqrt(max(var_i, 0.0))
+        skew_i = (float(np.sum(weights_norm * (values - mean_i) ** 3)) / (std_i ** 3)) if std_i > 1e-9 else 0.0
+        local_mean[i] = mean_i
+        local_std[i] = std_i
+        local_skew[i] = skew_i
+        w_sq_sum = float(np.sum(w ** 2))
+        effective_n[i] = (w_sum ** 2 / w_sq_sum) if w_sq_sum > 0 else 0.0
+
+    return {"local_mean": local_mean, "local_std": local_std, "local_skew": local_skew, "effective_n": effective_n}
+
+
 def calculate_bivariate_local_moran(
     x: np.ndarray,
     y: np.ndarray,

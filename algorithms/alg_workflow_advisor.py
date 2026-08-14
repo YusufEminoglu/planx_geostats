@@ -210,12 +210,40 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Spatial rho/lambda, predicted values, residuals, and model comparison metrics.",
                 "Use model comparison to decide whether OLS, GLR, GWR, SAR, SEM, or MGWR is more defensible.",
             ),
+            (
+                "Which model best predicts a continuous or categorical planning outcome?",
+                "Random Forest / Extra Trees / Gradient Boosting / SVM / Neural Network (Regression or Classification); ML Model Comparison (Leaderboard)",
+                "Complete numeric explanatory fields; numeric target for regression, categorical target for classification.",
+                "Fitted/predicted values, in-sample fit metrics, and a cross-model leaderboard.",
+                "Always confirm the winning model's score with Spatial k-Fold Cross-Validation Evaluator before reporting it.",
+            ),
+            (
+                "Which explanatory field actually drives a fitted model's predictions, and where?",
+                "SHAP Global Feature Importance; SHAP Spatial Attribution Map; SHAP Local Explanation Report; Permutation Feature Importance; Partial Dependence Report",
+                "A fitted model choice (same fields as the prediction tool) and, for SHAP, the optional shap package.",
+                "Ranked field importances, a mappable per-field attribution layer, and a signed per-record breakdown.",
+                "Cross-check with Model Residual Spatial Autocorrelation Check to confirm no spatial signal is left unexplained.",
+            ),
+            (
+                "Which street segments matter most for network flow, emergency access, or directness?",
+                "Network Connectivity Diagnostics; Network Betweenness Centrality; Network Closeness Centrality; Network Straightness Centrality; Network Reach",
+                "A line layer representing the street network and the optional networkx package.",
+                "Component/degree diagnostics, then per-segment centrality or reach scores.",
+                "Always run Network Connectivity Diagnostics first - a disconnected or gap-riddled network makes centrality misleading.",
+            ),
+            (
+                "How well is a population served by nearby facilities, and where are the gaps?",
+                "Nearest-Facility Coverage Gap; Two-Step Floating Catchment Area (2SFCA) Accessibility; Gravity-Based Accessibility Index",
+                "Separate demand (population/origins) and supply (facilities/destinations) layers sharing the same CRS.",
+                "Per-demand-record accessibility score or coverage flag, mappable directly.",
+                "Start with Nearest-Facility Coverage Gap for a fast look, then 2SFCA or Gravity for a capacity-weighted score.",
+            ),
         ]
         qa_rows = [
             ("Before analysis", "Data Readiness Audit", "Check CRS, geometry validity, missing values, constant fields, outliers, and correlation risk."),
             ("Before distance tools", "Calculate Distance Band", "Confirm projected units and avoid arbitrary thresholds."),
             ("Before advanced models", "GeoStats Library Status", "Confirm optional libraries are installed in the active QGIS Python environment."),
-            ("Before release/manual QA", "Sample Dataset Guide", "Load the Izmir FUR street network sample, synthetic QA fixture, or both."),
+            ("Before release/manual QA", "Sample Dataset Guide", "Load any combination of the Izmir FUR sample and the four synthetic QA fixtures (general, network, classification, accessibility)."),
             ("After modeling", "Model Comparison Matrix", "Compare fit, residual, and prediction fields across multiple model outputs."),
         ]
         selection_rows = [
@@ -228,6 +256,10 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("Spatially varying model", "GWR; MGWR", "Use when a global model hides local variation and the sample size supports local estimation."),
             ("Spatial dependence model", "Spatial Lag Regression; Spatial Error Regression", "Use when residual diagnostics or theory suggest spatial spillovers or spatially structured omitted variables."),
             ("Model audit", "Model Comparison Matrix; Sensitivity Test", "Use comparison and randomization checks before presenting a preferred planning model."),
+            ("Continuous or categorical outcome prediction", "Random Forest; Extra Trees; Gradient Boosting (scikit-learn/XGBoost/LightGBM); SVR/SVC; Neural Network (MLP)", "Use tree ensembles first (robust defaults, native or permutation importance); reach for SVM/MLP only with a clear reason to expect a smooth non-linear boundary and enough data."),
+            ("Explaining a fitted ML model", "SHAP Global Feature Importance; SHAP Spatial Attribution Map; SHAP Local Explanation Report; Permutation Feature Importance; Partial Dependence Report", "Use SHAP for a theoretically grounded, per-record attribution (including a mappable spatial view); use Permutation Importance when shap is not installed; use Partial Dependence for direction of effect."),
+            ("Street network structure and connectivity", "Network Connectivity Diagnostics; Network Betweenness/Closeness/Straightness Centrality; Network Reach", "Use Connectivity Diagnostics first on every new network layer; Betweenness for through-traffic bottlenecks, Closeness for average-destination convenience, Straightness for detour/directness, Reach for local service-area size."),
+            ("Service coverage / facility siting", "Nearest-Facility Coverage Gap; Two-Step Floating Catchment Area (2SFCA); Gravity-Based Accessibility Index", "Use Nearest-Facility Gap for a fast proximity-only check, 2SFCA for a hard-cutoff capacity-weighted score, Gravity for a continuous no-cutoff surface."),
         ]
         assumption_rows = [
             ("Distance-based tools", "Projected CRS, meaningful map units, and a defensible neighborhood scale.", "Geographic degrees, arbitrary thresholds, or many isolated observations."),
@@ -235,6 +267,9 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("OLS / GLR", "Complete records, non-constant predictors, and a model family that matches the outcome.", "Multicollinearity, misspecified family, outliers, and residual spatial pattern."),
             ("GWR / MGWR", "A sample large enough for local estimation and predictors that vary locally.", "Overfitting, unstable local coefficients, bandwidth misuse, and strong collinearity."),
             ("Spatial Lag / Error", "A theory-driven spatial weights model and optional PySAL/spreg availability.", "Treating spatial dependence as proof of causality or ignoring islands in the weights graph."),
+            ("ML prediction tools (RF/GBM/SVM/MLP)", "Enough complete records per field, and an out-of-sample check before trusting the score.", "In-sample R2/accuracy is optimistic; always confirm with Spatial k-Fold Cross-Validation Evaluator, especially for boosting and neural-network models."),
+            ("Network Centrality tools", "A line layer whose endpoints form a genuinely connected topology (small digitizing gaps silently fragment it).", "Multiple disconnected components make centrality values incomparable across components - run Network Connectivity Diagnostics first."),
+            ("Accessibility tools (2SFCA/Gravity/Nearest-Facility)", "Demand and supply layers share the same CRS and cover a comparable extent; distance is straight-line, not network routing.", "Treating straight-line distance as equivalent to travel distance in areas with a highly indirect street network."),
         ]
         pitfall_rows = [
             ("Using WGS84 distances", "Distances are measured in degrees, not meters.", "Reproject to a suitable local projected CRS before distance bands, ANN, Ripley's K, GWR, SAR, or SEM."),
@@ -242,6 +277,9 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("Skipping data readiness", "Nulls, constants, and geometry problems can silently remove records.", "Run Data Readiness Audit and review skipped-record counts in every report."),
             ("Reading p-values alone", "A significant result can still be practically weak or methodologically fragile.", "Check maps, effect sizes, neighborhood diagnostics, and planning context together."),
             ("Comparing models by one metric", "AIC, R2, residual maps, and spatial diagnostics can disagree.", "Use Model Comparison Matrix and inspect residual spatial autocorrelation."),
+            ("Trusting an ML model's in-sample score", "Random Forest/Gradient Boosting/MLP can partly memorize training records.", "Run Spatial k-Fold Cross-Validation Evaluator and report the cross-validated score instead."),
+            ("Running centrality tools on a gappy network", "Small digitizing gaps at intersections silently fragment the graph into disconnected pieces.", "Run Network Connectivity Diagnostics first and fix gaps before trusting Betweenness/Closeness/Straightness results."),
+            ("Mixing accessibility layers with different CRS", "Straight-line distance calculations become meaningless or silently wrong across mismatched CRS.", "Confirm Demand and Supply layers share the same projected CRS before running any Accessibility tool."),
         ]
         recipe_rows = [
             ("Street network clustering", "Izmir sample", "road_density; betweenness_mean", "Data Readiness Audit -> Incremental Autocorrelation -> Global Moran's I -> Getis-Ord Gi*"),
@@ -250,6 +288,9 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("Peripheral connectivity gap", "Izmir sample", "road_density; betweenness_mean", "Global Moran's I -> Local Moran's I -> Getis-Ord Gi*"),
             ("Count model smoke test", "Synthetic QA fixture", "count_target with explanatory_a and explanatory_b", "Generalized Linear Regression with Poisson family"),
             ("Directional line QA", "Synthetic QA fixture", "qa_lines_directional", "Linear Directional Mean"),
+            ("Density-class prediction and explanation", "Classification QA fixture", "road_density, transit_score, pedestrian_ratio with density_class", "Data Readiness Audit -> Random Forest Classification -> Spatial k-Fold Cross-Validation Evaluator -> SHAP Global Feature Importance -> SHAP Spatial Attribution Map"),
+            ("Corridor criticality scan", "Network QA fixture", "qa_street_network", "Network Connectivity Diagnostics -> Network Betweenness Centrality -> Network Straightness Centrality"),
+            ("Facility coverage check", "Accessibility QA fixture", "qa_demand_points (population); qa_supply_facilities (capacity)", "Nearest-Facility Coverage Gap -> Two-Step Floating Catchment Area (2SFCA) Accessibility"),
         ]
 
         starter_body = "".join(self._workflow_row(*row) for row in starter_rows)

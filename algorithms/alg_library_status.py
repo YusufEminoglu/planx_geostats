@@ -51,18 +51,23 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Creates a non-destructive HTML diagnostic report for the seven optional "
+            "Creates a non-destructive HTML diagnostic report for the eleven optional "
             "Python libraries used by PlanX GeoStats Lab: numpy, numba, scikit-learn, "
-            "libpysal, esda, spreg, and mgwr. Each package is tested with "
-            "importlib.import_module and the result (available or missing, with the "
-            "exact import error when it fails) is written to a structured report "
-            "alongside the active QGIS host executable, the Python executable resolved "
-            "for pip, and any detected OSGeo4W shell. No package is installed, "
-            "upgraded, or removed by this tool.\n\n"
+            "libpysal, esda, spreg, mgwr, xgboost, lightgbm, shap, and networkx. Each "
+            "package is tested with importlib.import_module and the result (available "
+            "or missing, with the exact import error when it fails) is written to a "
+            "structured report alongside the active QGIS host executable, the Python "
+            "executable resolved for pip, and any detected OSGeo4W shell. No package "
+            "is installed, upgraded, or removed by this tool.\n\n"
             "Missing mgwr only blocks Multiscale GWR. Missing spreg only blocks "
-            "Spatial Autoregression and Spatial Error Regression. All other 28 "
-            "algorithms run on numpy alone, so a missing optional package is rarely a "
-            "reason to stop an analysis already in progress.\n\n"
+            "Spatial Autoregression, Spatial Error Regression, and Spatial Regime "
+            "Regression. Missing xgboost or lightgbm only blocks the matching "
+            "Gradient Boosting engine (the scikit-learn engine still runs). Missing "
+            "shap only blocks the three SHAP explanation tools - Permutation "
+            "Importance and Partial Dependence still work without it. Missing "
+            "networkx only blocks the Network Centrality and Space Syntax group. "
+            "Most other algorithms run on numpy alone, so a missing optional package "
+            "is rarely a reason to stop an analysis already in progress.\n\n"
             "A package that imports successfully is not proof it computes correctly: "
             "numba compiles against a specific NumPy ABI, and a stale numba build can "
             "import without error while silently producing wrong results against a "
@@ -130,6 +135,10 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "esda": "Exploratory spatial data analysis statistics such as Moran and Getis-Ord routines.",
             "spreg": "Spatial regression utilities for model-oriented workflows, including Spatial Lag and Spatial Error regression.",
             "mgwr": "Multiscale geographically weighted regression with variable-specific bandwidths.",
+            "xgboost": "Gradient Boosting engine option for the Machine Learning and Explainable AI group.",
+            "lightgbm": "Gradient Boosting engine option for the Machine Learning and Explainable AI group.",
+            "shap": "SHAP feature-attribution engine for the global, spatial-mapping, and local explanation tools.",
+            "networkx": "Graph construction and centrality algorithms for the Network Centrality and Space Syntax group.",
         }
         return roles.get(package, "Optional GeoStats support package.")
 

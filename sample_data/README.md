@@ -78,3 +78,47 @@ All fields below are `REAL` type. Roughly 4 of 391 features (~1%) are null acros
   - `qa_ols_model_output`, `qa_glr_model_output`, `qa_gwr_model_output`, `qa_sar_model_output`, `qa_sem_model_output`, `qa_mgwr_model_output`: minimal model-output layers for Model Comparison Matrix detection and report QA.
 
 Keep this fixture deterministic and intentionally small. It is not intended to represent a real planning geography; it exists to exercise QGIS Processing runtime branches, API compatibility, geometry handling, and report generation.
+
+## Machine Learning / Network / Accessibility QA Fixtures (v2.0)
+
+The Izmir FUR export above has no line-network geometry (only pre-computed
+zone-level network summary fields) and no categorical field, so it cannot
+demonstrate the Network Centrality and Space Syntax group, the Accessibility
+group, or any classification/regime tool out of the box. These three
+synthetic fixtures fill those gaps; all are deterministic (fixed random
+seeds), CRS EPSG:5253 (TUREF / TM27, matching the Izmir FUR sample), and
+generated directly as GeoPackages (no external geo library dependency in
+the generator).
+
+`planx_geostats_network_qa.gpkg`
+
+- Layer: `qa_street_network` (65 line features, `segment_type` field: `local` / `arterial`)
+- A small connected 6x6 street grid with jittered node positions, three
+  diagonal arterial shortcuts, and two dead-end cul-de-sacs (38 nodes total,
+  1 connected component) - enough irregularity for Betweenness/Closeness/
+  Straightness Centrality to show real variation, not a perfect-grid tie.
+- Purpose: demo/QA data for Network Betweenness/Closeness/Straightness
+  Centrality, Network Reach, and Network Connectivity Diagnostics.
+
+`planx_geostats_classification_qa.gpkg`
+
+- Layer: `qa_zone_classification` (120 point features)
+- Fields: `road_density`, `transit_score`, `pedestrian_ratio` (numeric, with
+  a genuine center-to-edge spatial gradient plus noise so classification
+  models have real signal to learn) and `density_class` (`Low` / `Medium` /
+  `High`, tertile-derived from `road_density`).
+- Purpose: demo/QA data for every classification tool (Random Forest / Extra
+  Trees / Gradient Boosting / SVC / MLP Classification, SHAP classification
+  workflows) and Spatial Regime Regression's regime field.
+
+`planx_geostats_accessibility_qa.gpkg`
+
+- Layers: `qa_demand_points` (150 points, `population` field) and
+  `qa_supply_facilities` (10 points, `capacity` field).
+- Purpose: demo/QA data for Two-Step Floating Catchment Area (2SFCA),
+  Gravity-Based Accessibility Index, and Nearest-Facility Coverage Gap.
+
+None of these three fixtures represent real Izmir data - they are synthetic,
+generated for this release, and should stay clearly labeled as QA/demo data
+in the manual and Workflow Advisor rather than presented alongside the real
+Izmir FUR export.

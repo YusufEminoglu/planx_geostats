@@ -4,3 +4,7 @@ esda
 spreg
 mgwr
 scikit-learn
+xgboost
+lightgbm
+shap
+networkx

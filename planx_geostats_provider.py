@@ -51,6 +51,43 @@ from .algorithms.alg_skater import SkaterAlgorithm
 from .algorithms.alg_lm_diagnostics import LMDiagnosticsAlgorithm
 from .algorithms.alg_spatial_durbin import SpatialDurbinAlgorithm
 from .algorithms.alg_esf_regression import ESFRegressionAlgorithm
+from .algorithms.alg_random_forest_regression import RandomForestRegressionAlgorithm
+from .algorithms.alg_random_forest_classification import RandomForestClassificationAlgorithm
+from .algorithms.alg_extra_trees_regression import ExtraTreesRegressionAlgorithm
+from .algorithms.alg_extra_trees_classification import ExtraTreesClassificationAlgorithm
+from .algorithms.alg_svr import SVRAlgorithm
+from .algorithms.alg_svc import SVCAlgorithm
+from .algorithms.alg_gbm_regression_sklearn import GBMRegressionSklearnAlgorithm
+from .algorithms.alg_gbm_regression_xgboost import GBMRegressionXGBoostAlgorithm
+from .algorithms.alg_gbm_regression_lightgbm import GBMRegressionLightGBMAlgorithm
+from .algorithms.alg_gbm_classification_sklearn import GBMClassificationSklearnAlgorithm
+from .algorithms.alg_gbm_classification_xgboost import GBMClassificationXGBoostAlgorithm
+from .algorithms.alg_gbm_classification_lightgbm import GBMClassificationLightGBMAlgorithm
+from .algorithms.alg_mlp_regression import MLPRegressionAlgorithm
+from .algorithms.alg_mlp_classification import MLPClassificationAlgorithm
+from .algorithms.alg_spatial_cv_evaluator import SpatialCVEvaluatorAlgorithm
+from .algorithms.alg_permutation_importance import PermutationImportanceAlgorithm
+from .algorithms.alg_partial_dependence import PartialDependenceAlgorithm
+from .algorithms.alg_ml_model_comparison import MLModelComparisonAlgorithm
+from .algorithms.alg_shap_global_importance import SHAPGlobalImportanceAlgorithm
+from .algorithms.alg_shap_spatial_map import SHAPSpatialMapAlgorithm
+from .algorithms.alg_shap_local_explanation import SHAPLocalExplanationAlgorithm
+from .algorithms.alg_model_residual_autocorrelation import ModelResidualAutocorrelationAlgorithm
+from .algorithms.alg_prediction_uncertainty_map import PredictionUncertaintyMapAlgorithm
+from .algorithms.alg_dbscan import DBSCANAlgorithm
+from .algorithms.alg_hdbscan import HDBSCANAlgorithm
+from .algorithms.alg_gmm_clustering import GMMClusteringAlgorithm
+from .algorithms.alg_betweenness_centrality import BetweennessCentralityAlgorithm
+from .algorithms.alg_closeness_centrality import ClosenessCentralityAlgorithm
+from .algorithms.alg_straightness_centrality import StraightnessCentralityAlgorithm
+from .algorithms.alg_network_reach import NetworkReachAlgorithm
+from .algorithms.alg_network_connectivity_diagnostics import NetworkConnectivityDiagnosticsAlgorithm
+from .algorithms.alg_2sfca_accessibility import TwoStepFCAAlgorithm
+from .algorithms.alg_gravity_accessibility import GravityAccessibilityAlgorithm
+from .algorithms.alg_nearest_facility_gap import NearestFacilityGapAlgorithm
+from .algorithms.alg_spatial_regime_regression import SpatialRegimeRegressionAlgorithm
+from .algorithms.alg_quantile_regression import QuantileRegressionAlgorithm
+from .algorithms.alg_gw_summary_stats import GWSummaryStatsAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -124,5 +161,48 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(GWRAlgorithm())
         self.addAlgorithm(MGWRAlgorithm())
         self.addAlgorithm(ESFRegressionAlgorithm())
+        self.addAlgorithm(SpatialRegimeRegressionAlgorithm())
+        self.addAlgorithm(QuantileRegressionAlgorithm())
+        self.addAlgorithm(GWSummaryStatsAlgorithm())
         self.addAlgorithm(SensitivityTestAlgorithm())
         self.addAlgorithm(ModelComparisonAlgorithm())
+
+        # 06 | Machine Learning and Explainable AI
+        self.addAlgorithm(RandomForestRegressionAlgorithm())
+        self.addAlgorithm(RandomForestClassificationAlgorithm())
+        self.addAlgorithm(ExtraTreesRegressionAlgorithm())
+        self.addAlgorithm(ExtraTreesClassificationAlgorithm())
+        self.addAlgorithm(SVRAlgorithm())
+        self.addAlgorithm(SVCAlgorithm())
+        self.addAlgorithm(GBMRegressionSklearnAlgorithm())
+        self.addAlgorithm(GBMRegressionXGBoostAlgorithm())
+        self.addAlgorithm(GBMRegressionLightGBMAlgorithm())
+        self.addAlgorithm(GBMClassificationSklearnAlgorithm())
+        self.addAlgorithm(GBMClassificationXGBoostAlgorithm())
+        self.addAlgorithm(GBMClassificationLightGBMAlgorithm())
+        self.addAlgorithm(MLPRegressionAlgorithm())
+        self.addAlgorithm(MLPClassificationAlgorithm())
+        self.addAlgorithm(SpatialCVEvaluatorAlgorithm())
+        self.addAlgorithm(PermutationImportanceAlgorithm())
+        self.addAlgorithm(PartialDependenceAlgorithm())
+        self.addAlgorithm(MLModelComparisonAlgorithm())
+        self.addAlgorithm(SHAPGlobalImportanceAlgorithm())
+        self.addAlgorithm(SHAPSpatialMapAlgorithm())
+        self.addAlgorithm(SHAPLocalExplanationAlgorithm())
+        self.addAlgorithm(ModelResidualAutocorrelationAlgorithm())
+        self.addAlgorithm(PredictionUncertaintyMapAlgorithm())
+        self.addAlgorithm(DBSCANAlgorithm())
+        self.addAlgorithm(HDBSCANAlgorithm())
+        self.addAlgorithm(GMMClusteringAlgorithm())
+
+        # 07 | Network Centrality and Space Syntax
+        self.addAlgorithm(NetworkConnectivityDiagnosticsAlgorithm())
+        self.addAlgorithm(BetweennessCentralityAlgorithm())
+        self.addAlgorithm(ClosenessCentralityAlgorithm())
+        self.addAlgorithm(StraightnessCentralityAlgorithm())
+        self.addAlgorithm(NetworkReachAlgorithm())
+
+        # 08 | Accessibility
+        self.addAlgorithm(TwoStepFCAAlgorithm())
+        self.addAlgorithm(GravityAccessibilityAlgorithm())
+        self.addAlgorithm(NearestFacilityGapAlgorithm())
