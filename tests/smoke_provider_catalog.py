@@ -29,11 +29,9 @@ EXPECTED_GROUPS = {
     "04 | Centers, Direction and Dispersion",
     "05 | Models and Scenarios",
     "06 | Machine Learning and Explainable AI",
-    "07 | Network Centrality and Space Syntax",
-    "08 | Accessibility",
 }
 
-MIN_EXPECTED_ALGORITHM_COUNT = 81
+MIN_EXPECTED_ALGORITHM_COUNT = 73
 
 
 def _module_tree(path: Path) -> ast.Module:

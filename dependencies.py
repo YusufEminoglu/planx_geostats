@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 
 PIP_PACKAGES = [
     "numba", "libpysal", "esda", "spreg", "mgwr", "scikit-learn",
-    "xgboost", "lightgbm", "shap", "networkx",
+    "xgboost", "lightgbm", "shap",
 ]
 MODULES = {
     "numpy": "numpy",
@@ -22,7 +22,6 @@ MODULES = {
     "xgboost": "xgboost",
     "lightgbm": "lightgbm",
     "shap": "shap",
-    "networkx": "networkx",
 }
 
 

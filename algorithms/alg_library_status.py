@@ -51,9 +51,9 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Creates a non-destructive HTML diagnostic report for the eleven optional "
+            "Creates a non-destructive HTML diagnostic report for the ten optional "
             "Python libraries used by PlanX GeoStats Lab: numpy, numba, scikit-learn, "
-            "libpysal, esda, spreg, mgwr, xgboost, lightgbm, shap, and networkx. Each "
+            "libpysal, esda, spreg, mgwr, xgboost, lightgbm, and shap. Each "
             "package is tested with importlib.import_module and the result (available "
             "or missing, with the exact import error when it fails) is written to a "
             "structured report alongside the active QGIS host executable, the Python "
@@ -64,8 +64,7 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "Regression. Missing xgboost or lightgbm only blocks the matching "
             "Gradient Boosting engine (the scikit-learn engine still runs). Missing "
             "shap only blocks the three SHAP explanation tools - Permutation "
-            "Importance and Partial Dependence still work without it. Missing "
-            "networkx only blocks the Network Centrality and Space Syntax group. "
+            "Importance and Partial Dependence still work without it. "
             "Most other algorithms run on numpy alone, so a missing optional package "
             "is rarely a reason to stop an analysis already in progress.\n\n"
             "A package that imports successfully is not proof it computes correctly: "
@@ -138,7 +137,6 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "xgboost": "Gradient Boosting engine option for the Machine Learning and Explainable AI group.",
             "lightgbm": "Gradient Boosting engine option for the Machine Learning and Explainable AI group.",
             "shap": "SHAP feature-attribution engine for the global, spatial-mapping, and local explanation tools.",
-            "networkx": "Graph construction and centrality algorithms for the Network Centrality and Space Syntax group.",
         }
         return roles.get(package, "Optional GeoStats support package.")
 

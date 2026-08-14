@@ -77,14 +77,6 @@ from .algorithms.alg_prediction_uncertainty_map import PredictionUncertaintyMapA
 from .algorithms.alg_dbscan import DBSCANAlgorithm
 from .algorithms.alg_hdbscan import HDBSCANAlgorithm
 from .algorithms.alg_gmm_clustering import GMMClusteringAlgorithm
-from .algorithms.alg_betweenness_centrality import BetweennessCentralityAlgorithm
-from .algorithms.alg_closeness_centrality import ClosenessCentralityAlgorithm
-from .algorithms.alg_straightness_centrality import StraightnessCentralityAlgorithm
-from .algorithms.alg_network_reach import NetworkReachAlgorithm
-from .algorithms.alg_network_connectivity_diagnostics import NetworkConnectivityDiagnosticsAlgorithm
-from .algorithms.alg_2sfca_accessibility import TwoStepFCAAlgorithm
-from .algorithms.alg_gravity_accessibility import GravityAccessibilityAlgorithm
-from .algorithms.alg_nearest_facility_gap import NearestFacilityGapAlgorithm
 from .algorithms.alg_spatial_regime_regression import SpatialRegimeRegressionAlgorithm
 from .algorithms.alg_quantile_regression import QuantileRegressionAlgorithm
 from .algorithms.alg_gw_summary_stats import GWSummaryStatsAlgorithm
@@ -194,15 +186,3 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(DBSCANAlgorithm())
         self.addAlgorithm(HDBSCANAlgorithm())
         self.addAlgorithm(GMMClusteringAlgorithm())
-
-        # 07 | Network Centrality and Space Syntax
-        self.addAlgorithm(NetworkConnectivityDiagnosticsAlgorithm())
-        self.addAlgorithm(BetweennessCentralityAlgorithm())
-        self.addAlgorithm(ClosenessCentralityAlgorithm())
-        self.addAlgorithm(StraightnessCentralityAlgorithm())
-        self.addAlgorithm(NetworkReachAlgorithm())
-
-        # 08 | Accessibility
-        self.addAlgorithm(TwoStepFCAAlgorithm())
-        self.addAlgorithm(GravityAccessibilityAlgorithm())
-        self.addAlgorithm(NearestFacilityGapAlgorithm())

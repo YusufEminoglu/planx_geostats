@@ -60,9 +60,9 @@ class InstallGeoStatsLibrariesAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         return (
             "Installs or updates the optional Python libraries used by PlanX "
             "GeoStats Lab (numba, libpysal, esda, spreg, mgwr, scikit-learn, xgboost, "
-            "lightgbm, shap, networkx) into the active QGIS Python environment. The "
+            "lightgbm, shap) into the active QGIS Python environment. The "
             "package list is read from requirements_geostats.txt, or falls back to "
-            "the same ten packages if that file is missing.\n\n"
+            "the same nine packages if that file is missing.\n\n"
             "This tool is intentionally not silent. With the confirmation checkbox "
             "left unchecked it prints the exact command, the QGIS host executable, "
             "the resolved Python executable, and the detected OSGeo4W shell, then "

@@ -8,6 +8,6 @@ authors:
 title: "PlanX GeoStats Lab"
 version: "2.0.0"
 doi: "10.5281/zenodo.20753140"
-date-released: "2026-08-14"
+date-released: "2026-08-15"
 url: "https://github.com/YusufEminoglu/planx_geostats"
-abstract: "PlanX spatial analysis lab for QGIS planning workflows: data preparation, urban pattern scanning, hot spots, centers, exploratory models and scenarios, machine learning and explainable AI, network centrality and space syntax, and accessibility."
+abstract: "PlanX spatial analysis lab for QGIS planning workflows: data preparation, urban pattern scanning, hot spots, centers, exploratory models and scenarios, and machine learning and explainable AI."

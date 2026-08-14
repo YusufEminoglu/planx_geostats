@@ -29,18 +29,14 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     HTML_REPORT = "HTML_REPORT"
     SAMPLE_PATH = "SAMPLE_PATH"
     SYNTHETIC_QA_PATH = "SYNTHETIC_QA_PATH"
-    NETWORK_QA_PATH = "NETWORK_QA_PATH"
     CLASSIFICATION_QA_PATH = "CLASSIFICATION_QA_PATH"
-    ACCESSIBILITY_QA_PATH = "ACCESSIBILITY_QA_PATH"
     LOADED_LAYERS = "LOADED_LAYERS"
 
     LAYER_NAME = "izmir_fur_street_network"
     LOAD_OPTIONS = [
         "Izmir FUR street network sample",
         "Synthetic QA fixture (points/lines/polygons/model-output)",
-        "Network QA fixture (street grid, for group 07)",
         "Classification QA fixture (points + density_class, for ML classification/regimes)",
-        "Accessibility QA fixture (demand + supply points, for group 08)",
     ]
     SYNTHETIC_QA_LAYERS = [
         "qa_points_grid",
@@ -53,9 +49,7 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         "qa_sem_model_output",
         "qa_mgwr_model_output",
     ]
-    NETWORK_QA_LAYERS = ["qa_street_network"]
     CLASSIFICATION_QA_LAYERS = ["qa_zone_classification"]
-    ACCESSIBILITY_QA_LAYERS = ["qa_demand_points", "qa_supply_facilities"]
 
     def name(self) -> str:
         return "sample_dataset_guide"
@@ -77,8 +71,8 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Generates an HTML catalog of the two GeoPackages bundled with PlanX "
-            "GeoStats Lab and can load either or both into the current QGIS "
+            "Generates an HTML catalog of the GeoPackages bundled with PlanX "
+            "GeoStats Lab and can load any combination into the current QGIS "
             "project.\n\n"
             "The Izmir FUR sample (layer izmir_fur_street_network, 391 polygons, "
             "EPSG:5253) covers the Izmir Functional Urban Region with street-network "
@@ -99,20 +93,13 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "model-output layers (qa_ols_model_output through qa_mgwr_model_output) "
             "that exercise Model Comparison Matrix's field-detection logic for each "
             "regression family.\n\n"
-            "Three additional small synthetic GeoPackages fill gaps the Izmir FUR "
-            "export cannot: it has no line-network geometry (only pre-computed "
-            "zone-level network summary fields) and no categorical field. The "
-            "Network QA fixture (qa_street_network, 65 segments, one connected "
-            "component) demos Network Betweenness/Closeness/Straightness Centrality, "
-            "Network Reach, and Network Connectivity Diagnostics. The Classification "
-            "QA fixture (qa_zone_classification, 120 points with a genuine spatial "
-            "gradient plus a Low/Medium/High density_class field) demos every "
-            "classification tool and Spatial Regime Regression's regime field. The "
-            "Accessibility QA fixture (qa_demand_points + qa_supply_facilities) demos "
-            "2SFCA, Gravity-Based Accessibility Index, and Nearest-Facility Coverage "
-            "Gap. None of these three represent real Izmir data - they are synthetic, "
-            "generated for this release.\n\n"
-            "Dataset layers to load accepts any combination of the five datasets - "
+            "The Classification QA fixture (qa_zone_classification, 120 points with a "
+            "genuine spatial gradient plus a Low/Medium/High density_class field) fills "
+            "a gap the Izmir FUR export cannot on its own - it has no categorical field "
+            "- and demos every classification tool (group 06) and Spatial Regime "
+            "Regression's regime field (group 05). It is synthetic, generated for this "
+            "release, and does not represent real Izmir data.\n\n"
+            "Dataset layers to load accepts any combination of the three datasets - "
             "pick only what you need for the tool you are trying out."
         )
 
@@ -144,18 +131,14 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "Sample dataset guide"))
         self.addOutput(QgsProcessingOutputString(self.SAMPLE_PATH, "Sample GeoPackage path"))
         self.addOutput(QgsProcessingOutputString(self.SYNTHETIC_QA_PATH, "Synthetic QA GeoPackage path"))
-        self.addOutput(QgsProcessingOutputString(self.NETWORK_QA_PATH, "Network QA GeoPackage path"))
         self.addOutput(QgsProcessingOutputString(self.CLASSIFICATION_QA_PATH, "Classification QA GeoPackage path"))
-        self.addOutput(QgsProcessingOutputString(self.ACCESSIBILITY_QA_PATH, "Accessibility QA GeoPackage path"))
         self.addOutput(QgsProcessingOutputString(self.LOADED_LAYERS, "Loaded layer names"))
 
     def processAlgorithm(self, parameters, context, feedback):
         sample_path = self._sample_path()
         synthetic_qa_path = self._synthetic_qa_path()
-        network_qa_path = self._network_qa_path()
         classification_qa_path = self._classification_qa_path()
-        accessibility_qa_path = self._accessibility_qa_path()
-        for path in (sample_path, synthetic_qa_path, network_qa_path, classification_qa_path, accessibility_qa_path):
+        for path in (sample_path, synthetic_qa_path, classification_qa_path):
             if not os.path.exists(path):
                 raise QgsProcessingException(f"Bundled sample dataset was not found: {path}")
 
@@ -186,37 +169,19 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             if 2 in load_modes:
                 loaded_layers.extend(
                     self._load_layers(
-                        network_qa_path,
-                        [(name, f"PlanX GeoStats Network QA - {name}") for name in self.NETWORK_QA_LAYERS],
-                        feedback,
-                    )
-                )
-            if 3 in load_modes:
-                loaded_layers.extend(
-                    self._load_layers(
                         classification_qa_path,
                         [(name, f"PlanX GeoStats Classification QA - {name}") for name in self.CLASSIFICATION_QA_LAYERS],
                         feedback,
                     )
                 )
-            if 4 in load_modes:
-                loaded_layers.extend(
-                    self._load_layers(
-                        accessibility_qa_path,
-                        [(name, f"PlanX GeoStats Accessibility QA - {name}") for name in self.ACCESSIBILITY_QA_LAYERS],
-                        feedback,
-                    )
-                )
 
-        self._write_html(html_path, sample_path, synthetic_qa_path, network_qa_path, classification_qa_path, accessibility_qa_path)
+        self._write_html(html_path, sample_path, synthetic_qa_path, classification_qa_path)
         return {
             self.HTML_REPORT: html_path,
             "HTML_REPORT_OUT": html_path,
             self.SAMPLE_PATH: sample_path,
             self.SYNTHETIC_QA_PATH: synthetic_qa_path,
-            self.NETWORK_QA_PATH: network_qa_path,
             self.CLASSIFICATION_QA_PATH: classification_qa_path,
-            self.ACCESSIBILITY_QA_PATH: accessibility_qa_path,
             self.LOADED_LAYERS: ", ".join(loaded_layers),
         }
 
@@ -228,17 +193,9 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         plugin_dir = os.path.dirname(os.path.dirname(__file__))
         return os.path.join(plugin_dir, "sample_data", "planx_geostats_synthetic_qa.gpkg")
 
-    def _network_qa_path(self) -> str:
-        plugin_dir = os.path.dirname(os.path.dirname(__file__))
-        return os.path.join(plugin_dir, "sample_data", "planx_geostats_network_qa.gpkg")
-
     def _classification_qa_path(self) -> str:
         plugin_dir = os.path.dirname(os.path.dirname(__file__))
         return os.path.join(plugin_dir, "sample_data", "planx_geostats_classification_qa.gpkg")
-
-    def _accessibility_qa_path(self) -> str:
-        plugin_dir = os.path.dirname(os.path.dirname(__file__))
-        return os.path.join(plugin_dir, "sample_data", "planx_geostats_accessibility_qa.gpkg")
 
     def _load_layers(self, gpkg_path: str, layer_specs: list[tuple[str, str]], feedback) -> list[str]:
         loaded = []
@@ -253,10 +210,7 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 feedback.pushWarning(f"Could not load bundled sample layer through the OGR provider: {layer_name}")
         return loaded
 
-    def _write_html(
-        self, path: str, sample_path: str, synthetic_qa_path: str, network_qa_path: str,
-        classification_qa_path: str, accessibility_qa_path: str,
-    ) -> None:
+    def _write_html(self, path: str, sample_path: str, synthetic_qa_path: str, classification_qa_path: str) -> None:
         recommended = [
             ("Network pattern scan", "road_density", "Global Moran, Gi*, Local Moran, and Incremental Autocorrelation."),
             ("Accessibility model", "transit_accessibility", "OLS, GLR, GWR, MGWR, Spatial Lag, and Spatial Error with road density, gridiron index, connectivity index, and circuity."),
@@ -322,7 +276,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <tbody>
 <tr><td><strong>Izmir FUR street network sample</strong></td><td><code>{self.LAYER_NAME}</code></td><td>You want the default planning demo and regular manual workflow checks.</td></tr>
 <tr><td><strong>Synthetic QA fixture</strong></td><td><code>qa_points_grid</code>, <code>qa_lines_directional</code>, <code>qa_polygons_mini</code>, and exact model-output QA layers.</td><td>You want compact developer QA layers for edge-case testing.</td></tr>
-<tr><td><strong>Both datasets</strong></td><td>All bundled planning and QA layers.</td><td>You are preparing a full manual regression pass before release.</td></tr>
+<tr><td><strong>Classification QA fixture</strong></td><td><code>qa_zone_classification</code></td><td>You want to try a classification tool or Spatial Regime Regression with a ready-made categorical field.</td></tr>
 </tbody>
 </table>
 <h2>Synthetic QA Fixture</h2>
@@ -337,28 +291,13 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <thead><tr><th>Workflow</th><th>Suggested Field</th><th>Tools</th></tr></thead>
 <tbody>{rows}</tbody>
 </table>
-<h2>Network / Classification / Accessibility QA Fixtures (v2.0)</h2>
-<p>The Izmir FUR export has no line-network geometry and no categorical field, so it cannot demo the Network Centrality and Space Syntax group, the Accessibility group, or any classification/regime tool by itself. These three small synthetic GeoPackages fill those gaps - none of them represent real Izmir data.</p>
-<div class="path">{html.escape(network_qa_path)}</div>
-<table>
-<thead><tr><th>Layer</th><th>Geometry</th><th>Purpose</th></tr></thead>
-<tbody>
-<tr><td><code>qa_street_network</code></td><td>Line</td><td>65 segments, one connected component, <code>segment_type</code> field (local/arterial). Network Betweenness/Closeness/Straightness Centrality, Network Reach, Network Connectivity Diagnostics.</td></tr>
-</tbody>
-</table>
+<h2>Classification QA Fixture (v2.0)</h2>
+<p>The Izmir FUR export has no categorical field, so it cannot demo a classification tool or Spatial Regime Regression by itself. This small synthetic GeoPackage fills that gap - it does not represent real Izmir data.</p>
 <div class="path">{html.escape(classification_qa_path)}</div>
 <table>
 <thead><tr><th>Layer</th><th>Geometry</th><th>Purpose</th></tr></thead>
 <tbody>
 <tr><td><code>qa_zone_classification</code></td><td>Point</td><td>120 points; <code>road_density</code>, <code>transit_score</code>, <code>pedestrian_ratio</code> (numeric, real spatial gradient) and <code>density_class</code> (Low/Medium/High). Every classification tool and Spatial Regime Regression's regime field.</td></tr>
-</tbody>
-</table>
-<div class="path">{html.escape(accessibility_qa_path)}</div>
-<table>
-<thead><tr><th>Layer</th><th>Geometry</th><th>Purpose</th></tr></thead>
-<tbody>
-<tr><td><code>qa_demand_points</code></td><td>Point</td><td>150 points, <code>population</code> field - the Demand layer for the Accessibility group.</td></tr>
-<tr><td><code>qa_supply_facilities</code></td><td>Point</td><td>10 points, <code>capacity</code> field - the Supply layer for the Accessibility group.</td></tr>
 </tbody>
 </table>
 <h2>Notes</h2>
