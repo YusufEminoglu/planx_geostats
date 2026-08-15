@@ -7821,6 +7821,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Prokhorenkova et al.'s (2018) ordered-boosting mechanism (see Gradient Boosting Regression (CatBoost)) applies unchanged to classification: each example's gradient is estimated from a model trained only on examples preceding it under a random permutation, avoiding the prediction-shift bias that comes from computing a training example's own gradient with a model that has already seen its target. Symmetric trees again act as an implicit regularizer, splitting on the same feature and threshold across an entire depth level.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Ordered boosting matters more for classification log-loss than squared error.</strong> Prediction shift's distortion is a function of how much a model's fitted value at a training point differs, on average, from what an honest out-of-sample prediction there would be. For classification's log-loss gradient, that distortion tends to be most consequential exactly where the model is already fairly confident — precisely the well-separated majority of records in a typically imbalanced planning classification target (e.g. most parcels clearly not redeveloping) — since a small amount of self-referential bias in a confident prediction's gradient can compound over many boosting rounds. Ordered boosting's out-of-sample-simulated gradients reduce this compounding, one of several reasons CatBoost was benchmarked as unusually competitive specifically on datasets with imbalanced or noisy targets.
+  </p>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>catboost.CatBoostClassifier</code> with <code>verbose=False</code> and <code>allow_writing_files=False</code> (<code>core/ml_engines.py::fit_gbm_classifier</code>, engine="catboost").
@@ -7856,14 +7859,18 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="interp-box">
   Compare accuracy and confusion-matrix structure against the scikit-learn, XGBoost, and LightGBM engines on the same fields — close agreement across all four engines is reassuring; a CatBoost-specific accuracy jump with no clear explanation is worth double-checking for target leakage before trusting it. Always confirm with Spatial k-Fold Cross-Validation Evaluator, not the in-sample accuracy shown here.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Where CatBoost specifically tends to differ from the other three engines.</strong> Watch minority-class recall in particular when comparing across engines on an imbalanced planning target: if CatBoost's minority-class recall is meaningfully better than the other three at similar overall accuracy, that pattern is consistent with the ordered-boosting mechanism's theoretical advantage on exactly this kind of target (see above), not merely engine-to-engine noise — worth reporting as a specific finding rather than averaging it away into a single "which engine won" summary.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a>
+    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a> &middot; <a href="#alg-gbm-reg-catboost">Gradient Boosting Regression (CatBoost)</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Prokhorenkova, L., Gusev, G., Vorobev, A., Dorogush, A.V. &amp; Gulin, A.</strong> (2018). "CatBoost: Unbiased Boosting with Categorical Features." <em>Advances in Neural Information Processing Systems</em> 31: 6638–6648.</p>
+  <p style="margin:4px 0;"><strong>Saito, T. &amp; Rehmsmeier, M.</strong> (2015). "The Precision-Recall Plot Is More Informative than the ROC Plot When Evaluating Binary Classifiers on Imbalanced Datasets." <em>PLOS ONE</em> 10(3): e0118432. DOI: <a href="https://doi.org/10.1371/journal.pone.0118432">10.1371/journal.pone.0118432</a></p>
   </div>
 </div>
 </article>
@@ -8730,6 +8737,17 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Scoped to binary targets.</strong> Multiclass EBM produces a separate set of per-field contributions for each class simultaneously, which does not fit this tool's one-column-per-field export design. This tool therefore requires the target field to have exactly two classes; for three or more classes, use Random Forest Classification or a Gradient Boosting engine, paired with SHAP Global Feature Importance for an explanation.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Log-odds contributions are additive; probability contributions are not.</strong> Because the model is additive on the log-odds scale, not the probability scale, an ebm_&lt;field&gt; value cannot be read as "this field added N percentage points of probability" - the sigmoid link that converts log-odds to probability is non-linear, so the same log-odds contribution translates to a larger or smaller probability shift depending on where the record's baseline log-odds already sits (a shift near logit=0, i.e. probability near 0.5, moves probability more than the identical shift applied to an already-confident record near logit=+3 or -3). Two records with an identical ebm_road_density value can therefore see different probability impacts from it - this is expected, not an inconsistency, and is exactly the sigmoid's job.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Additive on the log-odds (logit) scale (intercept \(\beta_0\) plus one shape function per field, as in EBM Regression eq. 1, here feeding a logistic link):</strong></p>
+  $$\text{logit}(p_i) = \beta_0 + \sum_{j=1}^{p} f_j(x_{i,j}) \tag{1}$$
+  <p style="margin:8px 0;"><strong>Converting back to a predicted probability (ebm_conf) via the sigmoid:</strong></p>
+  $$p_i = \frac{1}{1 + e^{-\text{logit}(p_i)}} \tag{2}$$
+  </div>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>interpret.glassbox.ExplainableBoostingClassifier</code> with <code>interactions=0</code> (<code>core/ml_engines.py::fit_ebm_classifier</code>). ebm_intercept plus the sum of the ebm_&lt;field&gt; columns for a record, passed through a sigmoid, reconstructs the predicted probability for the second class in sorted label order.
@@ -8764,6 +8782,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="interp-box">
   Map an ebm_&lt;field&gt; column directly to see exactly where that field pushed classifications toward or away from the second class across the study area — exact, not a SHAP-style approximation. Compare accuracy against Gradient Boosting Classification on the same fields; a large gap quantifies how much this target depends on interactions between fields that the interactions-disabled EBM cannot represent.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading ebm_&lt;field&gt; near logit zero versus far from it.</strong> Per the non-linear sigmoid link above, an ebm_&lt;field&gt; column is most directly interpretable as a probability-scale effect specifically for records whose overall predicted probability sits near 0.5 (logit near 0) — there, the sigmoid is nearly linear, so log-odds and probability shifts track closely. For records the model is already confident about (ebm_conf near 0 or 1), the same log-odds contribution corresponds to a much smaller probability shift; when presenting a mapped ebm_&lt;field&gt; column to a non-technical audience, note this rather than implying a constant "N percentage points per unit" rate everywhere on the map.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-ebm-regression">Explainable Boosting Machine Regression (EBM)</a> &middot; <a href="#alg-shap-global">SHAP Global Feature Importance</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
@@ -8773,6 +8794,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Lou, Y., Caruana, R. &amp; Gehrke, J.</strong> (2012). "Intelligible Models for Classification and Regression." <em>Proceedings of the 18th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining</em>, 150–158. DOI: <a href="https://doi.org/10.1145/2339530.2339556">10.1145/2339530.2339556</a></p>
   <p style="margin:4px 0;"><strong>Nori, H., Jenkins, S., Koch, P. &amp; Caruana, R.</strong> (2019). "InterpretML: A Unified Framework for Machine Learning Interpretability." <em>arXiv:1909.09223</em>.</p>
+  <p style="margin:4px 0;"><strong>Hastie, T. &amp; Tibshirani, R.</strong> (1990). <em>Generalized Additive Models.</em> London: Chapman &amp; Hall. ISBN 0-412-34390-8 — Source of the logistic-link GAM formulation this tool's classification variant follows.</p>
   </div>
 </div>
 </article>
@@ -9118,6 +9140,12 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   The in-context-learning mechanism described in TabPFN Regression applies directly to classification: TabPFN's pretraining prior includes synthetic classification tasks, so the same forward pass approximates a Bayesian posterior predictive class distribution, \(p(y^{*} \mid x^{*}, D)\), for a categorical \(y^{*}\) rather than a continuous one. TabPFN's pretrained classification head was built and validated for a bounded number of classes; this tool enforces that ceiling (10 classes) explicitly.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why a 10-class ceiling specifically.</strong> TabPFN's classification head is not a generic softmax fit at inference time the way a neural network's output layer would be — it is itself part of what was pretrained, over synthetic classification tasks drawn from the same structural-causal-model prior as the regression version, with a bounded number of possible output classes baked into the pretrained architecture. This is a fundamentally different constraint from, say, scikit-learn's SVC needing more one-vs-one sub-models as classes grow (Support Vector Classification): TabPFN simply has no mechanism to represent an 11th class, regardless of dataset size or compute budget, until a future retrained version of the model expands that architecture.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Confidence and calibration on a model this new.</strong> Because TabPFN performs no gradient descent on the user's own data, tabpfn_conf reflects the pretrained model's posterior belief conditioned on the training table shown in-context — not a quantity fit or calibrated against this specific dataset the way, for instance, SVC's Platt-scaled probability is. Published benchmarking (Hollmann et al., 2025) reports TabPFN v2's calibration compares favorably to Gradient Boosting on general tabular benchmarks, but as with its raw accuracy, there is limited independent evidence of that calibration quality holding on planning-domain data specifically.
+  </p>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>tabpfn.TabPFNClassifier</code> (<code>core/ml_engines.py::fit_tabpfn_classifier</code>), which shares the row/feature envelope and first-use weight download of the regression engine, plus a 10-class ceiling.
@@ -9150,15 +9178,19 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="interp-box">
   Treat this as a fast, competitive second opinion alongside Gradient Boosting Classification rather than a default first choice, until it has accumulated more field experience on planning-specific data. Cross-check accuracy against Random Forest Classification / Gradient Boosting Classification on the same fields, and always confirm out-of-sample behavior with Spatial k-Fold Cross-Validation Evaluator.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Hitting the 10-class ceiling.</strong> If the target field has more than 10 distinct categories, this tool refuses to run rather than silently merging or dropping classes — collapse rare categories into a broader "other" class first if a genuinely coarser typology is acceptable for the analysis, or use Random Forest Classification / a Gradient Boosting engine instead, both of which handle any number of classes natively.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-tabpfn-regression">TabPFN Regression (Tabular Foundation Model)</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+    <strong>See also:</strong> <a href="#alg-tabpfn-regression">TabPFN Regression (Tabular Foundation Model)</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a> &middot; <a href="#alg-svc">Support Vector Classification</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M., Hoo, S.B., Schirrmeister, R.T. &amp; Hutter, F.</strong> (2025). "Accurate Predictions on Small Data with a Tabular Foundation Model." <em>Nature</em> 637: 319–326. DOI: <a href="https://doi.org/10.1038/s41586-024-08328-6">10.1038/s41586-024-08328-6</a></p>
   <p style="margin:4px 0;"><strong>Hollmann, N., Müller, S., Eggensperger, K. &amp; Hutter, F.</strong> (2023). "TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second." <em>International Conference on Learning Representations (ICLR)</em>.</p>
+  <p style="margin:4px 0;"><strong>Niculescu-Mizil, A. &amp; Caruana, R.</strong> (2005). "Predicting Good Probabilities with Supervised Learning." <em>Proceedings of the 22nd International Conference on Machine Learning (ICML)</em>, 625–632. DOI: <a href="https://doi.org/10.1145/1102351.1102430">10.1145/1102351.1102430</a> — General reference on why a classifier's raw confidence output should not be assumed to be a calibrated probability without checking.</p>
   </div>
 </div>
 </article>

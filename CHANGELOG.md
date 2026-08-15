@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0] - 2026-08-15
+
+- **8 new algorithms, taking the plugin from 73 to 81**, all in **06 | Machine Learning and Explainable AI**:
+  - **Conformal Prediction Interval** — distribution-free prediction intervals with a proven marginal coverage guarantee (MAPIE's jackknife+ cross-conformal method), for any regression model in the group, not just Random Forest/Extra Trees.
+  - **TabPFN Regression** and **TabPFN Classification** — a 2025 zero-shot tabular foundation model (Hollmann et al., *Nature*, 2025): a transformer pretrained once, offline, on millions of synthetic datasets, performing in-context learning at inference time with no per-dataset training loop or hyperparameters.
+  - **DiCE Counterfactual Explanation** — the action-oriented complement to SHAP: diverse, minimal field-value changes to one record that would flip its predicted class (Mothilal, Sharma & Tan, ACM FAT* 2020).
+  - **Gradient Boosting Regression/Classification (CatBoost)** — a 4th GBM engine alongside scikit-learn/XGBoost/LightGBM, using ordered boosting to remove the target-leakage bias present in classical gradient boosting (Prokhorenkova et al., NeurIPS 2018).
+  - **Explainable Boosting Machine Regression/Classification** — a glass-box generalized additive model (Lou, Caruana & Gehrke, KDD 2012) whose per-field contribution to every prediction is exact, read directly off the fitted model, not approximated by sampling the way SHAP explains a black-box model.
+- **Spatial k-Fold Cross-Validation Evaluator** gained a **kNNDM** fold-assignment option (Linnenbrink, Milà, Ludwig & Meyer, *Geoscientific Model Development*, 2024) alongside the existing K-Means spatial block method — chooses the fold split whose induced test-to-train distance distribution best matches the dataset's own leave-one-out distance distribution, rather than optimizing purely for geographic compactness.
+- New optional dependencies (`catboost`, `interpret`, `mapie`, `dice-ml`, `tabpfn`) install through the existing Setup and Diagnostics > Install / Update GeoStats Libraries workflow.
+- Reference manual expanded with full Theoretical Background / Mathematical Formulation / Parameters / Output / Interpretation Guide / Literature entries for all 8 new tools, and deepened across the 26 pre-existing Machine Learning entries with additional theory paragraphs, equations, interpretation guidance, and citations.
+- Fixed two pre-existing bugs in Multiscale Geographically Weighted Regression (MGWR), unrelated to this release's new tools, surfaced while re-running the full QGIS runtime verification gate: an adaptive-kernel bandwidth-search precondition that previously failed with an opaque numpy error on small samples now raises a clear, actionable message instead; and a result-extraction crash when `hat_matrix=False` (a property access that raised instead of returning a safe default).
+
 ## [2.0.0] - 2026-08-15
 
 - **29 new algorithms, taking the plugin from 44 to 73**, across one new group plus one existing group:
