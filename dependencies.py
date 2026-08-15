@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple
 PIP_PACKAGES = [
     "numba", "libpysal", "esda", "spreg", "mgwr", "scikit-learn",
     "xgboost", "lightgbm", "shap",
+    "catboost", "interpret", "mapie", "dice-ml", "tabpfn",
 ]
 MODULES = {
     "numpy": "numpy",
@@ -22,6 +23,11 @@ MODULES = {
     "xgboost": "xgboost",
     "lightgbm": "lightgbm",
     "shap": "shap",
+    "catboost": "catboost",
+    "interpret": "interpret",
+    "mapie": "mapie",
+    "dice-ml": "dice_ml",
+    "tabpfn": "tabpfn",
 }
 
 
@@ -49,7 +55,7 @@ def _install_packages_for(packages: List[str]) -> List[str]:
     result = []
     if any(package in {"libpysal", "esda", "spreg", "mgwr"} for package in packages):
         result.append("numba")
-    if any(package in {"shap", "xgboost", "lightgbm"} for package in packages) and "scikit-learn" not in packages:
+    if any(package in {"shap", "xgboost", "lightgbm", "mapie", "dice-ml"} for package in packages) and "scikit-learn" not in packages:
         result.append("scikit-learn")
     for package in packages:
         if package not in result:

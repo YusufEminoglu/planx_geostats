@@ -11,14 +11,14 @@
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
 [![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
 [![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://github.com/YusufEminoglu/PlanX)
-[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-44_algorithms-2c6e6a)](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
+[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-81_algorithms-2c6e6a)](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
-**40+ Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
+**81 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 73 algorithms, 7 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on GitHub Pages with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 81 algorithms, 7 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on GitHub Pages with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
@@ -94,17 +94,21 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 | Model Comparison | Score competing models side by side |
 | Monte Carlo Sensitivity Test | How robust is the result to perturbation? |
 
-### `06` Machine Learning & Explainable AI *(new in v2.0.0)*
+### `06` Machine Learning & Explainable AI
 | Tool | Question it answers |
 |---|---|
 | Random Forest / Extra Trees / SVM / Neural Network (Regression & Classification) | Predict a continuous or categorical outcome |
-| Gradient Boosting (scikit-learn / XGBoost / LightGBM, Regression & Classification) | The strongest tabular predictor, three interchangeable engines |
-| Spatial k-Fold Cross-Validation Evaluator | An honest, spatially-blocked out-of-sample score |
+| Gradient Boosting (scikit-learn / XGBoost / LightGBM / CatBoost, Regression & Classification) | The strongest tabular predictor, four interchangeable engines |
+| TabPFN Regression / Classification | A 2025 zero-shot tabular foundation model — no training loop, no tuning |
+| Spatial k-Fold Cross-Validation Evaluator | An honest, spatially-blocked out-of-sample score (K-Means block or kNNDM fold matching) |
 | Permutation Feature Importance · Partial Dependence Report | Model-agnostic importance and direction of effect |
 | ML Model Comparison (Leaderboard) | Rank every model family on the same, spatially cross-validated basis |
 | **SHAP Global / Spatial Attribution Map / Local Explanation** | Which field matters, **where** it matters (mapped), and why for one record |
+| Explainable Boosting Machine (Regression & Classification) | A glass-box model whose per-field contributions are exact, not sampled |
+| DiCE Counterfactual Explanation | What minimal change to one record would flip its predicted class |
 | Model Residual Spatial Autocorrelation Check | Has the ML model left real spatial structure unexplained? |
 | Prediction Uncertainty Map | Where is a Random Forest/Extra Trees prediction least trustworthy? |
+| Conformal Prediction Interval | A distribution-free, coverage-guaranteed prediction interval for any regression model |
 | DBSCAN · HDBSCAN · Gaussian Mixture | Density-based and probabilistic clustering alternatives to K-Means |
 
 ---
@@ -129,7 +133,7 @@ Each report ends with **interpretation guidance** — what the statistic assumes
 
 Core tools are pure QGIS. Advanced methods use, when present:
 
-`libpysal` · `esda` · `spreg` · `mgwr` · `scikit-learn` · `numba` · `xgboost` · `lightgbm` · `shap`
+`libpysal` · `esda` · `spreg` · `mgwr` · `scikit-learn` · `numba` · `xgboost` · `lightgbm` · `catboost` · `shap` · `interpret` · `mapie` · `dice-ml` · `tabpfn`
 
 > **The honest installer:** QGIS plugins run inside QGIS's own Python — installing into Anaconda or a system Python won't help. *GeoStats Library Status* shows exactly which interpreter QGIS uses and what's missing; *Install/Update GeoStats Libraries* previews the full pip command and only runs it after an explicit confirmation checkbox. Restart QGIS afterwards.
 
@@ -150,7 +154,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 73 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 81 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://github.com/YusufEminoglu/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -192,8 +196,8 @@ py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --
 
 **PlanX GeoStats Lab**, QGIS İşlem Araç Kutusu (Processing) içinde çalışan, plancılar için tasarlanmış bir **mekânsal istatistik laboratuvarıdır**:
 
-- **73 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analizi, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
-- **v2.0.0 ile yeni:** Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06) — Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM), SVM, Sinir Ağı, mekânsal k-katlamalı çapraz doğrulama ve **SHAP tabanlı açıklanabilirlik** (özellikle her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**).
+- **81 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analizi, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
+- **Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06):** Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost), SVM, Sinir Ağı, 2025 nesli TabPFN sıfır-eğitim tablosal temel modeli, mekânsal k-katlamalı çapraz doğrulama (K-Means blok veya kNNDM), **SHAP tabanlı açıklanabilirlik** (her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**), tam ve örneklemesiz katkı üreten cam-kutu **Explainable Boosting Machine**, **DiCE Counterfactual** (bir kaydın sınıfını değiştirecek en küçük değişiklik) ve dağılımdan bağımsız kapsama garantili **Conformal Prediction Interval**.
 - **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.
 - **Örnek veri dahildir:** 391 poligonluk **İzmir İşlevsel Kentsel Bölgesi (FUR)** sokak ağı veri seti (yol yoğunluğu, erişilebilirlik, space-syntax ve ağ topolojisi göstergeleri), sentetik QA veri seti ve yeni sınıflandırma QA veri seti — her araç tek tıkla denenebilir.
 - **Dürüst bağımlılık yönetimi:** Çekirdek araçlar saf QGIS ile çalışır; gelişmiş yöntemler için PySAL/MGWR/scikit-learn kurulumunu, çalıştırmadan önce pip komutunu aynen gösteren şeffaf bir kurulum aracı üstlenir.

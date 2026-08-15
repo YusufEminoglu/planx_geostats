@@ -647,10 +647,17 @@ def _all_cases() -> list[RuntimeCase]:
                 "INPUT": env["qa_points"],
                 "DEP_VAR": "target_value",
                 "INDEPENDENTS": ["explanatory_a", "explanatory_b"],
-                "KERNEL_TYPE": 0,
+                # Fixed kernel, not Adaptive: mgwr's multiscale backfitting seeds
+                # itself with an internal, unconfigurable "40 + 2*n_vars" minimum
+                # record count for adaptive kernels (a mgwr library limitation, see
+                # alg_mgwr.py's precondition check), which this 25-record QA fixture
+                # is too small for. Fixed kernels use distance-based bounds instead
+                # and have no such minimum, so this exercises the real MGWR fit/output
+                # path on the small QA fixture rather than only its error handling.
+                "KERNEL_TYPE": 3,
                 "CRITERION": 0,
-                "MIN_BW": 6.0,
-                "MAX_BW": 12.0,
+                "MIN_BW": 0.0,
+                "MAX_BW": 0.0,
                 "MAX_ITER": 3,
                 "N_CHUNKS": 1,
                 "SPHERICAL": False,

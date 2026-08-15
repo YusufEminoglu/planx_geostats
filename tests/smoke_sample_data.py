@@ -291,8 +291,8 @@ def test_sample_guide_load_options_match_bundled_layers() -> None:
     constants = _sample_guide_constants()
     assert constants["LOAD_OPTIONS"] == [
         "Izmir FUR street network sample",
-        "Synthetic QA fixture",
-        "Both datasets",
+        "Synthetic QA fixture (points/lines/polygons/model-output)",
+        "Classification QA fixture (points + density_class, for ML classification/regimes)",
     ]
     assert constants["LAYER_NAME"] == LAYER
 
@@ -316,7 +316,7 @@ def test_sample_guide_html_mentions_all_loadable_layers() -> None:
         "Loading Modes",
         "Izmir FUR street network sample",
         "Synthetic QA fixture",
-        "Both datasets",
+        "Classification QA fixture",
         LAYER,
     ]
     required_phrases.extend(constants["SYNTHETIC_QA_LAYERS"])

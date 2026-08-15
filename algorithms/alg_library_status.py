@@ -51,9 +51,10 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def shortHelpString(self) -> str:
         return (
-            "Creates a non-destructive HTML diagnostic report for the ten optional "
+            "Creates a non-destructive HTML diagnostic report for the fifteen optional "
             "Python libraries used by PlanX GeoStats Lab: numpy, numba, scikit-learn, "
-            "libpysal, esda, spreg, mgwr, xgboost, lightgbm, and shap. Each "
+            "libpysal, esda, spreg, mgwr, xgboost, lightgbm, shap, catboost, interpret, "
+            "mapie, dice-ml, and tabpfn. Each "
             "package is tested with importlib.import_module and the result (available "
             "or missing, with the exact import error when it fails) is written to a "
             "structured report alongside the active QGIS host executable, the Python "
@@ -61,10 +62,15 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "is installed, upgraded, or removed by this tool.\n\n"
             "Missing mgwr only blocks Multiscale GWR. Missing spreg only blocks "
             "Spatial Autoregression, Spatial Error Regression, and Spatial Regime "
-            "Regression. Missing xgboost or lightgbm only blocks the matching "
-            "Gradient Boosting engine (the scikit-learn engine still runs). Missing "
-            "shap only blocks the three SHAP explanation tools - Permutation "
-            "Importance and Partial Dependence still work without it. "
+            "Regression. Missing xgboost, lightgbm, or catboost only blocks the "
+            "matching Gradient Boosting engine (the scikit-learn engine still runs). "
+            "Missing shap only blocks the three SHAP explanation tools - Permutation "
+            "Importance and Partial Dependence still work without it. Missing mapie "
+            "only blocks Conformal Prediction Interval. Missing dice-ml only blocks "
+            "Counterfactual Explanation. Missing interpret only blocks the two EBM "
+            "tools. Missing tabpfn only blocks the two TabPFN tools, which also need "
+            "an internet connection the first time they run (see that tool's help for "
+            "why). "
             "Most other algorithms run on numpy alone, so a missing optional package "
             "is rarely a reason to stop an analysis already in progress.\n\n"
             "A package that imports successfully is not proof it computes correctly: "
@@ -137,6 +143,11 @@ class GeoStatsLibraryStatusAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "xgboost": "Gradient Boosting engine option for the Machine Learning and Explainable AI group.",
             "lightgbm": "Gradient Boosting engine option for the Machine Learning and Explainable AI group.",
             "shap": "SHAP feature-attribution engine for the global, spatial-mapping, and local explanation tools.",
+            "catboost": "Fourth Gradient Boosting engine option, with native categorical-field handling (ordered boosting).",
+            "interpret": "Explainable Boosting Machine (EBM) glass-box regression/classification engine.",
+            "mapie": "Conformal prediction engine for distribution-free prediction intervals on any model in the group.",
+            "dice-ml": "Counterfactual-explanation engine for the Counterfactual Explanation tool.",
+            "tabpfn": "TabPFN zero-shot tabular foundation-model engine; requires an internet connection on first use to fetch model weights.",
         }
         return roles.get(package, "Optional GeoStats support package.")
 

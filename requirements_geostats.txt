@@ -7,3 +7,8 @@ scikit-learn
 xgboost
 lightgbm
 shap
+catboost
+interpret
+mapie
+dice-ml
+tabpfn

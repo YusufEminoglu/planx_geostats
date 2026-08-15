@@ -738,6 +738,8 @@ main {
   <a href="#alg-gbm-cls-sklearn">Gradient Boosting Cls. (sklearn)</a>
   <a href="#alg-gbm-cls-xgboost">Gradient Boosting Cls. (XGBoost)</a>
   <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Cls. (LightGBM)</a>
+  <a href="#alg-gbm-reg-catboost">Gradient Boosting Reg. (CatBoost)</a>
+  <a href="#alg-gbm-cls-catboost">Gradient Boosting Cls. (CatBoost)</a>
   <a href="#alg-mlp-regression">Neural Network Regression</a>
   <a href="#alg-mlp-classification">Neural Network Classification</a>
   <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
@@ -747,8 +749,14 @@ main {
   <a href="#alg-shap-global">SHAP Global Importance</a>
   <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a>
   <a href="#alg-shap-local">SHAP Local Explanation</a>
+  <a href="#alg-dice-counterfactual">DiCE Counterfactual Explanation</a>
+  <a href="#alg-ebm-regression">EBM Regression</a>
+  <a href="#alg-ebm-classification">EBM Classification</a>
   <a href="#alg-model-residual-autocorr">Model Residual Autocorrelation</a>
   <a href="#alg-prediction-uncertainty">Prediction Uncertainty Map</a>
+  <a href="#alg-conformal-prediction">Conformal Prediction Interval</a>
+  <a href="#alg-tabpfn-regression">TabPFN Regression</a>
+  <a href="#alg-tabpfn-classification">TabPFN Classification</a>
   <a href="#alg-dbscan">DBSCAN Clustering</a>
   <a href="#alg-hdbscan">HDBSCAN Clustering</a>
   <a href="#alg-gmm">Gaussian Mixture Clustering</a>
@@ -778,7 +786,7 @@ main {
 
 <div class="meta-row">
     <span class="meta-chip">v2.0.0</span>
-    <span class="meta-chip">73 algorithms</span>
+    <span class="meta-chip">81 algorithms</span>
     <span class="meta-chip">7 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -794,11 +802,11 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">73</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">81</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">7</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">12</div><div class="stat-label">Regression Variants</div></div>
-  <div class="stat-tile"><div class="stat-value">26</div><div class="stat-label">ML &amp; XAI Tools</div></div>
-  <div class="stat-tile"><div class="stat-value">3</div><div class="stat-label">GBM Engines</div></div>
+  <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
+  <div class="stat-tile"><div class="stat-value">4</div><div class="stat-label">GBM Engines</div></div>
 </div>
 
 <p style="margin-top:20px;">Every tool operates inside the QGIS Processing framework, meaning all analyses are <strong>deterministic, repeatable, and batch-scriptable</strong>. The plugin emits structured HTML diagnostic reports, styled vector outputs with automatic symbology, CSV/JSON summaries for integration with external workflows, and inline Processing log diagnostics. Methods are selected from the peer-reviewed spatial statistics literature; where the literature offers multiple implementations, the plugin documents which variant is used and why.</p>
@@ -860,10 +868,10 @@ main {
   <div class="workflow-step">
     <div class="step-num">06</div>
     <div class="step-name">Machine Learning &amp; XAI</div>
-    <div class="step-tools">26 tools</div>
+    <div class="step-tools">34 tools</div>
   </div>
 </div>
-<p style="font-size:.84rem;color:var(--gs-slate-500);margin-top:8px;">Linear flow recommended for first-time analysis; experienced users may enter at any group. Every model in group 05 benefits from the diagnostics produced by groups 00–04. Group 06 (new in v2.0.0) is an independent add-on family needing only complete-case data.</p>
+<p style="font-size:.84rem;color:var(--gs-slate-500);margin-top:8px;">Linear flow recommended for first-time analysis; experienced users may enter at any group. Every model in group 05 benefits from the diagnostics produced by groups 00–04. Group 06 is an independent add-on family needing only complete-case data.</p>
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════ -->
@@ -6489,6 +6497,12 @@ Spatial econometric and regression models that estimate relationships between a 
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>The Chow test as the arbiter.</strong> Chow (1960) formalized the test this tool reports: an F-type statistic comparing the fit of separate regime-specific models against one pooled model, under the null hypothesis that the true coefficients are identical across regimes. A significant Chow test is the formal justification for reporting per-regime coefficients at all — without it, the apparent differences between regimes could easily be sampling noise, and a single pooled Generalized Linear Regression model is both simpler and equally defensible.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Spatial heterogeneity versus spatial dependence.</strong> Anselin (1988, 1990) draws a foundational distinction between two ways space can matter in a regression: spatial <em>dependence</em> (nearby observations' error terms or outcomes are correlated — the concern GWR, Spatial Lag, and Spatial Error address) and spatial <em>heterogeneity</em> (the relationship itself differs by location or group). Spatial regimes address heterogeneity directly, using a discrete, analyst-defined partition rather than a continuous surface — the regime field can be a genuinely spatial partition (north/south halves, planning districts) or any other categorical grouping the analyst believes changes the underlying process, which is why the method sits in the "Models and Scenarios" group rather than requiring a spatial-weights matrix the way SAR/SEM/SDM do.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Regimes versus GWR — a discrete-versus-continuous choice.</strong> GWR (this group) also lets coefficients vary spatially, but continuously and smoothly via a kernel bandwidth, producing one local coefficient surface per explanatory field rather than a handful of regime-specific tables. Choose Spatial Regime Regression when there is a real, defensible discrete boundary (an administrative district, a zoning category, a before/after policy split) that plausibly changes the whole model at once; choose GWR when spatial variation is expected to be gradual and no single partition captures it well. The two are not mutually exclusive checks — running both and comparing whether GWR's local coefficients shift sharply near the proposed regime boundaries is itself informative about whether the discrete partition is a reasonable simplification.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">Let \(r \in \{1, \dots, R\}\) index the regimes and \(n_r\) the number of complete records in regime <em>r</em>.</p>
@@ -6499,6 +6513,8 @@ Spatial econometric and regression models that estimate relationships between a 
   $$y_i = \beta_0 + \sum_{k=1}^{p} \beta_k\, x_{ik} + \varepsilon_i \tag{2}$$
   <p style="margin:8px 0;"><strong>Chow (joint) test statistic:</strong></p>
   $$F = \frac{(RSS_{\text{pooled}} - RSS_{\text{regimes}}) / [(R-1)(p+1)]}{RSS_{\text{regimes}} / (n - R(p+1))} \tag{3}$$
+  <p style="margin:8px 0;"><strong>Per-regime \(R^2\) (fit quality within regime \(r\) alone, useful alongside the joint test):</strong></p>
+  $$R^2_r = 1 - \frac{\sum_{i \in r}(y_i - \hat{y}_i)^2}{\sum_{i \in r}(y_i - \bar{y}_r)^2} \tag{4}$$
   </div>
 
   <div class="acad-note">
@@ -6533,17 +6549,22 @@ Spatial econometric and regression models that estimate relationships between a 
   <div class="interp-box">
   <strong>Reading the Chow test.</strong> p &lt; 0.05 on the joint Chow test means the regimes genuinely behave differently and the per-regime coefficient tables are worth reporting. p ≥ 0.05 means a single pooled Generalized Linear Regression model is simpler and just as defensible — do not present per-regime coefficients as meaningfully different without this test backing them up. Regimes with very few complete records will show wide, unstable coefficients regardless of the overall test result; check per-regime record counts (printed to the Processing log) before trusting any single regime's numbers.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing the regime field.</strong> The strongest regime candidates are ones with an a priori theoretical reason to expect structural difference — a zoning boundary that changes what can legally be built, an administrative border with different service levels, a clear before/after policy date — rather than an arbitrary post-hoc split chosen because it happens to look different in the data. If several candidate regime fields are available, prefer the one motivated by planning theory over the one that happens to maximize the Chow F-statistic; testing several candidates and reporting only the significant one invites the same multiple-comparisons problem as p-hacking in any other statistical setting.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-glr">Generalized Linear Regression</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a> &middot; <a href="#alg-gwr">GWR</a>
+    <strong>See also:</strong> <a href="#alg-glr">Generalized Linear Regression</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a> &middot; <a href="#alg-gwr">GWR</a> &middot; <a href="#alg-mgwr">MGWR</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1988). <em>Spatial Econometrics: Methods and Models.</em> Dordrecht: Kluwer Academic. DOI: <a href="https://doi.org/10.1007/978-94-015-7799-1">10.1007/978-94-015-7799-1</a> — Foundational treatment of the regimes/structural-instability framework in spatial econometrics.</p>
+  <p style="margin:4px 0;"><strong>Anselin, L.</strong> (1990). "Spatial Dependence and Spatial Structural Instability in Applied Regression Analysis." <em>Journal of Regional Science</em> 30(2): 185–207. DOI: <a href="https://doi.org/10.1111/j.1467-9787.1990.tb00092.x">10.1111/j.1467-9787.1990.tb00092.x</a> — Draws the dependence-versus-heterogeneity distinction this entry's theory section relies on.</p>
   <p style="margin:4px 0;"><strong>Chow, G.C.</strong> (1960). "Tests of Equality Between Sets of Coefficients in Two Linear Regressions." <em>Econometrica</em> 28(3): 591–605. DOI: <a href="https://doi.org/10.2307/1910133">10.2307/1910133</a> — The original Chow test this tool's joint significance test implements.</p>
   <p style="margin:4px 0;"><strong>Anselin, L. &amp; Rey, S.J.</strong> (2014). <em>Modern Spatial Econometrics in Practice: A Guide to GeoDa, GeoDaSpace and PySAL.</em> Chicago: GeoDa Press. — Practitioner-oriented treatment of regimes alongside PySAL's spreg tooling.</p>
   <p style="margin:4px 0;"><strong>Anselin, L., Syabri, I. &amp; Kho, Y.</strong> (2006). "GeoDa: An Introduction to Spatial Data Analysis." <em>Geographical Analysis</em> 38(1): 5–22. DOI: <a href="https://doi.org/10.1111/j.0016-7363.2005.00671.x">10.1111/j.0016-7363.2005.00671.x</a></p>
+  <p style="margin:4px 0;"><strong>Fotheringham, A.S., Brunsdon, C. &amp; Charlton, M.</strong> (2002). <em>Geographically Weighted Regression: The Analysis of Spatially Varying Relationships.</em> Chichester: Wiley. ISBN 0-471-49616-2 — Contrasts continuous local variation (GWR) against discrete regime splits.</p>
   </div>
 </div>
 </article>
@@ -6570,6 +6591,9 @@ Spatial econometric and regression models that estimate relationships between a 
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Why IRLS instead of the classical LP solver.</strong> The reference algorithm for quantile regression is a linear program (Koenker &amp; Bassett's original simplex-based method, later Barrodale-Roberts and interior-point variants). This tool instead uses an iteratively reweighted least squares scheme in the tradition of Schlossmacher's (1973) algorithm for L1 regression: each iteration re-weights every observation by \(\tau/|r_i|\) or \((1-\tau)/|r_i|\) depending on the residual's sign, then re-solves ordinary weighted least squares. This converges to the same solution as the LP formulation for well-behaved data while needing no external optimization library — consistent with this plugin's native-NumPy-first approach for tools that do not strictly require a heavier dependency.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why this matters specifically for planning equity questions.</strong> Koenker and Hallock (2001) popularized quantile regression in applied economics precisely because so many policy-relevant outcomes are about distributional tails, not averages: a housing-affordability program cares about the lower tail of income relative to housing cost, an emergency-response standard cares about the upper tail of response time, and a permit-backlog policy cares about the worst-case processing time, not the mean. A model that only ever reports the conditional mean effect can be systematically uninformative about exactly the part of the distribution a planning intervention is meant to target.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
@@ -6581,6 +6605,8 @@ Spatial econometric and regression models that estimate relationships between a 
   $$\hat{\beta}^{(t+1)} = (X'W^{(t)}X)^{-1}X'W^{(t)}y \tag{3}$$
   <p style="margin:8px 0;"><strong>Pseudo-\(R^2\) (Koenker &amp; Machado 1999, R1):</strong></p>
   $$R^2_1 = 1 - \frac{\sum_i \rho_\tau(y_i - \hat{y}_i)}{\sum_i \rho_\tau(y_i - Q_\tau(y))} \tag{4}$$
+  <p style="margin:8px 0;"><strong>Unconditional quantile of \(y\) used as the null-model benchmark in equation 4:</strong></p>
+  $$Q_\tau(y) = \arg\min_{q} \sum_i \rho_\tau(y_i - q) \tag{5}$$
   </div>
 
   <div class="acad-note">
@@ -6615,6 +6641,9 @@ Spatial econometric and regression models that estimate relationships between a 
   <div class="interp-box">
   <strong>Read across Tau values, not one run alone.</strong> Run this tool at Tau=0.1, 0.5, and 0.9 on the same fields and compare coefficients: a field with a small, stable coefficient across all three is a genuinely constant driver; a field whose coefficient grows sharply at Tau=0.9 is specifically driving the upper tail. Coefficients describe association with the chosen quantile, not the mean — never mix them with OLS coefficients in the same sentence without naming which quantile they refer to. No significance testing is available here; treat coefficients descriptively.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Quantile crossing.</strong> Because each Tau is fit as an independent run rather than jointly, fitted values at a higher Tau are not mathematically guaranteed to exceed those at a lower Tau for every record (a well-known quantile-regression phenomenon called "crossing"). This is rarely severe with well-behaved planning data and a handful of Tau values, but if fitted qr_fit values from a Tau=0.75 run come out below a Tau=0.5 run for the same records, treat both fits as approximate near that inconsistency rather than trusting either precisely.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-glr">Generalized Linear Regression</a> &middot; <a href="#alg-ols">OLS Regression</a>
@@ -6623,6 +6652,7 @@ Spatial econometric and regression models that estimate relationships between a 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Koenker, R. &amp; Bassett, G.</strong> (1978). "Regression Quantiles." <em>Econometrica</em> 46(1): 33–50. DOI: <a href="https://doi.org/10.2307/1913643">10.2307/1913643</a> — The original quantile regression paper.</p>
+  <p style="margin:4px 0;"><strong>Koenker, R. &amp; Hallock, K.F.</strong> (2001). "Quantile Regression." <em>Journal of Economic Perspectives</em> 15(4): 143–156. DOI: <a href="https://doi.org/10.1257/jep.15.4.143">10.1257/jep.15.4.143</a> — Widely cited accessible overview motivating quantile regression for distributional policy questions.</p>
   <p style="margin:4px 0;"><strong>Koenker, R. &amp; Machado, J.A.F.</strong> (1999). "Goodness of Fit and Related Inference Processes for Quantile Regression." <em>Journal of the American Statistical Association</em> 94(448): 1296–1310. DOI: <a href="https://doi.org/10.1080/01621459.1999.10473882">10.1080/01621459.1999.10473882</a> — Source of the R1 pseudo-\(R^2\) this tool reports.</p>
   <p style="margin:4px 0;"><strong>Koenker, R.</strong> (2005). <em>Quantile Regression.</em> Cambridge: Cambridge University Press. DOI: <a href="https://doi.org/10.1017/CBO9780511754098">10.1017/CBO9780511754098</a> — The standard reference monograph.</p>
   <p style="margin:4px 0;"><strong>Schlossmacher, E.J.</strong> (1973). "An Iterative Technique for Absolute Deviations Curve Fitting." <em>Journal of the American Statistical Association</em> 68(344): 857–859. DOI: <a href="https://doi.org/10.1080/01621459.1973.10481436">10.1080/01621459.1973.10481436</a> — The IRLS scheme this tool's engine generalizes from L1 to asymmetric pinball loss.</p>
@@ -6652,6 +6682,9 @@ Spatial econometric and regression models that estimate relationships between a 
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Effective sample size, not just a weighted average.</strong> Because kernel weights taper smoothly to zero rather than cutting off sharply, a naive count of "how many points are in the window" is not meaningful. This tool instead reports the Kish (1965) effective sample size, \(n_{\text{eff}} = (\sum w_i)^2 / \sum w_i^2\) — a standard survey-statistics device for expressing how many equally-weighted observations a set of unequal weights is worth. A low \(n_{\text{eff}}\) flags a local estimate resting on very little effective information, even if many points technically fall within a wide kernel's tail.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Precedent in the GWR software ecosystem.</strong> Geographically weighted descriptive statistics are not a novel idea invented for this plugin — the widely used <code>GWmodel</code> R package (Gollini et al., 2015; building on Brunsdon, Fotheringham &amp; Charlton's original GWR software) ships a dedicated <code>gwss()</code> function computing local mean, standard deviation, skewness, and correlation, precisely to give analysts an exploratory, model-free first look at spatial non-stationarity before committing to a full local regression. This tool follows the same logic: run it before GWR/MGWR to see whether a field's spread genuinely varies enough across the study area to justify the heavier local-regression machinery, not only after.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
@@ -6661,6 +6694,8 @@ Spatial econometric and regression models that estimate relationships between a 
   $$s_i = \sqrt{\frac{\sum_j w_{ij}(v_j - \bar{v}_i)^2}{\sum_j w_{ij}}}, \qquad \text{skew}_i = \frac{\sum_j w_{ij}(v_j - \bar{v}_i)^3 / \sum_j w_{ij}}{s_i^3} \tag{2}$$
   <p style="margin:8px 0;"><strong>Kish effective sample size:</strong></p>
   $$n_{\text{eff},i} = \frac{\left(\sum_j w_{ij}\right)^2}{\sum_j w_{ij}^2} \tag{3}$$
+  <p style="margin:8px 0;"><strong>Local coefficient of variation (a scale-free companion reading, derivable from equations 1–2):</strong></p>
+  $$CV_i = s_i / \bar{v}_i \tag{4}$$
   </div>
 
   <div class="acad-note">
@@ -6696,14 +6731,18 @@ Spatial econometric and regression models that estimate relationships between a 
   <div class="interp-box">
   <strong>Bandwidth trade-off.</strong> Too small a bandwidth produces noisy, erratic local statistics with low gw_neff everywhere; too large approaches the plain global mean/std and erases the spatial variation the tool exists to reveal. Map gw_std to check the constant-variance assumption behind global regression tools — sharp spatial variation in gw_std suggests a single global model will fit some areas much worse than others, and a GWR/MGWR model (or Spatial Regime Regression, if the variation aligns with a categorical boundary) may be worth trying instead.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading gw_skew alongside a modeling choice.</strong> A field whose gw_skew is strongly positive in some areas and near-zero in others is not well described by a single global skewness figure, and models that assume a symmetric error distribution (OLS, and Gaussian-family GLR) may fit poorly in the high-skew areas specifically. If gw_skew is persistently high across most of the study area for the dependent variable of a planned regression, consider Quantile Regression or the Poisson/Logistic GLR families over plain OLS.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gwr">GWR</a> &middot; <a href="#alg-mgwr">MGWR</a> &middot; <a href="#alg-data-readiness">Data Readiness Audit</a>
+    <strong>See also:</strong> <a href="#alg-gwr">GWR</a> &middot; <a href="#alg-mgwr">MGWR</a> &middot; <a href="#alg-data-readiness">Data Readiness Audit</a> &middot; <a href="#alg-quantile-regression">Quantile Regression</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Brunsdon, C., Fotheringham, A.S. &amp; Charlton, M.E.</strong> (1996). "Geographically Weighted Regression: A Method for Exploring Spatial Nonstationarity." <em>Geographical Analysis</em> 28(4): 281–298. DOI: <a href="https://doi.org/10.1111/j.1538-4632.1996.tb00936.x">10.1111/j.1538-4632.1996.tb00936.x</a></p>
+  <p style="margin:4px 0;"><strong>Gollini, I., Lu, B., Charlton, M., Brunsdon, C. &amp; Harris, P.</strong> (2015). "GWmodel: An R Package for Exploring Spatial Heterogeneity Using Geographically Weighted Models." <em>Journal of Statistical Software</em> 63(17): 1–50. DOI: <a href="https://doi.org/10.18637/jss.v063.i17">10.18637/jss.v063.i17</a> — Documents the <code>gwss()</code> precedent for geographically weighted summary statistics this tool follows.</p>
   <p style="margin:4px 0;"><strong>Kish, L.</strong> (1965). <em>Survey Sampling.</em> New York: John Wiley &amp; Sons. — Source of the effective-sample-size concept this tool's gw_neff field reports.</p>
   <p style="margin:4px 0;"><strong>Fotheringham, A.S., Brunsdon, C. &amp; Charlton, M.</strong> (2002). <em>Geographically Weighted Regression: The Analysis of Spatially Varying Relationships.</em> Chichester: Wiley. ISBN 0-471-49616-2</p>
   </div>
@@ -6719,7 +6758,7 @@ Spatial econometric and regression models that estimate relationships between a 
   <h3>Machine Learning and Explainable AI</h3>
 </div>
 <p style="color:var(--gs-slate-600);font-size:.88rem;margin-bottom:28px;">
-New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boosting across three engines, support vector machines, a small neural network) for predicting a continuous or categorical planning outcome, paired with the diagnostic scaffolding a spatial dataset specifically needs: a spatially blocked cross-validator, a leaderboard for comparing model families on equal footing, and SHAP-based explainability that goes further than a global importance ranking — including this plugin's flagship Spatial Attribution Map, which writes per-feature SHAP contributions back onto the map as symbolizable columns. Every tool here builds on the same optional scikit-learn dependency already used elsewhere in the plugin (Similarity Search, Multivariate Clustering); XGBoost, LightGBM, and shap are additional optional packages installed the same way.
+Modern supervised-learning models (tree ensembles, gradient boosting across four engines, support vector machines, a small neural network, and a 2025-generation tabular foundation model) for predicting a continuous or categorical planning outcome, paired with the diagnostic scaffolding a spatial dataset specifically needs: a spatially blocked cross-validator (with a choice of two fold-assignment methods), a leaderboard for comparing model families on equal footing, and explainability that goes well beyond a single global importance ranking — SHAP contributions written back onto the map as symbolizable columns (Spatial Attribution Map), an exact, non-sampled per-field breakdown from a glass-box additive model (Explainable Boosting Machine), an action-oriented "what would have to change" view for a single record (DiCE Counterfactual Explanation), and distribution-free prediction intervals with a proven coverage guarantee for any regression model in the group (Conformal Prediction Interval). Every tool here builds on the same optional scikit-learn dependency already used elsewhere in the plugin (Similarity Search, Multivariate Clustering); XGBoost, LightGBM, CatBoost, shap, interpret, mapie, dice-ml, and tabpfn are additional optional packages installed the same way.
 </p>
 
 <div class="callout callout-warn">
@@ -6748,6 +6787,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Out-of-bag error as a free internal check.</strong> Because each tree only sees ~63% of records in its bootstrap sample (the classic bagging fraction, \(1 - e^{-1}\)), the remaining ~37% ("out-of-bag") can be used to test that tree without a separate holdout split. Averaging each record's prediction across only the trees that did not see it produces the OOB score — an internal cross-validation estimate that costs nothing extra to compute, and the number this tool's report emphasizes over the more optimistic in-sample R2.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A structural limitation: no extrapolation.</strong> Because a tree's prediction is always the mean of training-record target values inside a leaf, Random Forest cannot extrapolate beyond the range of values it saw during training the way a linear model can — a field value 50% higher than anything in the training data still produces a prediction bounded by the training targets' observed range. This matters specifically for spatial prediction: applying a model fit on one district to a different district with a systematically different explanatory-field range (a much denser city core, for instance) risks silently flattened, underestimated predictions at the extremes, not a visible error. Checking whether the prediction layer's target field range matches the training layer's is a cheap, worthwhile sanity check before trusting predictions in an unseen area.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
@@ -6760,7 +6802,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </div>
 
   <div class="acad-note">
-  <strong>Implementation note.</strong> Wraps <code>sklearn.ensemble.RandomForestRegressor</code> with <code>bootstrap=True, oob_score=True, n_jobs=-1</code> (<code>core/ml_engines.py::fit_random_forest_regressor</code>). Complete-case extraction and metric computation are shared with every other regression tool in this group via <code>extract_regression_matrix</code>/<code>regression_metrics</code>, so behavior around missing values is identical across the whole group.
+  <strong>Implementation note.</strong> Wraps <code>sklearn.ensemble.RandomForestRegressor</code> with <code>bootstrap=True, oob_score=True, n_jobs=-1</code> (<code>core/ml_engines.py::fit_random_forest_regressor</code>). Complete-case extraction and metric computation are shared with every other regression tool in this group via <code>extract_regression_matrix</code>/<code>regression_metrics</code>, so behavior around missing values is identical across the whole group. The reported feature_importances_ are Mean Decrease in Impurity (eq. 3) — biased toward high-cardinality continuous fields relative to low-cardinality ones (Strobl et al., 2007); Permutation Feature Importance gives an unbiased alternative ranking on the same fitted model.
   </div>
 
   <h5>3. Parameters</h5>
@@ -6793,6 +6835,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>OOB score over in-sample R2.</strong> A large gap between OOB score and in-sample R2 signals overfitting — reduce Max tree depth or raise Minimum samples per leaf. Feature importances rank predictive contribution, not causal effect direction or magnitude; pair with SHAP Spatial Attribution Map for direction and geographic location of effect, and Model Residual Spatial Autocorrelation Check to confirm no spatial structure was left unexplained.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Predicting onto areas outside the training range.</strong> If Random Forest Regression will be used to predict onto parcels or districts the training data did not cover, check that the explanatory fields' ranges in the prediction area overlap the training area's ranges (Data Readiness Audit reports field ranges for exactly this purpose). Predictions for out-of-range inputs are not flagged automatically — they are simply clamped toward the nearest training leaf's average, which can look plausible while being systematically wrong.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-et-regression">Extra Trees Regression</a> &middot; <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a> &middot; <a href="#alg-glr">Generalized Linear Regression</a>
@@ -6803,6 +6848,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <p style="margin:4px 0;"><strong>Breiman, L.</strong> (2001). "Random Forests." <em>Machine Learning</em> 45(1): 5–32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a> — The original Random Forest paper.</p>
   <p style="margin:4px 0;"><strong>Breiman, L.</strong> (1996). "Bagging Predictors." <em>Machine Learning</em> 24(2): 123–140. DOI: <a href="https://doi.org/10.1007/BF00058655">10.1007/BF00058655</a></p>
   <p style="margin:4px 0;"><strong>Hastie, T., Tibshirani, R. &amp; Friedman, J.</strong> (2009). <em>The Elements of Statistical Learning</em> (2nd ed.), Ch. 15. New York: Springer. DOI: <a href="https://doi.org/10.1007/978-0-387-84858-7">10.1007/978-0-387-84858-7</a></p>
+  <p style="margin:4px 0;"><strong>Strobl, C., Boulesteix, A.-L., Zeileis, A. &amp; Hothorn, T.</strong> (2007). "Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution." <em>BMC Bioinformatics</em> 8: 25. DOI: <a href="https://doi.org/10.1186/1471-2105-8-25">10.1186/1471-2105-8-25</a> — Documents the Mean Decrease in Impurity bias noted above.</p>
   </div>
 </div>
 </article>
@@ -6828,6 +6874,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Class imbalance is the main practical hazard.</strong> A forest optimizing overall accuracy on an imbalanced target (a rare zoning category, an uncommon land-use class) can reach a high accuracy score simply by defaulting toward the majority class on ambiguous records — the well-known "accuracy paradox." This is why the report emphasizes per-class precision/recall/F1 and the full confusion matrix over the single accuracy number: a model that never predicts the minority class can still show high headline accuracy while being useless for the planning question that motivated collecting that class in the first place.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Vote fractions are not automatically calibrated probabilities.</strong> rf_conf is the fraction of trees voting for the predicted class — a genuine confidence signal, but Niculescu-Mizil &amp; Caruana (2005) showed tree-ensemble vote fractions are not, in general, well-calibrated probabilities: a set of records with rf_conf near 0.7 will not necessarily turn out to be correct roughly 70% of the time. Treat rf_conf as a reliable <em>ranking</em> of relative confidence across records (useful for prioritizing which predictions to field-verify first) rather than as a literal probability to plug into a downstream risk calculation without separate calibration.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -6872,6 +6921,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>Look past accuracy.</strong> Check per-class recall for the classes that actually matter for your planning question before trusting a headline accuracy figure, especially with an imbalanced class distribution. Treat rf_conf as a mappable confidence surface: low-confidence areas are where field verification or additional explanatory data would improve the model most.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When rf_conf needs to be a real probability, not just a ranking.</strong> If a downstream calculation actually needs calibrated probabilities (for example, combining rf_conf with a cost figure to estimate expected loss), fit a separate calibration step outside this plugin (Platt scaling or isotonic regression against a held-out set) rather than using rf_conf directly — this tool reports the ensemble's raw vote fraction, deliberately, so its meaning stays simple and consistent across every classification tool in this group.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-et-classification">Extra Trees Classification</a> &middot; <a href="#alg-shap-global">SHAP Global Feature Importance</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
@@ -6881,6 +6933,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Breiman, L.</strong> (2001). "Random Forests." <em>Machine Learning</em> 45(1): 5–32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a></p>
   <p style="margin:4px 0;"><strong>Saito, T. &amp; Rehmsmeier, M.</strong> (2015). "The Precision-Recall Plot Is More Informative than the ROC Plot When Evaluating Binary Classifiers on Imbalanced Datasets." <em>PLOS ONE</em> 10(3): e0118432. DOI: <a href="https://doi.org/10.1371/journal.pone.0118432">10.1371/journal.pone.0118432</a> — Motivates this tool's emphasis on per-class metrics over headline accuracy.</p>
+  <p style="margin:4px 0;"><strong>Niculescu-Mizil, A. &amp; Caruana, R.</strong> (2005). "Predicting Good Probabilities with Supervised Learning." <em>Proceedings of the 22nd International Conference on Machine Learning (ICML)</em>, 625–632. DOI: <a href="https://doi.org/10.1145/1102351.1102430">10.1145/1102351.1102430</a> — Source of the vote-fraction calibration caveat above.</p>
   </div>
 </div>
 </article>
@@ -6906,6 +6959,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>A cross-check, not a replacement.</strong> Because Random Forest and Extra Trees differ only in their source of randomness, running both on the same fields and comparing feature-importance rankings and R2 is a useful robustness check: close agreement is reassuring evidence the pattern is real rather than an artifact of one algorithm's particular randomization scheme.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>When the randomized-threshold trade favors Extra Trees.</strong> Geurts, Ernst and Wehenkel (2006) found the variance-reduction benefit of random thresholds is most pronounced with noisy fields and a modest number of training records — exactly the profile of many single-district or single-city planning datasets, where a handful of explanatory fields may carry measurement noise (a manually digitized road-density figure, a survey-derived score). On very clean, large datasets the two ensembles tend to converge to similar accuracy, and Random Forest's optimal-threshold search may edge ahead slightly; the two-tool comparison this section recommends is the practical way to find out which regime a given dataset falls into rather than assuming one in advance.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -6949,6 +7005,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Use as a cross-check against Random Forest Regression rather than in isolation; agreement between the two increases confidence in the explanatory-field ranking. No OOB score is reported — always confirm with Spatial k-Fold Cross-Validation Evaluator before reporting an R2 figure.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The same no-extrapolation limitation applies here.</strong> Extra Trees averages leaf-level training targets exactly as Random Forest does, so the extrapolation caveat in Random Forest Regression's interpretation guide (predictions for out-of-range explanatory-field values are clamped, not flagged) applies identically — check the prediction area's field ranges against the training layer's before trusting predictions in a substantially different subregion.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
@@ -6957,6 +7016,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Geurts, P., Ernst, D. &amp; Wehenkel, L.</strong> (2006). "Extremely Randomized Trees." <em>Machine Learning</em> 63(1): 3–42. DOI: <a href="https://doi.org/10.1007/s10994-006-6226-1">10.1007/s10994-006-6226-1</a> — The original Extra Trees paper.</p>
+  <p style="margin:4px 0;"><strong>Breiman, L.</strong> (2001). "Random Forests." <em>Machine Learning</em> 45(1): 5–32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a> — The bagging-ensemble baseline Extra Trees is compared against throughout this entry.</p>
   </div>
 </div>
 </article>
@@ -6979,6 +7039,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Geurts, Ernst and Wehenkel's (2006) extremely-randomized-split construction applies identically to classification: each tree still votes a leaf-based class probability distribution, but the random split thresholds decorrelate the trees further than Random Forest's optimal-threshold search does, which can help on noisy planning data with many correlated explanatory fields.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  As with the regression version, et_conf is a vote fraction, not an automatically calibrated probability — the same caveat noted for Random Forest Classification (Niculescu-Mizil &amp; Caruana, 2005) applies here without modification.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7018,14 +7081,18 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Use as a cross-check against Random Forest Classification; treat et_conf as a confidence surface for field-verification prioritization. Sharp disagreement between the two ensembles' predictions is worth investigating before trusting either.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading disagreement between the two ensembles.</strong> When Random Forest and Extra Trees disagree on a specific record's predicted class, that record sits near a genuinely ambiguous region of the decision boundary rather than one algorithm simply being "wrong" — such records are good candidates for field verification or for review with SHAP Local Explanation Report to see which fields each model weighted differently.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-rf-classification">Random Forest Classification</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+    <strong>See also:</strong> <a href="#alg-rf-classification">Random Forest Classification</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation Report</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Geurts, P., Ernst, D. &amp; Wehenkel, L.</strong> (2006). "Extremely Randomized Trees." <em>Machine Learning</em> 63(1): 3–42. DOI: <a href="https://doi.org/10.1007/s10994-006-6226-1">10.1007/s10994-006-6226-1</a></p>
+  <p style="margin:4px 0;"><strong>Niculescu-Mizil, A. &amp; Caruana, R.</strong> (2005). "Predicting Good Probabilities with Supervised Learning." <em>Proceedings of the 22nd International Conference on Machine Learning (ICML)</em>, 625–632. DOI: <a href="https://doi.org/10.1145/1102351.1102430">10.1145/1102351.1102430</a></p>
   </div>
 </div>
 </article>
@@ -7051,6 +7118,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>No native feature importance.</strong> Unlike a tree ensemble, SVR's fitted function has no natural decomposition into per-field contributions, especially with a non-linear kernel where the decision surface lives in an implicit transformed space. This tool answers "how well can this be predicted," not "which field matters most" — pair it with a tree-based tool or Permutation Feature Importance (which works for any model, including this one) when the explanatory question matters as much as predictive accuracy.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A training-cost ceiling on large layers.</strong> Solving the SVR quadratic program scales roughly quadratically to cubically with the number of training records, unlike a tree ensemble's near-linear scaling — the practical reason SVR is offered here as one option among several rather than a default. On typical single-district or single-city planning layers (hundreds to a few thousand parcels) this is rarely noticeable; on a province-scale layer with tens of thousands of records, expect training time to grow far faster than the record count, and a tree-based or gradient-boosting engine will usually be the more practical choice regardless of accuracy.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7097,6 +7167,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>Epsilon and C together control smoothness.</strong> A larger epsilon ignores small residuals and produces a simpler, flatter fit; a smaller epsilon fits more closely but risks overfitting noise. Raise C to fit training data more tightly, lower it for a smoother, more regularized fit. Use Random Forest Regression alongside this tool to get feature importances SVR cannot provide.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing a kernel.</strong> Start with Linear when there is reason to expect an approximately monotonic, additive relationship — it is far faster to fit and its coefficients, while not exposed as feature_importances_, at least correspond to a fixed direction of effect per field. Move to RBF specifically when Linear's R2 (or a residual plot) suggests curvature the linear kernel cannot capture; Polynomial is rarely the best choice on planning-scale data and is included mainly for completeness and comparison.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-svc">Support Vector Classification</a> &middot; <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-permutation-importance">Permutation Feature Importance</a>
@@ -7129,6 +7202,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Cortes and Vapnik's (1995) original formulation is a classifier: among all hyperplanes that separate two classes, choose the one maximizing the margin (distance) to the nearest points of either class — a choice that provably minimizes an upper bound on generalization error, not just training error. With the kernel trick, the same margin-maximization logic operates in an implicit, higher-dimensional feature space, letting SVC fit curved boundaries no linear separator could represent. Class probabilities (used here for the confidence field) are estimated via an internal cross-validated calibration step (Platt scaling), which is why fitting an SVC is somewhat more expensive than an equivalently sized Random Forest.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Beyond two classes.</strong> The margin-maximization objective (eq. 1) is inherently a two-class construction; scikit-learn extends it to more than two classes via a one-vs-one scheme, training a separate binary SVC for every pair of classes and combining their votes. With many classes this means fitting \(\binom{k}{2}\) models internally — invisible to the user, but part of why multi-class SVC on a target field with many categories can be noticeably slower to fit than the equivalent Random Forest Classification, which handles any number of classes with a single tree-growing pass.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7172,6 +7248,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Use RBF/Polynomial when classes are not linearly separable, Linear when they roughly are and speed matters. Raise C to fit the training boundary more tightly (risking overfitting near-ambiguous cases), lower it for a wider-margin, more regularized boundary. Pair with Random Forest Classification for feature importances SVC cannot provide.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>svc_conf reflects Platt-scaled calibration, not the raw margin.</strong> Because the confidence field comes from a separate calibration model fit on top of the SVC decision function rather than the margin distance itself, it is somewhat more trustworthy as an actual probability than a raw ensemble vote fraction (Random Forest's rf_conf) — but it is still fit on the same training data being classified, so the same general caution about validating on held-out data (Spatial k-Fold Cross-Validation Evaluator) applies before using svc_conf in a downstream calculation.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-svr">Support Vector Regression</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a>
@@ -7181,6 +7260,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Cortes, C. &amp; Vapnik, V.</strong> (1995). "Support-Vector Networks." <em>Machine Learning</em> 20(3): 273–297. DOI: <a href="https://doi.org/10.1007/BF00994018">10.1007/BF00994018</a></p>
   <p style="margin:4px 0;"><strong>Platt, J.C.</strong> (1999). "Probabilistic Outputs for Support Vector Machines and Comparisons to Regularized Likelihood Methods." <em>Advances in Large Margin Classifiers</em>, 61–74. MIT Press. — Source of the probability calibration used for svc_conf.</p>
+  <p style="margin:4px 0;"><strong>Hsu, C.-W. &amp; Lin, C.-J.</strong> (2002). "A Comparison of Methods for Multiclass Support Vector Machines." <em>IEEE Transactions on Neural Networks</em> 13(2): 415–425. DOI: <a href="https://doi.org/10.1109/72.991427">10.1109/72.991427</a> — Source of the one-vs-one multi-class extension noted above.</p>
   </div>
 </div>
 </article>
@@ -7206,6 +7286,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Histogram binning for speed.</strong> This engine specifically uses scikit-learn's <code>HistGradientBoostingRegressor</code> (inspired by LightGBM's histogram approach), which discretizes continuous features into a fixed number of bins before searching for splits — dramatically reducing split-search cost relative to the classical exact-greedy method, at the price of not exposing a native <code>feature_importances_</code> array the way the tree-ensemble bagging tools in this group do.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why this group offers four boosting engines rather than one.</strong> scikit-learn, XGBoost, LightGBM, and CatBoost all implement the same underlying idea (Friedman's sequential residual-fitting) but differ in split-search strategy, regularization, and tree-growth shape — differences that can matter on a specific dataset in ways that are hard to predict in advance. This engine's specific role is the "no extra install, reasonable default" option: it is the only one of the four that adds no new optional package beyond scikit-learn (already required for most of this group), making it the natural first boosting engine to try before installing XGBoost, LightGBM, or CatBoost specifically to compare.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7250,9 +7333,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>Treat in-sample R2 as an upper bound.</strong> Boosting fits training data more closely than bagging at a given tree count, so the gap between in-sample and cross-validated R2 is typically larger here than for Random Forest. Always confirm with Spatial k-Fold Cross-Validation Evaluator. A high learning rate combined with many boosting rounds is the most common cause of severe overfitting — lower the rate and raise the round count together for a more conservative fit.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Using this engine as the baseline in a four-engine comparison.</strong> Because it needs no extra install, run this engine first and treat its cross-validated score as the baseline to beat before installing XGBoost, LightGBM, or CatBoost — if all four engines land within a small margin of each other (typical on many planning datasets), the extra packages add engineering overhead without a meaningful accuracy gain, and this engine alone may be sufficient going forward.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-reg-xgboost">Gradient Boosting Regression (XGBoost)</a> &middot; <a href="#alg-gbm-reg-lightgbm">Gradient Boosting Regression (LightGBM)</a> &middot; <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+    <strong>See also:</strong> <a href="#alg-gbm-reg-xgboost">Gradient Boosting Regression (XGBoost)</a> &middot; <a href="#alg-gbm-reg-lightgbm">Gradient Boosting Regression (LightGBM)</a> &middot; <a href="#alg-gbm-reg-catboost">Gradient Boosting Regression (CatBoost)</a> &middot; <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7281,6 +7367,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Chen and Guestrin (2016) reformulated Friedman's gradient boosting using a second-order Taylor expansion of the loss (not just the first-order gradient), giving each tree a more precise target and enabling a closed-form optimal leaf-weight formula. XGBoost adds explicit L1/L2 penalties directly into the split-gain criterion, which tends to make it somewhat more resistant to overfitting than a plain first-order implementation at equivalent settings — one reason it became the dominant gradient boosting library in machine-learning competitions in the years following its release.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Second-order information sharpens each tree's target.</strong> A first-order method (like the plain functional gradient descent in Friedman's original formulation) knows only the slope of the loss at the current prediction; XGBoost's use of the Hessian \(h_i\) (eq. 1) additionally captures the loss's curvature, letting the optimal leaf weight (the closed-form minimizer of eq. 1 for a fixed tree structure) be computed directly rather than approximated — in practice this tends to produce a more precisely targeted correction per round, particularly useful when residuals are heteroscedastic (uneven in spread) across the study area.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7325,9 +7414,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   XGBoost's built-in regularization makes it somewhat more overfitting-resistant than the scikit-learn engine at default settings, but always confirm with Spatial k-Fold Cross-Validation Evaluator. Compare against the scikit-learn and LightGBM engines on the same fields; strong cross-engine agreement is reassuring evidence the fit is real rather than engine-specific.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Gain-based importances versus MDI.</strong> This engine's native feature importances are gain-based (the average split-gain improvement attributed to each field), a conceptually different quantity from Random Forest's Mean Decrease in Impurity, though both are commonly read the same way. The two rankings usually agree on the top fields for a well-behaved planning dataset; a sharp disagreement between them is a signal to check Permutation Feature Importance as an unbiased tie-breaker rather than trusting either ranking alone.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-gbm-reg-lightgbm">Gradient Boosting Regression (LightGBM)</a>
+    <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-gbm-reg-lightgbm">Gradient Boosting Regression (LightGBM)</a> &middot; <a href="#alg-gbm-reg-catboost">Gradient Boosting Regression (CatBoost)</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7356,6 +7448,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Most tree-growth algorithms (including the scikit-learn and XGBoost engines above, by default) grow level-wise — expanding every leaf at the current depth before going deeper. Ke et al. (2017) instead grow LightGBM's trees leaf-wise: at each step, split whichever single leaf across the whole tree reduces loss the most, regardless of depth. For a fixed number of leaves this typically reaches lower loss than level-wise growth, but it can also produce deeper, more overfitting-prone trees on small datasets if left unconstrained — the reason this tool exposes Max tree depth as a direct guard rail.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Two further speed techniques, most useful on large layers.</strong> Ke et al. (2017) also introduced Gradient-based One-Side Sampling (GOSS) — keeping all records with large gradients (the ones the ensemble is still fitting poorly) but only a random subsample of small-gradient records for computing each split, since well-fit records contribute little new information — and Exclusive Feature Bundling (EFB), which merges mutually-exclusive sparse fields into a single bundle to reduce the effective feature count during split search. Both techniques matter most on large, high-dimensional tables; on a typical single-district planning layer with a modest field count, LightGBM's practical speed edge over the other engines is usually small, and the leaf-wise growth strategy above is the more consequential difference.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7395,9 +7490,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>The most overfitting-prone engine on small datasets.</strong> Leaf-wise growth fits training data very closely — reduce Max tree depth or lower the learning rate if in-sample R2 looks suspiciously close to 1.0, and always confirm with Spatial k-Fold Cross-Validation Evaluator. LightGBM tends to pull ahead of the other two engines on larger datasets and roughly match them on small single-district planning datasets.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Max tree depth matters more here than for level-wise engines.</strong> Because leaf-wise growth can produce a small number of very deep, narrow branches rather than a broad, shallow tree, Max tree depth is a more load-bearing regularization knob for LightGBM than it is for the scikit-learn or XGBoost engines — when comparing all engines side by side at their default settings, remember that LightGBM's default depth guard is doing more work than the others' to keep the fit conservative.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-gbm-reg-xgboost">Gradient Boosting Regression (XGBoost)</a>
+    <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-gbm-reg-xgboost">Gradient Boosting Regression (XGBoost)</a> &middot; <a href="#alg-gbm-reg-catboost">Gradient Boosting Regression (CatBoost)</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7426,6 +7524,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Friedman's (2001) gradient boosting framework applies to classification via a logistic (or multinomial) loss in place of squared error — each round's tree still fits the negative gradient of the loss with respect to the current ensemble's predictions, now measured on the log-odds scale rather than the raw target scale. As with the regression engine, no native feature importances are exposed by scikit-learn's histogram-based implementation.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why the log-odds scale matters for interpretation.</strong> Because each boosting round fits a residual on the log-odds scale rather than the probability scale, the ensemble's raw score before the final softmax/sigmoid conversion is not itself a probability and is not exposed by this tool — only the final gbm_conf (post-conversion) is. This is a purely mechanical detail of how gradient boosting classification works, but it explains why gbm_conf cannot be decomposed into a simple sum of per-round contributions the way a plain additive regression model's prediction can; SHAP is the tool in this group designed specifically to recover a per-field decomposition from a model like this one.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7465,9 +7566,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   In-sample accuracy is optimistic for the same reason as every boosting engine — confirm with Spatial k-Fold Cross-Validation Evaluator, and watch per-class recall rather than overall accuracy when classes are imbalanced.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Run this engine first.</strong> As with the regression version, this is the zero-extra-install baseline — establish its cross-validated accuracy before installing XGBoost, LightGBM, or CatBoost to see whether the extra engines actually improve on it for this specific dataset.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a>
+    <strong>See also:</strong> <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a> &middot; <a href="#alg-gbm-cls-catboost">Gradient Boosting Classification (CatBoost)</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7494,6 +7598,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
 
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Chen and Guestrin's (2016) second-order boosting formulation (see Gradient Boosting Regression (XGBoost), equations 1–2) applies to classification via the binomial/multinomial deviance loss, with the same explicit L1/L2 leaf-weight regularization built into the split-gain criterion.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Where the second-order advantage shows up most.</strong> The Hessian-informed leaf weights that give XGBoost regression a more precisely targeted correction per round (see the regression entry) matter somewhat differently for classification: because the binomial deviance loss's curvature varies with how confident the current ensemble already is about a record (near-certain predictions have a flatter loss curvature than borderline ones), second-order information lets XGBoost allocate less correction effort to already-confident, easy records and more to borderline ones — a natural fit for planning classification tasks where most records are easy and a genuinely ambiguous minority drive most of the error.
+  </p>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>xgboost.XGBClassifier</code> (<code>core/ml_engines.py::fit_gbm_classifier</code>, engine="xgboost").
@@ -7529,9 +7636,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Confirm accuracy with Spatial k-Fold Cross-Validation Evaluator; watch per-class recall when classes are imbalanced. Compare against the scikit-learn and LightGBM engines for a cross-engine sanity check.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Native importances here are gain-based, not vote fractions.</strong> Unlike Random Forest Classification's Mean Decrease in Impurity, XGBoost's default importances rank fields by average split-gain — conceptually similar but not numerically comparable across engines. When reporting a "top predictive fields" ranking, name which engine and importance type produced it rather than treating the ranking as engine-agnostic.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a>
+    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a> &middot; <a href="#alg-gbm-cls-catboost">Gradient Boosting Classification (CatBoost)</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7558,6 +7668,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
 
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Ke et al.'s (2017) leaf-wise growth strategy (see Gradient Boosting Regression (LightGBM)) applies unchanged to classification, fitting the binomial/multinomial deviance gradient at each round instead of squared error.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Sharper decision boundaries, at an overfitting cost.</strong> Because leaf-wise growth concentrates splitting effort wherever the loss is currently worst, LightGBM classification can carve out sharper, more localized decision boundaries around a small cluster of hard-to-classify records than a level-wise engine growing the same number of leaves — useful when a genuine minority subclass exists, but also the mechanism behind this engine's greater tendency to overfit small training sets if Max tree depth and learning rate are not actively constrained.
+  </p>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>lightgbm.LGBMClassifier</code> (<code>core/ml_engines.py::fit_gbm_classifier</code>, engine="lightgbm").
@@ -7593,14 +7706,164 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   The most overfitting-prone engine on small datasets — reduce Max tree depth or lower the learning rate if in-sample accuracy looks suspiciously close to 1.0, and always confirm with Spatial k-Fold Cross-Validation Evaluator.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A minority-class win here deserves a second check.</strong> If LightGBM notably outperforms the other engines specifically on a rare class's recall, first confirm the improvement survives Spatial k-Fold Cross-Validation Evaluator before treating it as a genuine finding — the same leaf-wise sharpness that can capture a real minority subclass can just as easily memorize a handful of specific minority-class training records.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a>
+    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a> &middot; <a href="#alg-gbm-cls-catboost">Gradient Boosting Classification (CatBoost)</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q. &amp; Liu, T.-Y.</strong> (2017). "LightGBM: A Highly Efficient Gradient Boosting Decision Tree." <em>Advances in Neural Information Processing Systems</em> 30: 3146–3154.</p>
+  </div>
+</div>
+</article>
+
+<!-- Gradient Boosting Regression (CatBoost) -->
+<article class="alg-card" id="alg-gbm-reg-catboost">
+<div class="alg-card-header">
+  <div class="alg-icon">📈</div>
+  <div class="alg-info">
+    <h4>Gradient Boosting Regression (CatBoost)<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">gbm_regression_catboost</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-gbm-reg-catboost" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Gradient Boosting via CatBoost (Prokhorenkova, Gusev, Vorobev, Dorogush &amp; Gulin, NeurIPS 2018): ordered boosting to remove a subtle target-leakage bias present in classical gradient boosting, plus symmetric ("oblivious") trees. Requires the optional <code>catboost</code> package.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Ordered boosting and prediction shift.</strong> In classical gradient boosting (as used by the scikit-learn, XGBoost, and LightGBM engines above), the gradient used to fit tree \(m\) for training example \(i\) is computed from a model, \(F_{m-1}\), that was itself fit using example \(i\)'s own target value in earlier rounds. Prokhorenkova et al. (2018) showed this creates a systematic bias they call <em>prediction shift</em>: the in-sample gradient distribution the trees are fit to is subtly different from the gradient distribution a genuinely new point would produce, inflating in-sample fit quality by a small but real amount. CatBoost's fix, <em>ordered boosting</em>, computes each example's gradient using a model trained only on a random permutation of examples that precede it — effectively simulating out-of-sample gradients during training itself, at the cost of needing several such permutations internally to keep variance manageable.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Symmetric (oblivious) trees.</strong> Where scikit-learn, XGBoost, and LightGBM grow trees whose split choice can differ from node to node at the same depth, CatBoost's default trees are <em>symmetric</em>: every node at a given depth splits on the same feature and threshold. This is a stronger structural constraint — effectively a balanced decision table rather than an arbitrary binary tree — that evaluates faster and acts as an implicit regularizer, at some cost to how tightly any single tree can fit a locally idiosyncratic subregion of the feature space.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Categorical handling not exercised here.</strong> CatBoost's other headline feature — native categorical-field support via leakage-safe ordered target statistics, avoiding manual one-hot or target encoding — is not exercised by this plugin's pipeline, since every tool in this group takes numeric explanatory fields only. What this tool actually adds over the other three GBM engines is exclusively the ordered-boosting and symmetric-tree behavior above.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Additive ensemble after M boosting rounds (as in every GBM engine in this group):</strong></p>
+  $$F_M(x) = \sum_{m=1}^{M} \nu \cdot h_m(x) \tag{1}$$
+  <p style="margin:8px 0;"><strong>Ordered boosting's gradient for example \(i\) at round \(m\) uses a model \(F_{m-1}^{(\sigma_{<i})}\) fit only on examples preceding \(i\) under a random permutation \(\sigma\) of the training set, rather than the full-data model \(F_{m-1}\) every other engine uses:</strong></p>
+  $$\text{grad}_i^{(m)} = -\left[\frac{\partial L\!\left(y_i,\, F_{m-1}^{(\sigma_{<i})}(x_i)\right)}{\partial F_{m-1}^{(\sigma_{<i})}(x_i)}\right] \tag{2}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>catboost.CatBoostRegressor</code> with <code>verbose=False</code> and <code>allow_writing_files=False</code> (<code>core/ml_engines.py::fit_gbm_regressor</code>, engine="catboost"), exposing native, PredictionValuesChange-based feature importances.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Target field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">N_ESTIMATORS</td><td class="param-type">Integer</td><td class="param-default">200</td><td>10–3000</td><td>Number of boosting rounds (CatBoost "iterations")</td></tr>
+      <tr><td class="param-name">LEARNING_RATE</td><td class="param-type">Double</td><td class="param-default">0.1</td><td>0.001–1.0</td><td>Shrinkage per round</td></tr>
+      <tr><td class="param-name">MAX_DEPTH</td><td class="param-type">Integer</td><td class="param-default">6</td><td>0–16 (0=engine default of 6)</td><td>Symmetric tree depth (CatBoost "depth")</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output predictions layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">gbm_pred</td><td class="param-type">Double</td><td>Predicted value</td></tr>
+    <tr><td class="param-name">gbm_resid</td><td class="param-type">Double</td><td>Observed minus predicted</td></tr>
+    <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>CatBoost's overfitting profile differs from a max-depth story alone.</strong> Because symmetric trees are already a strong regularizer, CatBoost at default settings often needs less manual depth-limiting than XGBoost or LightGBM to reach a comparable fit; a first read should still confirm with Spatial k-Fold Cross-Validation Evaluator rather than trusting in-sample R2. Compare fitted values against the other three GBM engines on the same fields — the four engines agreeing closely is stronger evidence the underlying relationship is real than any single engine's fit statistics alone.
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-gbm-reg-xgboost">Gradient Boosting Regression (XGBoost)</a> &middot; <a href="#alg-gbm-reg-lightgbm">Gradient Boosting Regression (LightGBM)</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Prokhorenkova, L., Gusev, G., Vorobev, A., Dorogush, A.V. &amp; Gulin, A.</strong> (2018). "CatBoost: Unbiased Boosting with Categorical Features." <em>Advances in Neural Information Processing Systems</em> 31: 6638–6648.</p>
+  <p style="margin:4px 0;"><strong>Friedman, J.H.</strong> (2001). "Greedy Function Approximation: A Gradient Boosting Machine." <em>Annals of Statistics</em> 29(5): 1189–1232. DOI: <a href="https://doi.org/10.1214/aos/1013203451">10.1214/aos/1013203451</a></p>
+  </div>
+</div>
+</article>
+
+<!-- Gradient Boosting Classification (CatBoost) -->
+<article class="alg-card" id="alg-gbm-cls-catboost">
+<div class="alg-card-header">
+  <div class="alg-icon">📈</div>
+  <div class="alg-info">
+    <h4>Gradient Boosting Classification (CatBoost)<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">gbm_classification_catboost</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-gbm-cls-catboost" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    The classification counterpart of Gradient Boosting Regression (CatBoost): the same ordered-boosting and symmetric-tree machinery, fitting the classification log-loss gradient at each round instead of squared error. Requires the optional <code>catboost</code> package.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Prokhorenkova et al.'s (2018) ordered-boosting mechanism (see Gradient Boosting Regression (CatBoost)) applies unchanged to classification: each example's gradient is estimated from a model trained only on examples preceding it under a random permutation, avoiding the prediction-shift bias that comes from computing a training example's own gradient with a model that has already seen its target. Symmetric trees again act as an implicit regularizer, splitting on the same feature and threshold across an entire depth level.
+  </p>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>catboost.CatBoostClassifier</code> with <code>verbose=False</code> and <code>allow_writing_files=False</code> (<code>core/ml_engines.py::fit_gbm_classifier</code>, engine="catboost").
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Any Field</td><td class="param-default">—</td><td>≥ 2 distinct classes</td><td>Class label field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">N_ESTIMATORS</td><td class="param-type">Integer</td><td class="param-default">200</td><td>10–3000</td><td>Number of boosting rounds (CatBoost "iterations")</td></tr>
+      <tr><td class="param-name">LEARNING_RATE</td><td class="param-type">Double</td><td class="param-default">0.1</td><td>0.001–1.0</td><td>Shrinkage per round</td></tr>
+      <tr><td class="param-name">MAX_DEPTH</td><td class="param-type">Integer</td><td class="param-default">6</td><td>0–16 (0=engine default of 6)</td><td>Symmetric tree depth (CatBoost "depth")</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output classification layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">gbm_class</td><td class="param-type">String</td><td>Predicted class label</td></tr>
+    <tr><td class="param-name">gbm_conf</td><td class="param-type">Double</td><td>Predicted-class probability (0–1)</td></tr>
+    <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  Compare accuracy and confusion-matrix structure against the scikit-learn, XGBoost, and LightGBM engines on the same fields — close agreement across all four engines is reassuring; a CatBoost-specific accuracy jump with no clear explanation is worth double-checking for target leakage before trusting it. Always confirm with Spatial k-Fold Cross-Validation Evaluator, not the in-sample accuracy shown here.
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-gbm-cls-sklearn">Gradient Boosting Classification (scikit-learn)</a> &middot; <a href="#alg-gbm-cls-xgboost">Gradient Boosting Classification (XGBoost)</a> &middot; <a href="#alg-gbm-cls-lightgbm">Gradient Boosting Classification (LightGBM)</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Prokhorenkova, L., Gusev, G., Vorobev, A., Dorogush, A.V. &amp; Gulin, A.</strong> (2018). "CatBoost: Unbiased Boosting with Categorical Features." <em>Advances in Neural Information Processing Systems</em> 31: 6638–6648.</p>
   </div>
 </div>
 </article>
@@ -7626,6 +7889,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>When it is worth the cost.</strong> On the modest single-district or single-city planning datasets typical of this plugin's use, Random Forest Regression or Gradient Boosting Regression usually match or beat an MLP with far easier interpretation and no convergence risk. Reach for this tool specifically when the sample is large and the relationship is expected to be smoothly, highly non-linear in a way tree splits approximate poorly (tree-based models produce axis-aligned step functions, not smooth curves).
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Tabular data specifically favors tree ensembles.</strong> Grinsztajn, Oyallon &amp; Varoquaux (2022) documented, across a wide range of benchmark tabular datasets, that tree-based ensembles like Random Forest and Gradient Boosting continue to outperform neural networks including MLPs — attributing the gap to tabular data's typically irregular, non-smooth target functions and uninformative rotation-sensitive feature spaces, both of which favor axis-aligned tree splits over a smooth network function. This is not a criticism specific to this implementation; it is a documented, general property of the data type this entire plugin operates on, and the reason Random Forest/Gradient Boosting are positioned as the default choices throughout this group rather than this tool.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7669,6 +7935,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   A model that did not converge (see the report's convergence status) should not be trusted — raise Maximum iterations or simplify the hidden-layer sizes. Fewer, smaller layers reduce overfitting risk on modest planning datasets. This tool provides no feature importances; use Permutation Feature Importance for the only available ranking.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Justify reaching for this tool, don't default to it.</strong> Given the documented tabular-data disadvantage above, treat a decision to use MLP Regression over Random Forest/Gradient Boosting as one that needs its own justification (a specific, concrete reason to expect smooth non-linearity, plus a genuinely large sample) rather than trying every tool in the group and keeping whichever number looks best — Spatial k-Fold Cross-Validation Evaluator settles the comparison honestly if that justification is unclear.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-mlp-classification">Neural Network Classification</a> &middot; <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-permutation-importance">Permutation Feature Importance</a>
@@ -7678,6 +7947,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Rumelhart, D.E., Hinton, G.E. &amp; Williams, R.J.</strong> (1986). "Learning Representations by Back-Propagating Errors." <em>Nature</em> 323: 533–536. DOI: <a href="https://doi.org/10.1038/323533a0">10.1038/323533a0</a></p>
   <p style="margin:4px 0;"><strong>Hornik, K., Stinchcombe, M. &amp; White, H.</strong> (1989). "Multilayer Feedforward Networks Are Universal Approximators." <em>Neural Networks</em> 2(5): 359–366. DOI: <a href="https://doi.org/10.1016/0893-6080(89)90020-8">10.1016/0893-6080(89)90020-8</a></p>
+  <p style="margin:4px 0;"><strong>Grinsztajn, L., Oyallon, E. &amp; Varoquaux, G.</strong> (2022). "Why Do Tree-Based Models Still Outperform Deep Learning on Typical Tabular Data?" <em>Advances in Neural Information Processing Systems</em> 35: 507–520.</p>
   </div>
 </div>
 </article>
@@ -7700,6 +7970,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   The same universal-approximation and backpropagation foundations as Neural Network Regression apply here (Rumelhart, Hinton &amp; Williams, 1986; Hornik, Stinchcombe &amp; White, 1989), with a softmax output layer converting the final hidden layer's activations into a proper class-probability distribution and a cross-entropy loss in place of squared error.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  The same tabular-data disadvantage documented for the regression version (Grinsztajn, Oyallon &amp; Varoquaux, 2022) applies to classification as well — on the modest, structured planning datasets this plugin targets, Random Forest Classification or a Gradient Boosting engine will usually match or beat an MLP classifier's accuracy with far less risk of a non-converging fit.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7741,6 +8014,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Prefer this tool only when sample size is large and class boundaries are expected to be smoothly non-linear; otherwise a tree-based classifier will usually match or beat it with far easier interpretation. Check the convergence status before trusting results.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>mlp_conf and calibration.</strong> Like every classifier in this group, mlp_conf's softmax output is not automatically a calibrated probability despite being mathematically a valid probability distribution over classes; a network trained with too few records or too many iterations past convergence can produce overconfident, poorly calibrated softmax outputs. Treat mlp_conf as a relative ranking of confidence across records, and validate accuracy claims with Spatial k-Fold Cross-Validation Evaluator rather than the raw in-sample confidence values.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-mlp-regression">Neural Network Regression</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a>
@@ -7749,6 +8025,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Rumelhart, D.E., Hinton, G.E. &amp; Williams, R.J.</strong> (1986). "Learning Representations by Back-Propagating Errors." <em>Nature</em> 323: 533–536. DOI: <a href="https://doi.org/10.1038/323533a0">10.1038/323533a0</a></p>
+  <p style="margin:4px 0;"><strong>Grinsztajn, L., Oyallon, E. &amp; Varoquaux, G.</strong> (2022). "Why Do Tree-Based Models Still Outperform Deep Learning on Typical Tabular Data?" <em>Advances in Neural Information Processing Systems</em> 35: 507–520.</p>
   </div>
 </div>
 </article>
@@ -7773,14 +8050,21 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <strong>Why random CV lies to you on spatial data.</strong> Standard k-fold cross-validation assumes training and held-out records are independent draws from the same distribution. Planning data almost never satisfies this: Tobler's (1970) first law of geography — "everything is related to everything else, but near things are more related than far things" — means a randomly shuffled fold's test points are frequently right next to training points, letting the model implicitly "see" local information it should not have access to, and inflating the reported score. Roberts et al. (2017) formalize this concern across ecological and spatial modeling and recommend block-structured cross-validation specifically to remove it.
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
-  <strong>Spatial blocking via K-Means on coordinates.</strong> This tool groups records into <em>k</em> spatially contiguous blocks by running K-Means clustering directly on feature centroid coordinates (not on the model's explanatory fields) — a simple, widely used way to approximate the spatial block-CV designs described in the environmental and ecological cross-validation literature without requiring the analyst to hand-draw block boundaries.
+  <strong>Spatial blocking via K-Means on coordinates.</strong> This tool's default fold method groups records into <em>k</em> spatially contiguous blocks by running K-Means clustering directly on feature centroid coordinates (not on the model's explanatory fields) — a simple, widely used way to approximate the spatial block-CV designs described in the environmental and ecological cross-validation literature without requiring the analyst to hand-draw block boundaries.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>kNNDM: matching the CV design to the true prediction task, not just geographic compactness.</strong> K-Means blocking optimizes for tidy, compact folds, but says nothing about whether the resulting train/test distances actually resemble the distances a real deployment will face. Linnenbrink, Milà, Ludwig &amp; Meyer (2024) introduced k-fold Nearest-Neighbour Distance Matching (kNNDM) to close that gap directly: rather than choosing folds for compactness, kNNDM searches among many candidate fold assignments for the one whose test-to-nearest-training-point distance distribution most closely matches the dataset's own leave-one-out nearest-neighbour distance distribution — the distances a genuinely new prediction location would actually face. A close match (small Wasserstein distance between the two distributions) indicates the cross-validation design itself is well-matched to the deployment scenario; K-Means blocking optimizes a different, purely geometric objective and can produce folds that look tidy on a map while still not matching this criterion well.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Fold assignment follows ordinary K-Means (see Multivariate Clustering) applied to centroid coordinates \((x_i, y_i)\) rather than attribute fields. For each fold \(f \in \{1,\dots,k\}\), the chosen model is refit on all records outside fold \(f\) and scored (R2 for regression, accuracy and macro-F1 for classification) on the held-out fold; the reported result is the mean and standard deviation of that score across all \(k\) folds.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Fold assignment (K-Means spatial block) follows ordinary K-Means (see Multivariate Clustering) applied to centroid coordinates \((x_i, y_i)\) rather than attribute fields. For each fold \(f \in \{1,\dots,k\}\), the chosen model is refit on all records outside fold \(f\) and scored (R2 for regression, accuracy and macro-F1 for classification) on the held-out fold; the reported result is the mean and standard deviation of that score across all \(k\) folds.</p>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>kNNDM's selection criterion (\(G_j\) = leave-one-out nearest-neighbour distance distribution of the full dataset; \(G_{cv}\) = the candidate fold assignment's induced test-to-train nearest-neighbour distance distribution; \(W\) = 1-Wasserstein distance):</strong></p>
+  $$\text{fold assignment}^{*} = \arg\min_{\text{assignment}} \; W\!\left(G_j,\, G_{cv}(\text{assignment})\right) \tag{1}$$
+  </div>
 
   <div class="acad-note">
-  <strong>Implementation note.</strong> Implemented in <code>core/ml_engines.py::spatial_kfold_evaluate</code>/<code>spatial_kfold_assignment</code>. The output layer's cv_fold field lets the analyst map the block layout directly; a fold with a markedly lower score than the others often corresponds to a spatially distinct subregion the model handles poorly, visible immediately once mapped.
+  <strong>Implementation note.</strong> Implemented in <code>core/ml_engines.py::spatial_kfold_evaluate</code>/<code>spatial_kfold_assignment</code> (K-Means block) and <code>spatial_knndm_assignment</code> (kNNDM). The kNNDM implementation is a practical Python port of the paper's kmeans-clustering variant — an overclustered partition is merged into <em>k</em> folds via many candidate KMeans groupings of different random seeds, keeping whichever candidate's \(G_{cv}\)/\(G_j\) mismatch is smallest, subject to a maximum-fold-size guard — not a byte-for-byte port of the CAST R package's exact search procedure. It costs more compute than K-Means blocking (many candidate fold assignments are evaluated) and can produce less visually tidy blocks on the map. The output layer's cv_fold field lets the analyst map the block layout directly regardless of which fold method was used; a fold with a markedly lower score than the others often corresponds to a spatially distinct subregion the model handles poorly, visible immediately once mapped.
   </div>
 
   <h5>3. Parameters</h5>
@@ -7793,6 +8077,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
       <tr><td class="param-name">TASK_TYPE</td><td class="param-type">Enum</td><td class="param-default">Regression</td><td>Regression / Classification</td><td>Prediction task type</td></tr>
       <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Random Forest</td><td>RF / Extra Trees / GBM(sklearn) / SVM / MLP</td><td>Model to evaluate</td></tr>
       <tr><td class="param-name">N_FOLDS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>2–20</td><td>Number of spatial folds</td></tr>
+      <tr><td class="param-name">FOLD_METHOD</td><td class="param-type">Enum</td><td class="param-default">K-Means spatial block</td><td>K-Means spatial block / kNNDM</td><td>How folds are assigned (see above)</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output layer with fold assignment</td></tr>
     </tbody>
   </table>
@@ -7811,9 +8096,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>Report this score, not the fitting tool's in-sample score.</strong> A large standard deviation across folds means performance is uneven across the study area — check whether one region has systematically different data quality or a different underlying process. Choose Number of folds based on data size: 5 is a reasonable default, fewer (3) for smaller datasets, more (10) only with several hundred records or more.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing a fold method.</strong> K-Means spatial block is faster and produces a fold layout that reads cleanly on a map — a reasonable default, and useful when the cv_fold breakdown itself is being interpreted as a simple regional split. Prefer kNNDM specifically when the honesty of the reported score matters more than a clean block map — for example, before reporting a cross-validated accuracy figure in a document that will inform a funding or zoning decision — since its fold assignment is chosen to match the actual out-of-sample prediction task rather than for geographic tidiness.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-ml-model-comparison">ML Model Comparison</a> &middot; <a href="#alg-rf-regression">Random Forest Regression</a>
+    <strong>See also:</strong> <a href="#alg-ml-model-comparison">ML Model Comparison</a> &middot; <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-conformal-prediction">Conformal Prediction Interval</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7821,6 +8109,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <p style="margin:4px 0;"><strong>Roberts, D.R. et al.</strong> (2017). "Cross-Validation Strategies for Data with Temporal, Spatial, Hierarchical, or Phylogenetic Structure." <em>Ecography</em> 40(8): 913–929. DOI: <a href="https://doi.org/10.1111/ecog.02881">10.1111/ecog.02881</a></p>
   <p style="margin:4px 0;"><strong>Tobler, W.R.</strong> (1970). "A Computer Movie Simulating Urban Growth in the Detroit Region." <em>Economic Geography</em> 46(sup1): 234–240. DOI: <a href="https://doi.org/10.2307/143141">10.2307/143141</a> — Source of the "first law of geography" motivating spatial blocking.</p>
   <p style="margin:4px 0;"><strong>Pohjankukka, J., Pahikkala, T., Nevalainen, P. &amp; Heikkonen, J.</strong> (2017). "Estimating the Prediction Performance of Spatial Models via Spatial k-Fold Cross Validation." <em>International Journal of Geographical Information Science</em> 31(10): 2001–2019. DOI: <a href="https://doi.org/10.1080/13658816.2017.1346255">10.1080/13658816.2017.1346255</a></p>
+  <p style="margin:4px 0;"><strong>Linnenbrink, J., Milà, C., Ludwig, M. &amp; Meyer, H.</strong> (2024). "kNNDM CV: A k-Fold Nearest-Neighbour Distance Matching Cross-Validation Algorithm for Map Accuracy Estimation." <em>Geoscientific Model Development</em> 17(3): 1425–1441. DOI: <a href="https://doi.org/10.5194/gmd-17-1425-2024">10.5194/gmd-17-1425-2024</a></p>
   </div>
 </div>
 </article>
@@ -7843,6 +8132,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Breiman's (2001) Random Forest paper introduced permutation importance alongside mean-decrease-in-impurity importance as an alternative, model-internal measure computed from out-of-bag samples. Fisher, Rudin and Dominici (2019) later generalized the idea into a fully model-agnostic procedure — "Model Class Reliance" — applicable to any fitted predictor regardless of its internal structure, which is the version this tool implements: fit once on the full data, then repeatedly shuffle each field in turn and measure the resulting score drop, averaged over several repeats to control for the randomness the shuffling itself introduces.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Correlated fields split credit, they do not hide it.</strong> When two explanatory fields are strongly correlated, shuffling either one alone leaves the other largely able to substitute for the information lost — the model's score barely drops for either field individually, even though the pair jointly matters a great deal. This is a well-documented property of permutation importance (and of Mean Decrease in Impurity), not a bug in this implementation: a low importance score for two correlated fields considered separately does not mean the underlying concept they both measure is unimportant, only that no single one of them is uniquely necessary once the other is present. Checking a correlation matrix (Data Readiness Audit reports one) before interpreting a surprisingly low importance score is good practice.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -7875,6 +8167,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   A wide standard deviation across repeats means the estimate is itself noisy — raise Number of repeats. A near-zero or negative importance means the model did not rely on that field; consider dropping it and checking whether the remaining ranking stays stable. This tool does not cross-validate — pair with Spatial k-Fold Cross-Validation Evaluator for an honest accuracy figure alongside the ranking.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When to prefer this over MDI or gain-based native importances.</strong> Use Permutation Feature Importance whenever the model in question either has no native importance (SVM, MLP) or when a native importance ranking (Random Forest's MDI, XGBoost's gain) is suspected of being biased — for example, toward high-cardinality continuous fields. Because it directly measures score degradation on the metric the analyst actually cares about (R2 or accuracy), it is the most defensible ranking to present when the audience will ask "why should I trust this ranking."
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-shap-global">SHAP Global Feature Importance</a> &middot; <a href="#alg-partial-dependence">Partial Dependence Report</a>
@@ -7910,6 +8205,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>The correlated-features caveat.</strong> Partial dependence assumes the swept field is reasonably independent of the other explanatory fields. When it is strongly correlated with another selected field, the curve evaluates combinations of values that may never actually occur together in reality, which can produce a misleading shape — a limitation Friedman himself notes and one Goldstein et al.'s (2015) Individual Conditional Expectation (ICE) extension was designed to help diagnose by showing per-record curves instead of only their average.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Complementary to, not redundant with, SHAP.</strong> Partial dependence and SHAP Spatial Attribution Map both describe a field's effect, but at different resolutions: this tool answers "on average across the whole study area, how does the outcome change as this field changes," a single curve; SHAP's spatial map answers "at this specific location, how much did this field push the prediction," a per-record value that can and does vary by location even for the same field value, once interactions with other fields are accounted for. A field can show a strongly increasing partial dependence curve overall while still having sharply different SHAP contributions in different subregions — the two views genuinely answer different questions and are best read together, not as alternatives to pick one from.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
@@ -7942,6 +8240,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Read the curve's shape (increasing, decreasing, U-shaped, plateauing) as the field's marginal relationship with the outcome, not as a causal claim. Check correlations between explanatory fields before trusting the curve if the swept field is likely correlated with another selected field. A flat curve means the model's predictions barely change with this field once the other fields are already in the model — not necessarily that the field is unrelated to the outcome on its own.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A non-monotonic (U-shaped or hump-shaped) curve is itself a finding.</strong> Unlike a linear regression coefficient, which forces a single constant direction of effect, a tree-based or boosting model's partial dependence curve can show the outcome first falling then rising (or the reverse) across a field's range — a genuine non-linear planning relationship (e.g. transit accessibility helping up to a point before a different effect like congestion offsets it) that OLS or GLR would report as a weak, washed-out linear coefficient. A curve like this is a specific, concrete reason to prefer a non-linear model over a linear one for the outcome in question.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation</a>
@@ -7972,7 +8273,10 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
 
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
-  Model selection by cross-validated score comparison is standard machine-learning practice (Hastie, Tibshirani &amp; Friedman, 2009, Ch. 7); this tool applies it specifically with the spatially blocked folds from Spatial k-Fold Cross-Validation Evaluator, so the comparison inherits the same protection against spatial-autocorrelation leakage rather than comparing models on an optimistic, randomly-shuffled score. Only the scikit-learn Gradient Boosting engine is included in the comparison (no xgboost/lightgbm dependency required just to see which model FAMILY wins) — once boosting wins, the dedicated Gradient Boosting tools offer the XGBoost and LightGBM engines for the final fit.
+  Model selection by cross-validated score comparison is standard machine-learning practice (Hastie, Tibshirani &amp; Friedman, 2009, Ch. 7); this tool applies it specifically with the spatially blocked folds from Spatial k-Fold Cross-Validation Evaluator, so the comparison inherits the same protection against spatial-autocorrelation leakage rather than comparing models on an optimistic, randomly-shuffled score. Only the scikit-learn Gradient Boosting engine is included in the comparison (no xgboost/lightgbm dependency required just to see which model FAMILY wins) — once boosting wins, the dedicated Gradient Boosting tools offer the XGBoost, LightGBM, and CatBoost engines for the final fit.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why a leaderboard is a safer starting point than picking a favorite model.</strong> It is tempting to always reach for whichever model performed best on a previous, unrelated dataset — but the "no free lunch" observation in machine learning (Wolpert &amp; Macready, 1997) is precisely that no single model dominates across all problems; which family wins depends on the specific data-generating process behind each dataset. Running this leaderboard at the start of any new predictive analysis, rather than assuming Random Forest (or any other favorite) will win again, costs little relative to the risk of quietly leaving accuracy on the table with an unjustified default choice.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -8002,6 +8306,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   A leaderboard where every model scores within one standard deviation of each other means model choice barely matters for this dataset — in that case, prefer the simplest or most interpretable option (Random Forest) over a marginally higher-ranked but harder-to-explain one. A winning model that leads the runner-up by more than its own standard deviation is a reasonably clear result.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The leaderboard picks a family, not a final production model.</strong> Once a family wins (say, Gradient Boosting), still run the dedicated tool for that family with its own engine choice (scikit-learn/XGBoost/LightGBM/CatBoost), hyperparameter tuning, and full diagnostic report (residual autocorrelation check, SHAP explanation) rather than treating the leaderboard's built-in default settings as the finished analysis — this tool is a fast screening step, not a substitute for the fuller workflow the winning model's dedicated tool provides.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
@@ -8010,6 +8317,7 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Hastie, T., Tibshirani, R. &amp; Friedman, J.</strong> (2009). <em>The Elements of Statistical Learning</em> (2nd ed.), Ch. 7. New York: Springer. DOI: <a href="https://doi.org/10.1007/978-0-387-84858-7">10.1007/978-0-387-84858-7</a></p>
+  <p style="margin:4px 0;"><strong>Wolpert, D.H. &amp; Macready, W.G.</strong> (1997). "No Free Lunch Theorems for Optimization." <em>IEEE Transactions on Evolutionary Computation</em> 1(1): 67–82. DOI: <a href="https://doi.org/10.1109/4235.585893">10.1109/4235.585893</a></p>
   </div>
 </div>
 </article>
@@ -8035,6 +8343,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Why this over Permutation Feature Importance.</strong> Permutation importance answers "how much does the model's overall SCORE drop if this field is scrambled" — a useful but coarser question than SHAP's "how much did this field contribute to THIS prediction, fairly accounting for interactions with other fields." Averaging SHAP's per-record, per-field contributions gives a global ranking, but the same underlying values also support the per-record map (SHAP Spatial Attribution Map) and single-record breakdown (SHAP Local Explanation Report) this ranking alone cannot provide.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Approximated, not exact, for non-tree models.</strong> The efficiency axiom (eq. 2) holds exactly for TreeExplainer's output; for the black-box SVM/MLP path, SHAP values are estimated by sampling coalitions rather than computed via the tree-structure shortcut, so they carry sampling variance and the additivity in equation 2 holds only approximately. Explainable Boosting Machine Regression/Classification offers a genuinely exact, sampling-free alternative to this tool specifically for its own glass-box model family, at the cost of applying only to that one model rather than to any model in this group the way SHAP does.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -8072,9 +8383,12 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   A ranking based on a small subsample (n_explained well below the complete-record count) carries more noise — raise Max rows to explain if runtime allows. Ranking disagreement with Permutation Feature Importance on the same fields is worth investigating rather than dismissing either result. Follow up with SHAP Spatial Attribution Map to see where each field's contribution is concentrated geographically.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing between SHAP and EBM for explanation.</strong> If the underlying model is one of Random Forest, Extra Trees, Gradient Boosting, SVM, or MLP, SHAP is the only exact-or-near-exact explanation tool available for it in this group. If interpretability is the primary goal and the small accuracy trade-off is acceptable, fitting Explainable Boosting Machine Regression/Classification directly instead — rather than fitting a black-box model and then explaining it with SHAP — sidesteps the approximation question entirely.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation</a> &middot; <a href="#alg-permutation-importance">Permutation Feature Importance</a>
+    <strong>See also:</strong> <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation</a> &middot; <a href="#alg-permutation-importance">Permutation Feature Importance</a> &middot; <a href="#alg-ebm-regression">Explainable Boosting Machine Regression</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -8147,6 +8461,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>Symbolize one field at a time.</strong> Each record's prediction equals shap_base plus the sum of ALL its shap_&lt;field&gt; values — trying to read several mapped fields together defeats the purpose of the decomposition. Use a diverging ramp centered on zero. Cross-check a striking spatial pattern with Model Residual Spatial Autocorrelation Check to confirm the underlying model has not simply left unexplained spatial structure that happens to correlate with the mapped field.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A mapped SHAP pattern describes the model, not necessarily causation.</strong> A clean spatial gradient in shap_road_density, for instance, shows that the fitted model relies on road_density differently across the study area — it does not by itself establish that road density causally drives the outcome in those areas, since the model may be picking up a genuine causal effect, a confound correlated with road density, or an artifact of how the training data happened to be distributed. Treat a striking mapped pattern as a strong lead for further investigation (a targeted OLS/GWR check on the pattern's subregion, or domain knowledge review) rather than a finished causal claim.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-shap-global">SHAP Global Feature Importance</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation</a> &middot; <a href="#alg-model-residual-autocorr">Model Residual Spatial Autocorrelation Check</a>
@@ -8179,6 +8496,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   This is the same additive decomposition (equation 2, SHAP Global Feature Importance) as the other two SHAP tools, applied to a single targeted record instead of a sample or the full dataset — the canonical "waterfall" presentation of a SHAP explanation from Lundberg and Lee's (2017) original paper, where each field's bar shows how much it pushed the prediction above or below the average, in order from largest to smallest contribution.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The natural companion to DiCE Counterfactual Explanation, not a substitute for it.</strong> This tool answers "what drove this record's prediction" — a backward-looking, attribution question. DiCE Counterfactual Explanation (classification targets only) answers the forward-looking complement: "what would need to change for a different outcome." Running both on the same record gives a complete picture: this tool identifies which fields the model currently leans on, and DiCE shows whether nudging those same fields (or different ones entirely) would actually flip the outcome — the two do not always agree, and when they disagree it usually means the record sits in a region where the model's decision boundary is shaped by field interactions this single-record SHAP breakdown does not fully expose on its own.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Identical to equations 1–2 in SHAP Global Feature Importance, evaluated at a single record \(x_i\) and reported in full rather than averaged or aggregated.</p>
@@ -8208,14 +8528,251 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Positive contributions push the prediction up (or toward the explained class); negative push it down (or away). Use after SHAP Spatial Attribution Map or the Identify tool points to a specific feature worth understanding — an outlier prediction, a surprising high-confidence classification, or a record a stakeholder is asking about specifically.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Explaining a stakeholder-facing decision.</strong> When a specific record's prediction needs to be defended to a stakeholder (why was this parcel flagged, why was this district scored the way it was), this tool's ranked, signed field list is the most direct artifact this plugin can produce for that conversation — far more concrete than a global importance ranking, which cannot speak to any one record specifically. Pair with the actual field values for that record (visible in the attribute table) so each SHAP contribution can be read alongside the underlying number that produced it.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-partial-dependence">Partial Dependence Report</a>
+    <strong>See also:</strong> <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-partial-dependence">Partial Dependence Report</a> &middot; <a href="#alg-dice-counterfactual">DiCE Counterfactual Explanation</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Lundberg, S.M. &amp; Lee, S.-I.</strong> (2017). "A Unified Approach to Interpreting Model Predictions." <em>Advances in Neural Information Processing Systems</em> 30: 4765–4774.</p>
+  <p style="margin:4px 0;"><strong>Mothilal, R.K., Sharma, A. &amp; Tan, C.</strong> (2020). "Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations." <em>Proceedings of the 2020 ACM Conference on Fairness, Accountability, and Transparency (FAT*)</em>, 607–617. DOI: <a href="https://doi.org/10.1145/3351095.3372850">10.1145/3351095.3372850</a> — Source of the counterfactual companion tool noted above.</p>
+  </div>
+</div>
+</article>
+
+<!-- DiCE Counterfactual Explanation -->
+<article class="alg-card" id="alg-dice-counterfactual">
+<div class="alg-card-header">
+  <div class="alg-icon">🔀</div>
+  <div class="alg-info">
+    <h4>DiCE Counterfactual Explanation<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">dice_counterfactual_explanation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-dice-counterfactual" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Searches for the smallest, most diverse field changes to one specific record that would flip a classifier's predicted class — Diverse Counterfactual Explanations (Mothilal, Sharma &amp; Tan, ACM FAT* 2020). The action-oriented complement to SHAP Local Explanation's "what drove this" view: "what would have to be different."
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Feature attribution versus recourse.</strong> SHAP Local Explanation Report decomposes an existing prediction into per-field contributions — a backward-looking account of what the model already did. Counterfactual explanation, introduced as a legal and technical framing by Wachter, Mittelstadt &amp; Russell (2017, "Counterfactual Explanations Without Opening the Black Box"), asks a forward-looking, action-oriented question instead: what is the smallest change to this specific record's fields that would have produced a different, desired outcome? For a parcel classified as unlikely to redevelop, that answer is directly actionable in a way a SHAP contribution ranking alone is not — it names a concrete lever, not just a cause.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Diversity, not just proximity.</strong> A single nearest counterfactual can be misleading — it may happen to move a field that is not actually changeable in practice, when another, equally minimal counterfactual moving a different field would have worked just as well. Mothilal, Sharma &amp; Tan (2020) formalized this by optimizing for a <em>set</em> of counterfactuals simultaneously, trading off three objectives: each counterfactual must (a) actually flip the prediction to the desired class, (b) stay close to the original record (proximity — small, plausible edits), and (c) stay far from the <em>other</em> counterfactuals in the set (diversity — different edits, so the set as a whole surveys distinct, independent levers rather than trivial variations on one).
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Actionability via immutability constraints.</strong> Not every field a model uses can genuinely be changed by a planning decision — a parcel's legal zoning code or a fixed lot-geometry attribute is not a lever, even if the model finds it predictive. This tool's Immutable fields parameter removes such fields from the search entirely, so every field named in a returned counterfactual is, by construction, one the analyst chose to treat as changeable.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>DiCE's joint objective over a set of \(k\) candidate counterfactuals \(\{c_1,\ldots,c_k\}\) for query point \(x\), desired class \(y^*\) (\(\lambda_1,\lambda_2\) balance the three terms):</strong></p>
+  $$\min_{c_1,\ldots,c_k} \; \frac{1}{k}\sum_{i=1}^{k} \text{yloss}(f(c_i), y^*) \;+\; \frac{\lambda_1}{k}\sum_{i=1}^{k} \text{dist}(c_i, x) \;-\; \lambda_2\, \text{dpp\_diversity}(c_1,\ldots,c_k) \tag{1}$$
+  <p style="margin:8px 0;"><strong>Diversity term, a determinantal-point-process style measure over the pairwise distance kernel \(K_{ij} = 1/(1+\text{dist}(c_i,c_j))\) (larger when counterfactuals are more spread out):</strong></p>
+  $$\text{dpp\_diversity} = \det(K) \tag{2}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>dice_ml</code>'s random-sampling method (<code>core/ml_engines.py::fit_dice_counterfactuals</code>) around whichever classifier from this group's Model parameter is selected, fit fresh on the layer's complete records. Immutable fields are removed from <code>dice_ml</code>'s <code>features_to_vary</code> list entirely, not merely penalized, so they cannot appear changed in any returned counterfactual.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Any Field</td><td class="param-default">—</td><td>≥ 2 distinct classes</td><td>Class label field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Random Forest</td><td>Any Group 06 CV model</td><td>Classifier to explain</td></tr>
+      <tr><td class="param-name">FEATURE_ID</td><td class="param-type">Integer</td><td class="param-default">0</td><td>Must be a complete record</td><td>QGIS feature ID to explain</td></tr>
+      <tr><td class="param-name">DESIRED_CLASS</td><td class="param-type">String</td><td class="param-default">blank</td><td>Required if &gt; 2 classes</td><td>Target class label (blank = "the other class" for binary targets)</td></tr>
+      <tr><td class="param-name">N_COUNTERFACTUALS</td><td class="param-type">Integer</td><td class="param-default">4</td><td>1–20</td><td>Number of diverse counterfactuals to return</td></tr>
+      <tr><td class="param-name">IMMUTABLE_FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">none</td><td>Subset of FEATURES</td><td>Fields excluded from the search entirely</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  This tool produces an HTML report only (no output vector layer, since it explains one record, not the whole layer): for each of the N_COUNTERFACTUALS returned, the fields that changed, their original and counterfactual values, and the class the counterfactual would produce.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>A counterfactual is only as trustworthy as the classifier behind it.</strong> Cross-check the chosen Model's cross-validated accuracy (Spatial k-Fold Cross-Validation Evaluator) before treating any counterfactual as a real planning lever — a counterfactual generated from an inaccurate model is not a reliable recommendation, however small the suggested edit looks.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading the returned set as a whole, not just the first result.</strong> If every one of the N_COUNTERFACTUALS proposes changing the same one or two fields, that convergence is itself informative — those fields likely matter most for this record's classification. If the set instead disagrees sharply about which fields to move, treat the model's decision boundary near this record as genuinely ambiguous rather than picking one counterfactual as "the" answer.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-shap-local">SHAP Local Explanation Report</a> &middot; <a href="#alg-partial-dependence">Partial Dependence Report</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Mothilal, R.K., Sharma, A. &amp; Tan, C.</strong> (2020). "Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations." <em>Proceedings of the 2020 ACM Conference on Fairness, Accountability, and Transparency (FAT*)</em>, 607–617. DOI: <a href="https://doi.org/10.1145/3351095.3372850">10.1145/3351095.3372850</a></p>
+  <p style="margin:4px 0;"><strong>Wachter, S., Mittelstadt, B. &amp; Russell, C.</strong> (2017). "Counterfactual Explanations Without Opening the Black Box: Automated Decisions and the GDPR." <em>Harvard Journal of Law &amp; Technology</em> 31(2): 841–887.</p>
+  </div>
+</div>
+</article>
+
+<!-- Explainable Boosting Machine Regression (EBM) -->
+<article class="alg-card" id="alg-ebm-regression">
+<div class="alg-card-header">
+  <div class="alg-icon">⚖️</div>
+  <div class="alg-info">
+    <h4>Explainable Boosting Machine Regression (EBM)<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">ebm_regression</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-ebm-regression" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Fits a glass-box generalized additive model (Lou, Caruana &amp; Gehrke, KDD 2012; Microsoft's InterpretML implementation) whose per-field contribution to every prediction is exact — read directly off the fitted model, not approximated by sampling the way SHAP explains a black-box model. Requires the optional <code>interpret</code> package.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Generalized additive models, learned by boosting.</strong> A classical generalized additive model (GAM; Hastie &amp; Tibshirani, 1990) writes the prediction as a sum of independent per-field shape functions, \(F(x) = \beta_0 + \sum_j f_j(x_j)\) — fully additive, so each field's effect can be plotted and read in isolation, unlike a tree ensemble's interacting splits. Lou, Caruana &amp; Gehrke (2012) showed each \(f_j\) can be learned by gradient boosting itself: fit one shallow tree per field per round, cycling round-robin across all fields with a very low learning rate, so no single field's shape function races ahead and locks in before the others are fit. The result keeps a GAM's full interpretability while matching much of the accuracy of an uninterpretable ensemble on many tabular problems — Random Forest and Gradient Boosting effectively trade a GAM's transparency for the added flexibility of splits that combine fields; EBM keeps the transparency by construction and lets the round-robin boosting procedure recover as much of that missing flexibility as an additive structure allows.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Exact contributions, not sampled ones.</strong> Because the fitted model literally is a sum of per-field functions, \(\hat{y} = \beta_0 + \sum_j f_j(x_j)\), the contribution of field \(j\) to any single prediction is simply \(f_j(x_j)\) — a direct table lookup, computed once at fit time. SHAP, by contrast, must approximate a Shapley-value decomposition of an arbitrary opaque model via Monte Carlo sampling over feature coalitions, which is powerful (it works on any model) but is fundamentally an estimate with sampling variance. EBM's contributions carry no such variance; the same input always yields the same exact contribution.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Interactions disabled by design in this tool.</strong> EBM's full form (GA2M) also supports a small number of automatically-selected pairwise interaction terms, \(f_{jk}(x_j, x_k)\), which typically improve accuracy further. This tool disables them (interactions=0) so every model term maps 1:1 onto an explanatory field — keeping the exported per-record ebm_&lt;field&gt; columns unambiguous, at the cost of the small accuracy gain interactions would otherwise add.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Fully additive prediction (intercept \(\beta_0\) plus one shape function per field):</strong></p>
+  $$\hat{y} = \beta_0 + \sum_{j=1}^{p} f_j(x_j) \tag{1}$$
+  <p style="margin:8px 0;"><strong>Each \(f_j\) is itself a sum of shallow boosted trees fit only on field \(j\), across \(M\) round-robin cycles (\(\nu\)=learning rate):</strong></p>
+  $$f_j(x_j) = \sum_{m=1}^{M} \nu \cdot h_{j,m}(x_j) \tag{2}$$
+  <p style="margin:8px 0;"><strong>Exact contribution of field \(j\) to prediction \(i\), reported directly as ebm_&lt;field&gt;:</strong></p>
+  $$\text{contrib}_{i,j} = f_j(x_{i,j}) \tag{3}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>interpret.glassbox.ExplainableBoostingRegressor</code> with <code>interactions=0</code>; per-record contributions are read via the model's <code>explain_local()</code> API (<code>core/ml_engines.py::fit_ebm_regressor</code>). ebm_intercept plus the sum of the ebm_&lt;field&gt; columns for a record exactly reconstructs ebm_pred.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Target field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output predictions and exact contributions layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">ebm_pred</td><td class="param-type">Double</td><td>Predicted value</td></tr>
+    <tr><td class="param-name">ebm_resid</td><td class="param-type">Double</td><td>Observed minus predicted</td></tr>
+    <tr><td class="param-name">ebm_intercept</td><td class="param-type">Double</td><td>Model base value (constant across records)</td></tr>
+    <tr><td class="param-name">ebm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
+    <tr><td class="param-name">ebm_&lt;field&gt;</td><td class="param-type">Double</td><td>Exact contribution of that field to this record's prediction (one column per explanatory field)</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Map an ebm_&lt;field&gt; column directly instead of running a separate SHAP tool.</strong> Because the contribution is exact and additive, mapping ebm_transit_score (for example) shows precisely where that field pushed predictions up or down across the study area — the same use case as SHAP Spatial Attribution Map, but without SHAP's sampling approximation or the need to fit a second model.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When EBM underperforms a full-interaction engine.</strong> If R2 here is notably lower than Gradient Boosting Regression on the same fields, the gap is a direct, quantified estimate of how much this dataset's relationship depends on interactions between fields — information the interactions-disabled EBM cannot represent by construction. A large gap is itself a useful finding: it means no purely additive model, however well-fit, can fully describe this outcome.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-shap-global">SHAP Global Feature Importance</a> &middot; <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Lou, Y., Caruana, R. &amp; Gehrke, J.</strong> (2012). "Intelligible Models for Classification and Regression." <em>Proceedings of the 18th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining</em>, 150–158. DOI: <a href="https://doi.org/10.1145/2339530.2339556">10.1145/2339530.2339556</a></p>
+  <p style="margin:4px 0;"><strong>Hastie, T. &amp; Tibshirani, R.</strong> (1990). <em>Generalized Additive Models.</em> London: Chapman &amp; Hall. ISBN 0-412-34390-8</p>
+  <p style="margin:4px 0;"><strong>Nori, H., Jenkins, S., Koch, P. &amp; Caruana, R.</strong> (2019). "InterpretML: A Unified Framework for Machine Learning Interpretability." <em>arXiv:1909.09223</em>.</p>
+  </div>
+</div>
+</article>
+
+<!-- Explainable Boosting Machine Classification (EBM) -->
+<article class="alg-card" id="alg-ebm-classification">
+<div class="alg-card-header">
+  <div class="alg-icon">⚖️</div>
+  <div class="alg-info">
+    <h4>Explainable Boosting Machine Classification (EBM)<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">ebm_classification</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-ebm-classification" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    The classification counterpart of Explainable Boosting Machine Regression: the same glass-box additive model and exact-contribution mechanism, here predicting a binary class as a sum of per-field log-odds contributions. Requires the optional <code>interpret</code> package.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Lou, Caruana &amp; Gehrke's (2012) additive-boosting mechanism (see Explainable Boosting Machine Regression) applies to classification via a logistic link: the model is additive on the log-odds scale, \(\text{logit}(p) = \beta_0 + \sum_j f_j(x_j)\), and each field's exact contribution is a log-odds shift toward or away from the positive class rather than a shift in the raw target's units.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Scoped to binary targets.</strong> Multiclass EBM produces a separate set of per-field contributions for each class simultaneously, which does not fit this tool's one-column-per-field export design. This tool therefore requires the target field to have exactly two classes; for three or more classes, use Random Forest Classification or a Gradient Boosting engine, paired with SHAP Global Feature Importance for an explanation.
+  </p>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>interpret.glassbox.ExplainableBoostingClassifier</code> with <code>interactions=0</code> (<code>core/ml_engines.py::fit_ebm_classifier</code>). ebm_intercept plus the sum of the ebm_&lt;field&gt; columns for a record, passed through a sigmoid, reconstructs the predicted probability for the second class in sorted label order.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Any Field</td><td class="param-default">—</td><td>Exactly 2 distinct classes</td><td>Class label field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output classification and exact contributions layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">ebm_class</td><td class="param-type">String</td><td>Predicted class label</td></tr>
+    <tr><td class="param-name">ebm_conf</td><td class="param-type">Double</td><td>Predicted-class probability (0–1)</td></tr>
+    <tr><td class="param-name">ebm_intercept</td><td class="param-type">Double</td><td>Model base log-odds toward the second class (constant across records)</td></tr>
+    <tr><td class="param-name">ebm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
+    <tr><td class="param-name">ebm_&lt;field&gt;</td><td class="param-type">Double</td><td>Exact log-odds contribution of that field to this record's prediction (one column per explanatory field)</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  Map an ebm_&lt;field&gt; column directly to see exactly where that field pushed classifications toward or away from the second class across the study area — exact, not a SHAP-style approximation. Compare accuracy against Gradient Boosting Classification on the same fields; a large gap quantifies how much this target depends on interactions between fields that the interactions-disabled EBM cannot represent.
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-ebm-regression">Explainable Boosting Machine Regression (EBM)</a> &middot; <a href="#alg-shap-global">SHAP Global Feature Importance</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Lou, Y., Caruana, R. &amp; Gehrke, J.</strong> (2012). "Intelligible Models for Classification and Regression." <em>Proceedings of the 18th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining</em>, 150–158. DOI: <a href="https://doi.org/10.1145/2339530.2339556">10.1145/2339530.2339556</a></p>
+  <p style="margin:4px 0;"><strong>Nori, H., Jenkins, S., Koch, P. &amp; Caruana, R.</strong> (2019). "InterpretML: A Unified Framework for Machine Learning Interpretability." <em>arXiv:1909.09223</em>.</p>
   </div>
 </div>
 </article>
@@ -8238,6 +8795,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Why ML models are not automatically exempt from this check.</strong> Residual spatial autocorrelation testing is standard practice for linear spatial regression (Anselin, 1988) precisely because OLS assumes independent errors, an assumption spatial data routinely violates. Tree ensembles and other ML models make no such explicit independence assumption, which can create a false sense that the check is unnecessary for them — but if none of the explanatory fields carry location information (distance-to-center, adjacency, coordinates themselves), a machine-learning model can reach a high in-sample R2 by fitting the available features closely while still leaving a real, unmodeled spatial process in its residuals. The same Moran's I test that flags this for linear models flags it here too.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>What "fix" actually means for an ML model versus a linear one.</strong> For OLS, a significant residual Moran's I typically leads to a Spatial Lag or Spatial Error model that explicitly represents the spatial dependence structure. Tree ensembles and boosting have no equivalent spatially-structured-error extension available in this plugin, so the practical response for an ML model is different: add explanatory fields that carry the missing location signal directly (distance-to-center, a spatial-lag of the target itself, coordinate fields), refit, and re-run this check — the model does not need a spatial-error term if the spatial pattern is instead captured as an ordinary predictive feature.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -8274,6 +8834,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   <strong>Do not trust a high-R2 ML model on spatial data until this comes back clean.</strong> A significant positive Moran's I (p &lt; 0.05) means real spatial signal is being missed — add a distance-to-center or spatial-lag field and refit, or switch to a model built to account for spatial structure directly (GWR, MGWR, Spatial Lag/Error Regression, group 05).
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Run this before, not only after, a model is finalized.</strong> Because this check reuses the exact fitting pipeline as every other tool in this group (same complete-case extraction, same model dispatcher), it costs little to run routinely on any ML fit that will inform a planning decision — treat it as a standard step alongside Spatial k-Fold Cross-Validation Evaluator, not a special diagnostic reserved for when results already look suspicious.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-global-moran">Global Moran's I</a> &middot; <a href="#alg-gwr">GWR</a>
@@ -8305,6 +8868,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Ensemble disagreement as an uncertainty proxy.</strong> Because every tree in a bagging ensemble trained on a different bootstrap resample, the spread of their individual predictions at a given point is informative: where the trees agree closely, the ensemble is confident; where they disagree widely, the region is likely sparse in training data or represents an unusual combination of explanatory-field values the forest has not seen consistently. This "ensemble variance" approach to uncertainty is a long-standing, well-established practical technique (formalized more rigorously as Quantile Regression Forests by Meinshausen, 2006) that requires no distributional assumption beyond the bagging structure itself. Gradient Boosting, SVM, and MLP have no equivalent per-member prediction spread without substantially more machinery, which is why this tool is deliberately scoped to the two bagging ensembles only.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A heuristic, not a calibrated guarantee.</strong> Meinshausen's (2006) Quantile Regression Forests formalizes this idea with a specific statistical construction, but the simplified version implemented here (raw per-tree spread and empirical percentiles) has no proven coverage guarantee the way Conformal Prediction Interval's jackknife+ intervals do — unc_low/unc_high should be read as "roughly how much the trees disagree," a useful and cheap signal, not a calibrated (1-alpha) interval with any specific target coverage rate. When a genuinely calibrated interval is needed (for a figure that will be reported with a stated confidence level), Conformal Prediction Interval is the more defensible tool, and it additionally works for every model in this group, not only Random Forest/Extra Trees.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -8349,15 +8915,250 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   High unc_std areas are typically sparse training data or unusual field-value combinations, not random noise — prioritize field verification or additional data collection there before acting on predictions. Use unc_pred together with unc_std, never on its own, when making a decision from a prediction.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing between this tool and Conformal Prediction Interval.</strong> Use this tool for a fast, free-with-the-fit uncertainty read specifically on a Random Forest or Extra Trees model, especially when the goal is exploratory (finding which areas need more data collection). Use Conformal Prediction Interval instead when the interval itself will be reported or acted on formally, when the model is anything other than Random Forest/Extra Trees, or when a specific, stated target coverage rate matters to the audience.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation</a>
+    <strong>See also:</strong> <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-shap-local">SHAP Local Explanation</a> &middot; <a href="#alg-conformal-prediction">Conformal Prediction Interval</a>
   </div>
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
   <p style="margin:4px 0;"><strong>Meinshausen, N.</strong> (2006). "Quantile Regression Forests." <em>Journal of Machine Learning Research</em> 7: 983–999.</p>
   <p style="margin:4px 0;"><strong>Breiman, L.</strong> (2001). "Random Forests." <em>Machine Learning</em> 45(1): 5–32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a></p>
+  </div>
+</div>
+</article>
+
+<!-- Conformal Prediction Interval -->
+<article class="alg-card" id="alg-conformal-prediction">
+<div class="alg-card-header">
+  <div class="alg-icon">↕️</div>
+  <div class="alg-info">
+    <h4>Conformal Prediction Interval<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">conformal_prediction_interval</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-conformal-prediction" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Computes distribution-free prediction intervals with a mathematically guaranteed marginal coverage rate, for any regression model in this group — not just the Random Forest/Extra Trees tree-vote spread Prediction Uncertainty Map relies on. Wraps MAPIE's jackknife+ conformal method (Barber, Candès, Ramdas &amp; Tibshirani, 2021). Requires the optional <code>mapie</code> package.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A guarantee, not a heuristic.</strong> Prediction Uncertainty Map's tree-vote spread is a genuinely useful uncertainty signal, but it is a heuristic specific to bagging ensembles — nothing says the spread across trees is calibrated to any particular coverage rate, and the method has no meaning at all for SVM, MLP, or any non-ensemble model. Conformal prediction (Vovk, Gammerman &amp; Shafer, 2005) is different in kind: under only the assumption that the data is <em>exchangeable</em> (a weaker condition than the i.i.d. normal-error assumption behind a classical regression confidence interval), it produces intervals with a proven marginal coverage guarantee — across many predictions, at least \((1-\alpha)\) of the true values will fall inside their own interval, for <em>any</em> underlying model, regardless of whether that model's own uncertainty estimates are any good.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Jackknife+: cross-validation applied to calibration.</strong> The simplest form of conformal prediction (split conformal) sacrifices half the data purely to calibrate the interval width. Barber, Candès, Ramdas &amp; Tibshirani (2021) introduced jackknife+ (and its cross-conformal generalization, used here) to recover that lost efficiency: the data is split into folds exactly as in k-fold cross-validation, a model is fit leaving each fold out in turn, and the leave-one-fold-out residuals across all folds are pooled to calibrate the final interval width — every record contributes to both fitting and calibration, at the cost of fitting the model N_FOLDS times instead of once.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>What the guarantee does not promise.</strong> The coverage guarantee is <em>marginal</em> — averaged over all records — not <em>conditional</em> on any specific record's covariates. It is entirely possible for the interval to systematically undercover in one subregion of the study area and overcover in another while still averaging out to the target rate overall; a large gap between empirical and target coverage in this tool's report, or strong spatial structure in interval width, is a sign the exchangeability assumption may be strained by spatial autocorrelation specifically.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Jackknife+ interval for a new point, built from the \(N_{\text{FOLDS}}\) leave-one-fold-out models \(\hat{f}_{-k}\) and their held-out residuals \(R_i = |y_i - \hat{f}_{-k(i)}(x_i)|\):</strong></p>
+  $$\hat{C}(x) = \left[\, q^{-}_{\alpha}\!\left\{\hat{f}_{-k(i)}(x) - R_i\right\},\;\; q^{+}_{\alpha}\!\left\{\hat{f}_{-k(i)}(x) + R_i\right\} \,\right] \tag{1}$$
+  <p style="margin:8px 0;"><strong>where \(q^{-}_{\alpha}\) and \(q^{+}_{\alpha}\) denote the \(\alpha\) and \((1-\alpha)\) empirical quantiles taken over all \(i\) in the calibration pool. Empirical coverage reported by this tool:</strong></p>
+  $$\widehat{\text{coverage}} = \frac{1}{n}\sum_{i=1}^{n} \mathbb{1}\!\left[\text{conf\_low}_i \le y_i \le \text{conf\_high}_i\right] \tag{2}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>mapie.regression.MapieRegressor</code> with <code>method="plus"</code> around whichever model from this group's Model parameter is selected (<code>core/ml_engines.py::fit_conformal_interval</code>). Regression only — MAPIE's classification API produces variable-length prediction sets rather than fixed columns, which does not fit this tool's output schema.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Target field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1 field</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Random Forest</td><td>Any Group 06 CV model</td><td>Regression model to calibrate</td></tr>
+      <tr><td class="param-name">ALPHA</td><td class="param-type">Double</td><td class="param-default">0.1</td><td>0.01–0.5</td><td>Miscoverage rate (interval targets 1−alpha coverage)</td></tr>
+      <tr><td class="param-name">N_FOLDS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>2–20</td><td>Cross-conformal folds</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Output layer with prediction intervals</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">conf_pred</td><td class="param-type">Double</td><td>Point prediction from the conformal-calibrated model</td></tr>
+    <tr><td class="param-name">conf_low</td><td class="param-type">Double</td><td>Lower bound of the (1−alpha) prediction interval</td></tr>
+    <tr><td class="param-name">conf_high</td><td class="param-type">Double</td><td>Upper bound of the (1−alpha) prediction interval</td></tr>
+    <tr><td class="param-name">conf_width</td><td class="param-type">Double</td><td>Interval width (conf_high − conf_low)</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Report the interval, not just conf_pred.</strong> When a prediction will inform a planning decision, conf_low–conf_high communicates how much to trust that specific record's prediction far better than a bare point value; a wide conf_width is itself a finding, not noise to discard.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading the empirical-versus-target coverage gap.</strong> The reported empirical coverage is computed in-sample and is therefore optimistic for the same structural reason every in-sample metric in this group is; treat a close match to the target as a mild positive signal, not proof the guarantee holds exactly. A large, persistent gap — especially paired with conf_width that visibly clusters by location — is a sign to check Model Residual Spatial Autocorrelation Check for the same model before trusting the intervals in a specific subregion.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-prediction-uncertainty">Prediction Uncertainty Map</a> &middot; <a href="#alg-model-residual-autocorr">Model Residual Spatial Autocorrelation Check</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Barber, R.F., Candès, E.J., Ramdas, A. &amp; Tibshirani, R.J.</strong> (2021). "Predictive Inference with the Jackknife+." <em>Annals of Statistics</em> 49(1): 486–507. DOI: <a href="https://doi.org/10.1214/20-AOS1965">10.1214/20-AOS1965</a></p>
+  <p style="margin:4px 0;"><strong>Vovk, V., Gammerman, A. &amp; Shafer, G.</strong> (2005). <em>Algorithmic Learning in a Random World.</em> New York: Springer. ISBN 978-0-387-00152-4 — Foundational conformal prediction text.</p>
+  <p style="margin:4px 0;"><strong>Romano, Y., Patterson, E. &amp; Candès, E.</strong> (2019). "Conformalized Quantile Regression." <em>Advances in Neural Information Processing Systems</em> 32: 3543–3553.</p>
+  </div>
+</div>
+</article>
+
+<!-- TabPFN Regression -->
+<article class="alg-card" id="alg-tabpfn-regression">
+<div class="alg-card-header">
+  <div class="alg-icon">🔮</div>
+  <div class="alg-info">
+    <h4>TabPFN Regression (Tabular Foundation Model)<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">tabpfn_regression</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-tabpfn-regression" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Fits a zero-shot regression prediction with TabPFN v2 (Hollmann et al., <em>Nature</em>, 2025): a transformer pretrained once, offline, on millions of synthetic tabular problems, performing in-context learning at call time rather than a per-dataset training loop. Requires the optional <code>tabpfn</code> package and, on first use, an internet connection to download pretrained weights.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Prior-fitted networks and in-context learning.</strong> Every other model in this group learns from your specific dataset: Random Forest grows trees on it, MLP updates weights against it over many epochs. Müller, Hollmann, Arango, Grabocka &amp; Hutter (2022) introduced a different paradigm, the Prior-Fitted Network (PFN): a transformer is trained exactly once, offline, on an enormous stream of <em>synthetic</em> datasets sampled from a structural-causal-model prior, learning to approximate Bayesian posterior predictive inference, \(p(y^{*}\mid x^{*}, D_{\text{train}})\), as a single, amortized forward pass. At inference time on a genuinely new dataset, no further training happens: the training table and the query rows are simply passed through the network together as a prompt, and the network's pretraining has already taught it "how to learn" from a table it has never seen — this is what "in-context learning" means here, borrowing the same mechanism that lets a large language model follow a new instruction from its prompt alone.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>TabPFN v2.</strong> Hollmann et al. (2023) first demonstrated this approach specifically for tabular classification (TabPFN v1); Hollmann et al. (2025, published in <em>Nature</em>) extended it to regression and substantially scaled the pretraining prior and model capacity as TabPFN v2, reporting that it matched or outperformed tuned Gradient Boosting on a wide range of small-to-medium tabular benchmarks while fitting in seconds with no hyperparameter search at all — a genuinely novel result for a field where tree ensembles have dominated for over a decade (Grinsztajn, Oyallon &amp; Varoquaux, 2022, had specifically documented deep learning's continued struggle to beat GBMs on tabular data, making TabPFN's approach notable rather than simply another neural architecture).
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A hard, published operating envelope.</strong> TabPFN's in-context mechanism processes the entire training table within the transformer's attention computation at inference time, which does not scale indefinitely: the published, supported envelope is up to 10,000 rows and 500 features. This tool enforces that ceiling explicitly, raising a clear error rather than letting the underlying library degrade silently or fail with an opaque internal error past the boundary.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The Bayesian posterior predictive TabPFN is pretrained to approximate, for query point \(x^{*}\) given the training table \(D\) (integrating over the prior's latent data-generating parameters \(\theta\)):</strong></p>
+  $$p(y^{*} \mid x^{*}, D) = \int p(y^{*} \mid x^{*}, \theta)\, p(\theta \mid D) \, d\theta \tag{1}$$
+  <p style="margin:8px 0;"><strong>Pretraining objective (offline, once, over synthetic prior draws \((D, x^{*}, y^{*}) \sim \text{prior}\); \(g_\phi\) is the transformer with parameters \(\phi\)):</strong></p>
+  $$\phi^{*} = \arg\min_{\phi} \; \mathbb{E}_{(D,x^{*},y^{*}) \sim \text{prior}} \left[-\log g_\phi(y^{*} \mid x^{*}, D)\right] \tag{2}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>tabpfn.TabPFNRegressor</code> (<code>core/ml_engines.py::fit_tabpfn_regressor</code>), which downloads and caches pretrained weights on first use. No hyperparameters are exposed because none exist to tune — the model performs zero gradient-descent steps on your data.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>—</td><td>Target field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>1–500 fields</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>≤ 10,000 complete records</td><td>Output predictions layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">tabpfn_pred</td><td class="param-type">Double</td><td>In-context predicted value</td></tr>
+    <tr><td class="param-name">tabpfn_resid</td><td class="param-type">Double</td><td>Observed minus predicted</td></tr>
+    <tr><td class="param-name">tabpfn_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>The newest and least field-tested engine here — treat it as a second opinion, not a default.</strong> TabPFN's benchmark performance is well documented on published, general-purpose tabular datasets, but it has far less accumulated track record on planning-domain data specifically than Random Forest or any Gradient Boosting engine. Cross-check its R2 against Gradient Boosting Regression on the same fields, and always confirm out-of-sample behavior with Spatial k-Fold Cross-Validation Evaluator before relying on it for a planning decision.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>An unusually large R2 deserves scrutiny, not celebration.</strong> Because TabPFN has no hyperparameters to overfit in the conventional sense, an R2 that is markedly higher than every tree-based engine with no clear explanation is more often a sign of target leakage in the explanatory fields than of a genuinely superior fit — check for a field that encodes the target directly or near-directly before trusting the result.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-permutation-importance">Permutation Feature Importance</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M., Hoo, S.B., Schirrmeister, R.T. &amp; Hutter, F.</strong> (2025). "Accurate Predictions on Small Data with a Tabular Foundation Model." <em>Nature</em> 637: 319–326. DOI: <a href="https://doi.org/10.1038/s41586-024-08328-6">10.1038/s41586-024-08328-6</a></p>
+  <p style="margin:4px 0;"><strong>Müller, S., Hollmann, N., Arango, S.P., Grabocka, J. &amp; Hutter, F.</strong> (2022). "Transformers Can Do Bayesian Inference." <em>International Conference on Learning Representations (ICLR)</em>.</p>
+  <p style="margin:4px 0;"><strong>Grinsztajn, L., Oyallon, E. &amp; Varoquaux, G.</strong> (2022). "Why Do Tree-Based Models Still Outperform Deep Learning on Typical Tabular Data?" <em>Advances in Neural Information Processing Systems</em> 35: 507–520. — Documents the pre-TabPFN state of the field this tool's results should be read against.</p>
+  </div>
+</div>
+</article>
+
+<!-- TabPFN Classification -->
+<article class="alg-card" id="alg-tabpfn-classification">
+<div class="alg-card-header">
+  <div class="alg-icon">🔮</div>
+  <div class="alg-info">
+    <h4>TabPFN Classification (Tabular Foundation Model)<span class="perf-badge">optional</span></h4>
+    <div class="alg-id">tabpfn_classification</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-tabpfn-classification" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    The classification counterpart of TabPFN Regression: the same pretrained, in-context-learning transformer (Hollmann et al., <em>Nature</em>, 2025), here predicting a categorical target with no per-dataset training loop and no hyperparameters to tune. Requires the optional <code>tabpfn</code> package and, on first use, an internet connection.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  The in-context-learning mechanism described in TabPFN Regression applies directly to classification: TabPFN's pretraining prior includes synthetic classification tasks, so the same forward pass approximates a Bayesian posterior predictive class distribution, \(p(y^{*} \mid x^{*}, D)\), for a categorical \(y^{*}\) rather than a continuous one. TabPFN's pretrained classification head was built and validated for a bounded number of classes; this tool enforces that ceiling (10 classes) explicitly.
+  </p>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Wraps <code>tabpfn.TabPFNClassifier</code> (<code>core/ml_engines.py::fit_tabpfn_classifier</code>), which shares the row/feature envelope and first-use weight download of the regression engine, plus a 10-class ceiling.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer</td></tr>
+      <tr><td class="param-name">TARGET</td><td class="param-type">Any Field</td><td class="param-default">—</td><td>2–10 distinct classes</td><td>Class label field</td></tr>
+      <tr><td class="param-name">FEATURES</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>1–500 fields</td><td>Explanatory fields</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>≤ 10,000 complete records</td><td>Output classification layer</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="param-name">tabpfn_class</td><td class="param-type">String</td><td>Predicted class label</td></tr>
+    <tr><td class="param-name">tabpfn_conf</td><td class="param-type">Double</td><td>Predicted-class probability (0–1)</td></tr>
+    <tr><td class="param-name">tabpfn_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
+  </tbody>
+  </table>
+  </div>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  Treat this as a fast, competitive second opinion alongside Gradient Boosting Classification rather than a default first choice, until it has accumulated more field experience on planning-specific data. Cross-check accuracy against Random Forest Classification / Gradient Boosting Classification on the same fields, and always confirm out-of-sample behavior with Spatial k-Fold Cross-Validation Evaluator.
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-tabpfn-regression">TabPFN Regression (Tabular Foundation Model)</a> &middot; <a href="#alg-rf-classification">Random Forest Classification</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M., Hoo, S.B., Schirrmeister, R.T. &amp; Hutter, F.</strong> (2025). "Accurate Predictions on Small Data with a Tabular Foundation Model." <em>Nature</em> 637: 319–326. DOI: <a href="https://doi.org/10.1038/s41586-024-08328-6">10.1038/s41586-024-08328-6</a></p>
+  <p style="margin:4px 0;"><strong>Hollmann, N., Müller, S., Eggensperger, K. &amp; Hutter, F.</strong> (2023). "TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second." <em>International Conference on Learning Representations (ICLR)</em>.</p>
   </div>
 </div>
 </article>
@@ -8380,6 +9181,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Ester, Kriegel, Sander and Xu (1996) introduced DBSCAN as an alternative to centroid-based clustering (K-Means) that needs no predetermined cluster count and can recover clusters of arbitrary shape, not just roughly convex, similarly-sized ones. A point is "core" if at least MinPts points (including itself) fall within distance Epsilon; clusters form by chaining together core points and their neighbors, and points reachable by no core point are explicit noise — a structural difference from K-Means, which assigns every point to the nearest centroid regardless of how poorly it fits.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Noise as a first-class result, not a failure.</strong> Unlike Multivariate Clustering (K-Means), which forces every record into a cluster whether it belongs or not, DBSCAN's explicit noise label (cluster_id = -1) is often the more useful part of the output for a planning question framed around identifying outliers or exceptions — parcels that don't fit any coherent typology in the study area — rather than the clusters themselves. Mapping the noise points alone, on their own, is a legitimate and often revealing analysis in its own right.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -8415,6 +9219,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Epsilon is the hardest parameter to set — start around 0.5–1.0 and adjust: too small produces almost all noise, too large merges everything into one cluster. A run with more than half the records labeled noise usually means Epsilon is too small or Min samples too high for this dataset's density. Use HDBSCAN instead when the study area plausibly mixes dense and sparse sub-areas that a single Epsilon cannot separate correctly.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A practical Epsilon-tuning routine.</strong> Rather than guessing, sort every point's distance to its k-th nearest neighbor (k = Min samples) and look for the "elbow" where this sorted distance curve bends sharply upward — the classic k-distance-graph heuristic from Ester et al.'s (1996) original paper. That elbow value is a reasonable Epsilon starting point specific to this dataset's density, rather than an arbitrary default carried over from a different layer.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-hdbscan">HDBSCAN Hierarchical Density Clustering</a> &middot; <a href="#alg-multivar-cluster">Multivariate Clustering (K-Means)</a>
@@ -8446,6 +9253,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Campello, Moulavi and Sander (2013) reformulated DBSCAN's fixed-Epsilon density threshold as a hierarchy: build a dendrogram of clusters across every possible density level (via a mutual-reachability minimum spanning tree, closely related to the SKATER regionalization tool's own MST construction), then select the set of clusters that persist the longest — the "most stable" clusters — as the final flat clustering. This removes DBSCAN's single-Epsilon assumption entirely, at some additional computational cost, and produces a per-point cluster membership PROBABILITY (cluster_prob) rather than only a hard 0/1 assignment.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>One parameter instead of two, and what that trade buys.</strong> DBSCAN requires both Epsilon and Min samples to be tuned jointly, and the right Epsilon can differ by density region within the same layer. HDBSCAN needs only Min cluster size because it evaluates stability across every density level automatically rather than committing to one — the cost is purely computational (building the full hierarchy is more expensive than a single DBSCAN pass), which is negligible on typical planning-scale layers of a few thousand records or fewer.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Builds on DBSCAN's core-point and reachability definitions (equations 1–2 there) but replaces the fixed \(\varepsilon\) with a mutual-reachability distance \(d_{\text{mreach}}(a,b) = \max(\text{core}_k(a), \text{core}_k(b), d(a,b))\) evaluated across all scales, then extracts the flat clustering that maximizes total cluster stability (area under each cluster's persistence in the resulting hierarchy) — the Excess of Mass algorithm from Campello, Moulavi &amp; Sander (2013).</p>
@@ -8475,6 +9285,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Min cluster size is more intuitive than DBSCAN's Epsilon — a literal minimum record count. Raise it to merge small clusters into noise or larger neighbors; lower it to allow smaller, tighter groups. Prefer this over DBSCAN whenever the study area plausibly mixes dense and sparse sub-areas, common in mixed urban/suburban planning datasets.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading cluster_prob alongside cluster_id.</strong> A record with cluster_id assigned but a low cluster_prob is a weak, borderline member of that cluster, not a confidently typical one — when reporting cluster characteristics or selecting representative examples of a cluster for a planning narrative, filter to high-cluster_prob records rather than treating every member as equally representative.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-dbscan">DBSCAN Density-Based Clustering</a> &middot; <a href="#alg-gmm">Gaussian Mixture Model Clustering</a>
@@ -8505,6 +9318,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <h5>1. Theoretical Background</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   Dempster, Laird and Rubin's (1977) Expectation-Maximization algorithm is the standard fitting method for mixture models: alternately compute each point's probability of belonging to each component (E-step) and update each component's mean/covariance/weight given those soft assignments (M-step), iterating to convergence on the likelihood. Because each component is a full (or constrained) Gaussian rather than a spherical centroid, GMM can represent elongated or correlated clusters K-Means structurally cannot, and — because assignment is inherently probabilistic — a point near two components' boundary shows genuine uncertainty (e.g. 0.55/0.45) rather than an artificially confident hard label.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>K-Means as a special case, not a competitor to rule out first.</strong> K-Means (Multivariate Clustering) is mathematically the limiting case of a GMM with equal, spherical, fixed-size components — so GMM with Spherical covariance and equal component weights recovers something close to K-Means, while Full covariance recovers genuinely elliptical clusters K-Means cannot represent at all. This makes GMM strictly more flexible in principle; the practical trade-off is that Full covariance needs meaningfully more records per cluster to estimate its covariance matrix reliably, which is why Covariance Type is exposed as an explicit choice rather than always defaulting to the most flexible option.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -8543,6 +9359,9 @@ New in v2.0.0. Modern supervised-learning models (tree ensembles, gradient boost
   <div class="interp-box">
   Run this tool at several K values and pick the one with the lowest BIC (printed to the log) rather than assuming more components is always better. A point with probability spread across two components sits near their boundary — a genuinely useful signal K-Means's hard assignment discards. Switch to a more constrained covariance type if the fit does not converge or looks unstable with few records.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>BIC versus AIC when they disagree.</strong> BIC (Schwarz, 1978) penalizes model complexity more heavily than AIC as the record count grows, so it tends to favor a smaller K on typical planning-scale datasets — the more conservative, generally preferred criterion for this tool's default recommendation. If AIC and BIC favor different K values, that disagreement itself is informative: it usually means the "right" number of clusters is genuinely ambiguous for this dataset, and the choice should be settled by planning-domain interpretability (does each cluster correspond to a coherent, nameable typology) rather than by the numeric criterion alone.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-multivar-cluster">Multivariate Clustering (K-Means)</a> &middot; <a href="#alg-hdbscan">HDBSCAN Hierarchical Density Clustering</a>

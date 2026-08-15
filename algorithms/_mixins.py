@@ -64,6 +64,8 @@ HELP_SLUGS = {
     "gbm_classification_sklearn": "alg-gbm-cls-sklearn",
     "gbm_classification_xgboost": "alg-gbm-cls-xgboost",
     "gbm_classification_lightgbm": "alg-gbm-cls-lightgbm",
+    "gbm_regression_catboost": "alg-gbm-reg-catboost",
+    "gbm_classification_catboost": "alg-gbm-cls-catboost",
     "mlp_regression": "alg-mlp-regression",
     "mlp_classification": "alg-mlp-classification",
     "spatial_kfold_cv_evaluator": "alg-spatial-cv",
@@ -81,6 +83,12 @@ HELP_SLUGS = {
     "spatial_regime_regression": "alg-spatial-regime",
     "quantile_regression": "alg-quantile-regression",
     "gw_summary_statistics": "alg-gw-summary-stats",
+    "conformal_prediction_interval": "alg-conformal-prediction",
+    "tabpfn_regression": "alg-tabpfn-regression",
+    "tabpfn_classification": "alg-tabpfn-classification",
+    "dice_counterfactual_explanation": "alg-dice-counterfactual",
+    "ebm_regression": "alg-ebm-regression",
+    "ebm_classification": "alg-ebm-classification",
 }
 
 

@@ -63,6 +63,8 @@ from .algorithms.alg_gbm_regression_lightgbm import GBMRegressionLightGBMAlgorit
 from .algorithms.alg_gbm_classification_sklearn import GBMClassificationSklearnAlgorithm
 from .algorithms.alg_gbm_classification_xgboost import GBMClassificationXGBoostAlgorithm
 from .algorithms.alg_gbm_classification_lightgbm import GBMClassificationLightGBMAlgorithm
+from .algorithms.alg_gbm_regression_catboost import GBMRegressionCatBoostAlgorithm
+from .algorithms.alg_gbm_classification_catboost import GBMClassificationCatBoostAlgorithm
 from .algorithms.alg_mlp_regression import MLPRegressionAlgorithm
 from .algorithms.alg_mlp_classification import MLPClassificationAlgorithm
 from .algorithms.alg_spatial_cv_evaluator import SpatialCVEvaluatorAlgorithm
@@ -80,6 +82,12 @@ from .algorithms.alg_gmm_clustering import GMMClusteringAlgorithm
 from .algorithms.alg_spatial_regime_regression import SpatialRegimeRegressionAlgorithm
 from .algorithms.alg_quantile_regression import QuantileRegressionAlgorithm
 from .algorithms.alg_gw_summary_stats import GWSummaryStatsAlgorithm
+from .algorithms.alg_conformal_prediction import ConformalPredictionAlgorithm
+from .algorithms.alg_tabpfn_regression import TabPFNRegressionAlgorithm
+from .algorithms.alg_tabpfn_classification import TabPFNClassificationAlgorithm
+from .algorithms.alg_dice_counterfactual import DiCECounterfactualAlgorithm
+from .algorithms.alg_ebm_regression import EBMRegressionAlgorithm
+from .algorithms.alg_ebm_classification import EBMClassificationAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -172,6 +180,8 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(GBMClassificationSklearnAlgorithm())
         self.addAlgorithm(GBMClassificationXGBoostAlgorithm())
         self.addAlgorithm(GBMClassificationLightGBMAlgorithm())
+        self.addAlgorithm(GBMRegressionCatBoostAlgorithm())
+        self.addAlgorithm(GBMClassificationCatBoostAlgorithm())
         self.addAlgorithm(MLPRegressionAlgorithm())
         self.addAlgorithm(MLPClassificationAlgorithm())
         self.addAlgorithm(SpatialCVEvaluatorAlgorithm())
@@ -181,8 +191,14 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(SHAPGlobalImportanceAlgorithm())
         self.addAlgorithm(SHAPSpatialMapAlgorithm())
         self.addAlgorithm(SHAPLocalExplanationAlgorithm())
+        self.addAlgorithm(DiCECounterfactualAlgorithm())
+        self.addAlgorithm(EBMRegressionAlgorithm())
+        self.addAlgorithm(EBMClassificationAlgorithm())
         self.addAlgorithm(ModelResidualAutocorrelationAlgorithm())
         self.addAlgorithm(PredictionUncertaintyMapAlgorithm())
+        self.addAlgorithm(ConformalPredictionAlgorithm())
+        self.addAlgorithm(TabPFNRegressionAlgorithm())
+        self.addAlgorithm(TabPFNClassificationAlgorithm())
         self.addAlgorithm(DBSCANAlgorithm())
         self.addAlgorithm(HDBSCANAlgorithm())
         self.addAlgorithm(GMMClusteringAlgorithm())

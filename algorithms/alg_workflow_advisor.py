@@ -212,17 +212,24 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ),
             (
                 "Which model best predicts a continuous or categorical planning outcome?",
-                "Random Forest / Extra Trees / Gradient Boosting / SVM / Neural Network (Regression or Classification); ML Model Comparison (Leaderboard)",
+                "Random Forest / Extra Trees / Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost) / SVM / Neural Network (Regression or Classification); TabPFN (small tables, zero tuning); ML Model Comparison (Leaderboard)",
                 "Complete numeric explanatory fields; numeric target for regression, categorical target for classification.",
                 "Fitted/predicted values, in-sample fit metrics, and a cross-model leaderboard.",
                 "Always confirm the winning model's score with Spatial k-Fold Cross-Validation Evaluator before reporting it.",
             ),
             (
                 "Which explanatory field actually drives a fitted model's predictions, and where?",
-                "SHAP Global Feature Importance; SHAP Spatial Attribution Map; SHAP Local Explanation Report; Permutation Feature Importance; Partial Dependence Report",
-                "A fitted model choice (same fields as the prediction tool) and, for SHAP, the optional shap package.",
+                "SHAP Global Feature Importance; SHAP Spatial Attribution Map; SHAP Local Explanation Report; Permutation Feature Importance; Partial Dependence Report; Explainable Boosting Machine (exact, non-sampled contributions)",
+                "A fitted model choice (same fields as the prediction tool) and, for SHAP, the optional shap package (interpret for EBM).",
                 "Ranked field importances, a mappable per-field attribution layer, and a signed per-record breakdown.",
                 "Cross-check with Model Residual Spatial Autocorrelation Check to confirm no spatial signal is left unexplained.",
+            ),
+            (
+                "What minimal change to one record would flip its predicted class, or how uncertain is one predicted value?",
+                "DiCE Counterfactual Explanation (classification); Conformal Prediction Interval (regression, any model, distribution-free coverage guarantee); Prediction Uncertainty Map (Random Forest/Extra Trees tree-vote spread)",
+                "A fitted classifier or regressor choice (same fields as the prediction tool) and the optional dice-ml/mapie package.",
+                "For DiCE: diverse minimal-edit counterfactuals for one record. For conformal: a calibrated [low, high] interval per record with a target coverage rate.",
+                "Cross-check the underlying model's cross-validated accuracy first — neither tool makes an inaccurate model trustworthy.",
             ),
         ]
         qa_rows = [
@@ -242,8 +249,9 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("Spatially varying model", "GWR; MGWR", "Use when a global model hides local variation and the sample size supports local estimation."),
             ("Spatial dependence model", "Spatial Lag Regression; Spatial Error Regression", "Use when residual diagnostics or theory suggest spatial spillovers or spatially structured omitted variables."),
             ("Model audit", "Model Comparison Matrix; Sensitivity Test", "Use comparison and randomization checks before presenting a preferred planning model."),
-            ("Continuous or categorical outcome prediction", "Random Forest; Extra Trees; Gradient Boosting (scikit-learn/XGBoost/LightGBM); SVR/SVC; Neural Network (MLP)", "Use tree ensembles first (robust defaults, native or permutation importance); reach for SVM/MLP only with a clear reason to expect a smooth non-linear boundary and enough data."),
-            ("Explaining a fitted ML model", "SHAP Global Feature Importance; SHAP Spatial Attribution Map; SHAP Local Explanation Report; Permutation Feature Importance; Partial Dependence Report", "Use SHAP for a theoretically grounded, per-record attribution (including a mappable spatial view); use Permutation Importance when shap is not installed; use Partial Dependence for direction of effect."),
+            ("Continuous or categorical outcome prediction", "Random Forest; Extra Trees; Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost); SVR/SVC; Neural Network (MLP); TabPFN", "Use tree ensembles first (robust defaults, native or permutation importance); reach for SVM/MLP only with a clear reason to expect a smooth non-linear boundary and enough data; try TabPFN as a fast, zero-tuning second opinion on tables under 10,000 records/500 fields."),
+            ("Explaining a fitted ML model", "SHAP Global Feature Importance; SHAP Spatial Attribution Map; SHAP Local Explanation Report; Permutation Feature Importance; Partial Dependence Report; Explainable Boosting Machine", "Use SHAP for a theoretically grounded, per-record attribution on any model (including a mappable spatial view); use Explainable Boosting Machine when an exact, non-approximated per-field contribution is worth trading a small amount of accuracy for; use Permutation Importance when shap is not installed; use Partial Dependence for direction of effect."),
+            ("Recourse for one classified record, or a calibrated interval for one prediction", "DiCE Counterfactual Explanation; Conformal Prediction Interval", "Use DiCE when the question is 'what would need to change'; use Conformal Prediction Interval when the question is 'how much should I trust this specific predicted value.'"),
         ]
         assumption_rows = [
             ("Distance-based tools", "Projected CRS, meaningful map units, and a defensible neighborhood scale.", "Geographic degrees, arbitrary thresholds, or many isolated observations."),
@@ -251,7 +259,7 @@ class GeoStatsWorkflowAdvisorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ("OLS / GLR", "Complete records, non-constant predictors, and a model family that matches the outcome.", "Multicollinearity, misspecified family, outliers, and residual spatial pattern."),
             ("GWR / MGWR", "A sample large enough for local estimation and predictors that vary locally.", "Overfitting, unstable local coefficients, bandwidth misuse, and strong collinearity."),
             ("Spatial Lag / Error", "A theory-driven spatial weights model and optional PySAL/spreg availability.", "Treating spatial dependence as proof of causality or ignoring islands in the weights graph."),
-            ("ML prediction tools (RF/GBM/SVM/MLP)", "Enough complete records per field, and an out-of-sample check before trusting the score.", "In-sample R2/accuracy is optimistic; always confirm with Spatial k-Fold Cross-Validation Evaluator, especially for boosting and neural-network models."),
+            ("ML prediction tools (RF/GBM/SVM/MLP/TabPFN)", "Enough complete records per field, and an out-of-sample check before trusting the score.", "In-sample R2/accuracy is optimistic; always confirm with Spatial k-Fold Cross-Validation Evaluator, especially for boosting, neural-network, and TabPFN models. TabPFN additionally caps at 10,000 records, 500 features, and (for classification) 10 classes."),
         ]
         pitfall_rows = [
             ("Using WGS84 distances", "Distances are measured in degrees, not meters.", "Reproject to a suitable local projected CRS before distance bands, ANN, Ripley's K, GWR, SAR, or SEM."),

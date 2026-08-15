@@ -44,12 +44,15 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     TASK_TYPE = "TASK_TYPE"
     MODEL = "MODEL"
     N_FOLDS = "N_FOLDS"
+    FOLD_METHOD = "FOLD_METHOD"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
 
     TASK_TYPES = ["Regression (numeric target)", "Classification (categorical target)"]
     TASK_KEYS = ["regression", "classification"]
     MODEL_LABELS = [CV_MODEL_LABELS[key] for key in CV_MODEL_KEYS]
+    FOLD_METHODS = ["K-Means spatial block (default)", "kNNDM (nearest-neighbour distance matching)"]
+    FOLD_METHOD_KEYS = ["kmeans_block", "knndm"]
 
     def __init__(self):
         super().__init__()
@@ -100,7 +103,21 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "Choose Number of folds based on data size: 5 is a reasonable "
             "default; fewer folds (3) for smaller datasets, more (10) only with "
             "several hundred records or more so each held-out block still has "
-            "enough test records to compute a stable metric."
+            "enough test records to compute a stable metric.\n\n"
+            "Fold method: K-Means spatial block (the default above) groups "
+            "records purely by geographic compactness. kNNDM (Linnenbrink, "
+            "Milà, Ludwig and Meyer, Geoscientific Model Development, 2024) "
+            "instead searches for the fold assignment whose test-to-nearest-"
+            "training-point distance distribution most closely matches the "
+            "dataset's own leave-one-out nearest-neighbour distance "
+            "distribution - i.e. the split that makes cross-validation "
+            "distances 'feel' most like predicting at a genuinely new "
+            "location, which K-Means blocking does not explicitly optimize "
+            "for. kNNDM costs more compute (it searches many candidate fold "
+            "assignments) and can produce less visually tidy blocks; prefer "
+            "it when the honesty of the reported score matters more than a "
+            "clean block map, and prefer K-Means spatial block when you also "
+            "want to inspect cv_fold as a simple regional breakdown."
         )
 
     def initAlgorithm(self, config=None):
@@ -127,6 +144,7 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 defaultValue=5, minValue=2, maxValue=20,
             )
         )
+        self.addParameter(QgsProcessingParameterEnum(self.FOLD_METHOD, "Fold method", options=self.FOLD_METHODS, defaultValue=0))
         self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Output layer with fold assignment"))
         self.addParameter(
             QgsProcessingParameterFileDestination(
@@ -148,6 +166,7 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         task_type = self.TASK_KEYS[self.parameterAsEnum(parameters, self.TASK_TYPE, context)]
         model_key = CV_MODEL_KEYS[self.parameterAsEnum(parameters, self.MODEL, context)]
         n_folds = self.parameterAsInt(parameters, self.N_FOLDS, context)
+        fold_method = self.FOLD_METHOD_KEYS[self.parameterAsEnum(parameters, self.FOLD_METHOD, context)]
 
         html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
         if not html_path:
@@ -172,11 +191,14 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if skipped:
             feedback.pushInfo(f"Skipped {skipped} feature(s) with missing values or empty geometry.")
 
-        feedback.pushInfo(f"Running spatial {n_folds}-fold CV with {CV_MODEL_LABELS[model_key]}...")
+        method_label = self.FOLD_METHODS[self.FOLD_METHOD_KEYS.index(fold_method)]
+        feedback.pushInfo(f"Running spatial {n_folds}-fold CV ({method_label}) with {CV_MODEL_LABELS[model_key]}...")
         try:
-            cv_results = spatial_kfold_evaluate(x, y, centroids, n_folds, task_type, model_key)
+            cv_results = spatial_kfold_evaluate(x, y, centroids, n_folds, task_type, model_key, fold_method=fold_method)
         except ImportError as exc:
             raise QgsProcessingException(optional_dependency_error("Spatial k-Fold Cross-Validation Evaluator", ["scikit-learn"], exc))
+        except ValueError as exc:
+            raise QgsProcessingException(str(exc))
 
         fold_metrics = cv_results["fold_metrics"]
         if not fold_metrics:
@@ -205,7 +227,7 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
-        self._write_html(html_path, target_field, feature_fields, task_type, model_key, n_folds, fold_metrics, skipped)
+        self._write_html(html_path, target_field, feature_fields, task_type, model_key, n_folds, method_label, fold_metrics, skipped)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def postProcessAlgorithm(self, context, feedback):
@@ -218,7 +240,7 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         )
         return {}
 
-    def _write_html(self, path, target_field, feature_fields, task_type, model_key, n_folds, fold_metrics, skipped):
+    def _write_html(self, path, target_field, feature_fields, task_type, model_key, n_folds, method_label, fold_metrics, skipped):
         is_regression = task_type == "regression"
         metric_key = "r2" if is_regression else "accuracy"
         headers = ["Fold", "Train n", "Test n"] + (["R2", "RMSE", "MAE"] if is_regression else ["Accuracy", "Macro F1"])
@@ -265,7 +287,7 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 </style></head>
 <body><div class="container">
 <h1>Spatial k-Fold Cross-Validation</h1>
-<p>Target: <strong>{html.escape(target_field)}</strong> | Model: <strong>{html.escape(CV_MODEL_LABELS[model_key])}</strong> | Folds: <strong>{n_folds}</strong></p>
+<p>Target: <strong>{html.escape(target_field)}</strong> | Model: <strong>{html.escape(CV_MODEL_LABELS[model_key])}</strong> | Folds: <strong>{n_folds}</strong> | Fold method: <strong>{html.escape(method_label)}</strong></p>
 <div class="summary">
 Mean {metric_key} = {float(np.mean(values)):.6f} | Std across folds = {float(np.std(values)):.6f}<br>
 Skipped {skipped} record(s) with missing values or empty geometry.

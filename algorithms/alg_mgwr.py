@@ -325,6 +325,29 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.pushWarning(
                 "The MGWR sample is small for multiscale bandwidth search. Treat bandwidths and local coefficients as exploratory."
             )
+        if not fixed:
+            # mgwr's multiscale backfitting seeds itself with an initial global bandwidth
+            # search (mgwr.search.multi_bw -> Sel_BW._init_section) that does NOT honor
+            # this tool's Min/Max bandwidth parameters and instead falls back to a fixed
+            # "40 + 2*n_vars" lower bound for adaptive (non-fixed) kernels. When the sample
+            # is smaller than that bound, the golden-section search receives an invalid
+            # (lower > upper) bracket and mgwr fails deep inside its kernel code with an
+            # opaque "kth out of bounds" numpy error. Catch that precondition here with an
+            # actionable message instead of letting the cryptic library error surface -
+            # this is independent of Min/Max bandwidth above, which only bounds the later
+            # per-variable refinement, not this initial seed step.
+            n_vars = p + 1
+            mgwr_min_n = 40 + 2 * n_vars
+            if n < mgwr_min_n:
+                raise QgsProcessingException(
+                    f"MGWR's adaptive-kernel multiscale bandwidth search needs at least "
+                    f"{mgwr_min_n} complete records for {p} explanatory variable(s) plus the "
+                    f"intercept (a hardcoded minimum inside the mgwr library's initial "
+                    f"bandwidth-seeding step, not something Min/Max bandwidth above can "
+                    f"override); this layer has {n}. Use a Fixed kernel (Fixed Gaussian or "
+                    f"Fixed Bisquare), select a layer with more complete records, or use "
+                    f"plain GWR instead of MGWR on small samples."
+                )
         for risk in model_quality["risks"]:
             feedback.pushWarning(risk)
         if crs_warning and not spherical:
@@ -519,31 +542,31 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         return kwargs
 
     def _extract_results(self, results, selector, y, indep_fields):
-        params = self._array2d(getattr(results, "params", None))
+        params = self._array2d(self._safe_getattr(results, "params"))
         if params is None:
             raise QgsProcessingException("MGWR returned no local coefficient matrix.")
         n = len(y)
-        predicted = self._array1d(getattr(results, "predy", None), n)
+        predicted = self._array1d(self._safe_getattr(results, "predy"), n)
         if predicted is None:
             predicted = np.full(n, np.nan)
-        residuals = self._array1d(getattr(results, "resid_response", None), n)
+        residuals = self._array1d(self._safe_getattr(results, "resid_response"), n)
         if residuals is None or not np.all(np.isfinite(residuals)):
             residuals = y - predicted
-        std_residuals = self._array1d(getattr(results, "std_res", None), n)
+        std_residuals = self._array1d(self._safe_getattr(results, "std_res"), n)
         if std_residuals is None or not np.all(np.isfinite(std_residuals)):
             resid_std = float(np.nanstd(residuals))
             std_residuals = residuals / resid_std if resid_std > 0 else np.zeros(n)
 
-        standard_errors = self._array2d(getattr(results, "bse", None))
+        standard_errors = self._array2d(self._safe_getattr(results, "bse"))
         if standard_errors is None or standard_errors.shape != params.shape:
             standard_errors = np.full(params.shape, np.nan)
-        t_values = self._array2d(getattr(results, "tvalues", None))
+        t_values = self._array2d(self._safe_getattr(results, "tvalues"))
         if t_values is None or t_values.shape != params.shape:
             t_values = np.divide(params, standard_errors, out=np.full(params.shape, np.nan), where=standard_errors > 0)
 
         bandwidths = self._extract_bandwidths(results, selector, params.shape[1])
-        enp_j = np.asarray(getattr(results, "ENP_j", np.full(params.shape[1], np.nan)), dtype=float).flatten()
-        if enp_j.size != params.shape[1]:
+        enp_j = self._array1d(self._safe_getattr(results, "ENP_j"), params.shape[1])
+        if enp_j is None:
             enp_j = np.full(params.shape[1], np.nan)
 
         return {
@@ -555,13 +578,13 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "std_residuals": std_residuals,
             "bandwidths": bandwidths,
             "enp_j": enp_j,
-            "r2": self._safe_float(getattr(results, "R2", None)),
-            "adj_r2": self._safe_float(getattr(results, "adj_R2", None)),
-            "aic": self._safe_float(getattr(results, "aic", None)),
-            "aicc": self._safe_float(getattr(results, "aicc", None)),
-            "bic": self._safe_float(getattr(results, "bic", None)),
-            "sigma2": self._safe_float(getattr(results, "sigma2", None)),
-            "tr_s": self._safe_float(getattr(results, "tr_S", None)),
+            "r2": self._safe_float(self._safe_getattr(results, "R2")),
+            "adj_r2": self._safe_float(self._safe_getattr(results, "adj_R2")),
+            "aic": self._safe_float(self._safe_getattr(results, "aic")),
+            "aicc": self._safe_float(self._safe_getattr(results, "aicc")),
+            "bic": self._safe_float(self._safe_getattr(results, "bic")),
+            "sigma2": self._safe_float(self._safe_getattr(results, "sigma2")),
+            "tr_s": self._safe_float(self._safe_getattr(results, "tr_S")),
             "names": ["Intercept"] + list(indep_fields),
         }
 
@@ -612,6 +635,20 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             if arr.size >= expected_size:
                 return arr[:expected_size]
         return np.full(expected_size, np.nan)
+
+    def _safe_getattr(self, obj, name, default=None):
+        """Like getattr(), but also swallows exceptions raised while evaluating a
+        property - not just a genuinely missing attribute. Several MGWRResults
+        properties (std_res, bse, tvalues, ...) divide by the hat-matrix influence
+        diagonal, which is None whenever hat_matrix=False (used here to avoid the
+        O(n^2) hat matrix on large layers); accessing those properties then raises
+        instead of returning None the way a missing attribute would, and a plain
+        getattr(obj, name, default) does not catch that - only AttributeError from
+        a genuinely absent attribute triggers its default."""
+        try:
+            return getattr(obj, name, default)
+        except Exception:
+            return default
 
     def _array1d(self, value, expected_size):
         if value is None:

@@ -31,7 +31,7 @@ EXPECTED_GROUPS = {
     "06 | Machine Learning and Explainable AI",
 }
 
-MIN_EXPECTED_ALGORITHM_COUNT = 73
+MIN_EXPECTED_ALGORITHM_COUNT = 81
 
 
 def _module_tree(path: Path) -> ast.Module:
