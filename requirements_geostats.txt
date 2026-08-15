@@ -9,6 +9,6 @@ lightgbm
 shap
 catboost
 interpret
-mapie
+mapie>=1.0
 dice-ml
 tabpfn

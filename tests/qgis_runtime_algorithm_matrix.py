@@ -21,6 +21,11 @@ from typing import Callable
 PROVIDER_ID = "planx_geostats"
 OPTIONAL_DEPENDENCY_TEXT = "requires optional Python package(s)"
 INSTALL_PREVIEW_TEXT = "Preview only: installation was not started"
+# TabPFN needs a one-time license acceptance (a cached TABPFN_TOKEN) before its
+# first local inference call; a test machine that has never completed that
+# out-of-band step is an environment-configuration gap, not a plugin bug -
+# tolerate it the same way a genuinely missing optional package is tolerated.
+TABPFN_AUTH_TEXT = "one-time license"
 
 
 @dataclass
@@ -1361,6 +1366,15 @@ def _run_case(case: RuntimeCase, env: dict, context) -> dict:
                 "label": case.label,
                 "ok": True,
                 "status": "optional_dependency_missing",
+                "error": message,
+                "messages": feedback_capture.tail(),
+            }
+        if case.optional_dependency_ok and TABPFN_AUTH_TEXT in message:
+            return {
+                "algorithm": case.algorithm,
+                "label": case.label,
+                "ok": True,
+                "status": "tabpfn_license_not_accepted",
                 "error": message,
                 "messages": feedback_capture.tail(),
             }

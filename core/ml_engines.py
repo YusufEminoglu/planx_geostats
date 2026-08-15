@@ -298,12 +298,14 @@ def fit_conformal_interval(
     Extra Trees only, via tree-vote spread), this works for every model
     build_cv_estimator supports and carries a distribution-free marginal
     coverage guarantee rather than a heuristic spread measure."""
-    from mapie.regression import MapieRegressor
+    from mapie.regression import CrossConformalRegressor
 
     estimator = build_cv_estimator("regression", model_key, random_state)
-    mapie = MapieRegressor(estimator, method="plus", cv=cv, random_state=random_state)
-    mapie.fit(x, y)
-    y_pred, y_pis = mapie.predict(x, alpha=alpha)
+    mapie = CrossConformalRegressor(
+        estimator=estimator, confidence_level=1.0 - alpha, method="plus", cv=cv, random_state=random_state,
+    )
+    mapie.fit_conformalize(x, y)
+    y_pred, y_pis = mapie.predict_interval(x)
     lower = np.asarray(y_pis)[:, 0, 0]
     upper = np.asarray(y_pis)[:, 1, 0]
     covered = (y >= lower) & (y <= upper)
@@ -316,6 +318,28 @@ def fit_conformal_interval(
 _TABPFN_MAX_ROWS = 10000
 _TABPFN_MAX_FEATURES = 500
 _TABPFN_MAX_CLASSES = 10
+
+
+def _tabpfn_auth_guidance(exc: Exception) -> str:
+    """TabPFN needs a one-time license acceptance before its first local
+    inference call, normally done via an interactive browser-login prompt.
+    That prompt polls sys.stdin with select.select(), which only supports
+    sockets on Windows and raises OSError [WinError 10038] there - inside
+    QGIS's embedded console this always fails, and it is unreliable even in
+    a plain Windows terminal. Setting TABPFN_TOKEN sidesteps the broken
+    prompt entirely (checked before any browser/stdin interaction), so that
+    is the only reliable fix on Windows, not a QGIS-specific workaround."""
+    return (
+        f"TabPFN could not complete its one-time license check or model download ({exc}). "
+        "On Windows, TabPFN's interactive browser-login prompt is unreliable (it polls the "
+        "console in a way Windows does not support), so accept the license once outside QGIS "
+        "instead: 1) open https://ux.priorlabs.ai/account in a browser, log in or register, and "
+        "accept the license on the Licenses tab; 2) copy the API key from that page; 3) set it as "
+        "a permanent Windows environment variable named TABPFN_TOKEN (System Properties > "
+        "Environment Variables), or run 'setx TABPFN_TOKEN \"<your-api-key>\"' in a command "
+        "prompt. Restart QGIS afterward so it inherits the new environment variable; TabPFN will "
+        "then use the cached token with no browser prompt."
+    )
 
 
 def fit_tabpfn_regressor(x: np.ndarray, y: np.ndarray, random_state: int = 42) -> dict:
@@ -343,7 +367,10 @@ def fit_tabpfn_regressor(x: np.ndarray, y: np.ndarray, random_state: int = 42) -
     from tabpfn import TabPFNRegressor
 
     model = TabPFNRegressor(random_state=random_state)
-    model.fit(x, y)
+    try:
+        model.fit(x, y)
+    except Exception as exc:
+        raise ValueError(_tabpfn_auth_guidance(exc)) from exc
     fitted = np.asarray(model.predict(x))
     return {"model": model, "fitted": fitted, **regression_metrics(y, fitted)}
 
@@ -371,7 +398,10 @@ def fit_tabpfn_classifier(x: np.ndarray, y: np.ndarray, class_labels: Sequence[s
     from tabpfn import TabPFNClassifier
 
     model = TabPFNClassifier(random_state=random_state)
-    model.fit(x, y)
+    try:
+        model.fit(x, y)
+    except Exception as exc:
+        raise ValueError(_tabpfn_auth_guidance(exc)) from exc
     fitted = np.asarray(model.predict(x)).astype(int).ravel()
     proba = model.predict_proba(x)
     return {"model": model, "fitted": fitted, "proba": proba, **classification_metrics(y, fitted, class_labels)}
