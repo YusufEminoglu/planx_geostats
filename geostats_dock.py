@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 """PlanX GeoStats Lab dock: a docked Processing launcher.
 
-A QTreeWidget grouped by the provider's 6 existing groups (each keeps its
-own colour), one icon per tool, double-click to run, right-click for
+A QTreeWidget grouped by the provider's 7 groups (each keeps its own
+colour), one icon per tool, double-click to run, right-click for
 documentation. Mirrors the sibling planx_urban_resilience plugin's
-urban_resilience_dock.py. GeoStats has no shared GroupMixin across its 34
+urban_resilience_dock.py. GeoStats has no shared GroupMixin across its
 algorithm files (each already implements group()/groupId()/icon()
 individually), so this module reads those directly off the registered
-algorithms rather than off a per-file mixin constant.
+algorithms rather than off a per-file mixin constant. GEOSTATS_GROUPS
+below must list every group id the provider's algorithms actually return -
+a group missing here is silently omitted from the dock even though it is
+still fully registered and runnable from the Processing Toolbox (the exact
+bug that hid all of 06 | Machine Learning and Explainable AI until fixed).
 """
 from __future__ import annotations
 
@@ -43,6 +47,7 @@ GEOSTATS_GROUPS = (
     ("03 | Hot Spots and Spatial Outliers", "planx_hotspots_outliers", "#DC2626"),
     ("04 | Centers, Direction and Dispersion", "planx_center_direction_spread", "#7C3AED"),
     ("05 | Models and Scenarios", "planx_model_scenario", "#059669"),
+    ("06 | Machine Learning and Explainable AI", "planx_ml_xai", "#4F46E5"),
 )
 
 # Every colour used below is pinned explicitly (never inherited from the

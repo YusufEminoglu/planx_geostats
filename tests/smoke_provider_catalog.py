@@ -20,6 +20,7 @@ RELEASE_ZIP_VERIFIER = ROOT.parent / "packaging" / "verify_release_zip.py"
 RELEASE_ZIP_VERIFIER_TEST = ROOT.parent / "packaging" / "test_verify_release_zip.py"
 ALGORITHMS = ROOT / "algorithms"
 ALGORITHM_ICONS = ROOT / "icons" / "algorithms"
+GEOSTATS_DOCK = ROOT / "geostats_dock.py"
 
 EXPECTED_GROUPS = {
     "00 | Setup and Diagnostics",
@@ -81,13 +82,14 @@ def _algorithm_class_catalog() -> dict[str, dict[str, str]]:
             for child in node.body:
                 if isinstance(child, ast.FunctionDef) and child.name == "icon":
                     has_icon = True
-                if isinstance(child, ast.FunctionDef) and child.name in {"name", "displayName", "group"}:
+                if isinstance(child, ast.FunctionDef) and child.name in {"name", "displayName", "group", "groupId"}:
                     method_values[child.name] = _single_string_return(child)
             catalog[node.name] = {
                 "file": path.name,
                 "name": method_values.get("name", ""),
                 "display_name": method_values.get("displayName", ""),
                 "group": method_values.get("group", ""),
+                "group_id": method_values.get("groupId", ""),
                 "has_icon": has_icon,
             }
     return catalog
@@ -132,6 +134,44 @@ def test_algorithm_catalog_has_stable_ids_and_groups() -> None:
 
     groups = {meta["group"] for meta in catalog.values()}
     assert groups == EXPECTED_GROUPS
+
+
+def test_dock_group_list_covers_every_algorithm_group_id() -> None:
+    """geostats_dock.py's GEOSTATS_GROUPS is a second, independent list of
+    (display_name, group_id, colour) that the dock widget iterates to decide
+    what to show - unlike the Processing Toolbox, which reads group_id
+    straight off each registered algorithm and therefore can never miss a
+    group. A group_id present on algorithms but absent from GEOSTATS_GROUPS
+    is silently dropped from the dock with no error: exactly what happened
+    to the entire "06 | Machine Learning and Explainable AI" group, whose
+    34 algorithms (including all 8 tools added this Wave) were fully
+    registered and runnable from the Processing Toolbox the whole time but
+    never appeared in the docked panel, because group-06 was never added to
+    this list when it was first introduced. This test fails loudly instead."""
+    catalog = _algorithm_class_catalog()
+    algorithm_group_ids = {meta["group_id"] for meta in catalog.values()}
+    assert all(algorithm_group_ids), "Every algorithm needs a non-empty groupId()"
+
+    tree = _module_tree(GEOSTATS_DOCK)
+    dock_group_ids: set[str] = set()
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Assign) and len(node.targets) == 1):
+            continue
+        target = node.targets[0]
+        if not (isinstance(target, ast.Name) and target.id == "GEOSTATS_GROUPS"):
+            continue
+        for row in node.value.elts:
+            group_id_node = row.elts[1]
+            assert isinstance(group_id_node, ast.Constant) and isinstance(group_id_node.value, str)
+            dock_group_ids.add(group_id_node.value)
+
+    assert dock_group_ids, "Could not find GEOSTATS_GROUPS in geostats_dock.py"
+    missing = algorithm_group_ids - dock_group_ids
+    assert not missing, (
+        f"Algorithm group_id(s) {sorted(missing)} are registered and runnable from the "
+        "Processing Toolbox but missing from geostats_dock.py's GEOSTATS_GROUPS, so every "
+        "algorithm in that group is silently absent from the docked GeoStats Lab panel."
+    )
 
 
 def test_every_algorithm_has_unique_png_icon() -> None:
@@ -602,6 +642,7 @@ def run_all() -> None:
     test_provider_imports_every_registered_algorithm()
     test_every_algorithm_file_is_registered_once()
     test_algorithm_catalog_has_stable_ids_and_groups()
+    test_dock_group_list_covers_every_algorithm_group_id()
     test_every_algorithm_has_unique_png_icon()
     test_plugin_metadata_and_provider_use_packaged_png_icon()
     test_html_module_is_not_shadowed_in_report_writers()

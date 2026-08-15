@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.1] - 2026-08-15
+
+- **Bug fix**: the docked GeoStats Lab panel's group list (`geostats_dock.py::GEOSTATS_GROUPS`) never included `06 | Machine Learning and Explainable AI`. All 34 algorithms in that group — including every tool added in 2.1.0 (Conformal Prediction Interval, TabPFN, DiCE, CatBoost, EBM) plus the original 26 from 2.0.0 — were fully registered and runnable from the Processing Toolbox the entire time, but silently never appeared in the docked panel specifically, since the panel iterates its own hardcoded group list rather than reading group ids directly off the provider. Fixed by adding the missing group entry, and added `tests/smoke_provider_catalog.py::test_dock_group_list_covers_every_algorithm_group_id`, which now fails the build if any future group is ever left out of the dock's list again.
+
 ## [2.1.0] - 2026-08-15
 
 - **8 new algorithms, taking the plugin from 73 to 81**, all in **06 | Machine Learning and Explainable AI**:
