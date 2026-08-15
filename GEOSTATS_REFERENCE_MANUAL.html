@@ -9149,6 +9149,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>tabpfn.TabPFNRegressor</code> (<code>core/ml_engines.py::fit_tabpfn_regressor</code>), which downloads and caches pretrained weights on first use. No hyperparameters are exposed because none exist to tune — the model performs zero gradient-descent steps on your data.
   </div>
+  <div class="acad-note">
+  <strong>First-use licensing (Windows).</strong> TabPFN requires a one-time license acceptance before its first local inference call. TabPFN's own interactive browser-login prompt polls the console in a way Windows does not support for a non-socket standard input, so it cannot complete inside QGIS's embedded Python console — accept the license once outside QGIS instead: open <a href="https://ux.priorlabs.ai/account" target="_blank" rel="noopener">ux.priorlabs.ai/account</a>, log in or register, accept the license, copy the API key, then set it as a permanent Windows environment variable named <code>TABPFN_TOKEN</code> and restart QGIS. After that, TabPFN authenticates silently on every run with no browser prompt. Running without a cached token raises a clear message with these same steps rather than a raw error.
+  </div>
 
   <h5>3. Parameters</h5>
   <table class="params-table">
@@ -9222,6 +9225,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>tabpfn.TabPFNClassifier</code> (<code>core/ml_engines.py::fit_tabpfn_classifier</code>), which shares the row/feature envelope and first-use weight download of the regression engine, plus a 10-class ceiling.
+  </div>
+  <div class="acad-note">
+  <strong>First-use licensing (Windows).</strong> See TabPFN Regression's identical note above: on Windows, accept the license once at <a href="https://ux.priorlabs.ai/account" target="_blank" rel="noopener">ux.priorlabs.ai/account</a> and set a permanent <code>TABPFN_TOKEN</code> environment variable before running this tool in QGIS, since the library's own interactive browser-login prompt cannot complete inside QGIS's embedded console on Windows.
   </div>
 
   <h5>3. Parameters</h5>

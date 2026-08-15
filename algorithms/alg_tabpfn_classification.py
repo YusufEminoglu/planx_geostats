@@ -95,7 +95,15 @@ class TabPFNClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "k-Fold Cross-Validation Evaluator before relying on it.\n\n"
             "Requires the optional tabpfn package (Setup and Diagnostics > "
             "Install / Update GeoStats Libraries) and, on first use, an "
-            "internet connection."
+            "internet connection.\n\n"
+            "First use also needs a one-time TabPFN license acceptance. On "
+            "Windows, TabPFN's interactive browser-login prompt cannot "
+            "complete inside QGIS's embedded console, so accept the license "
+            "once outside QGIS instead: open https://ux.priorlabs.ai/account, "
+            "log in or register, accept the license, copy the API key, then "
+            "set it as a permanent Windows environment variable named "
+            "TABPFN_TOKEN and restart QGIS. After that, TabPFN runs with no "
+            "further prompts."
         )
 
     def initAlgorithm(self, config=None):
