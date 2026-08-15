@@ -6790,6 +6790,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>A structural limitation: no extrapolation.</strong> Because a tree's prediction is always the mean of training-record target values inside a leaf, Random Forest cannot extrapolate beyond the range of values it saw during training the way a linear model can — a field value 50% higher than anything in the training data still produces a prediction bounded by the training targets' observed range. This matters specifically for spatial prediction: applying a model fit on one district to a different district with a systematically different explanatory-field range (a much denser city core, for instance) risks silently flattened, underestimated predictions at the extremes, not a visible error. Checking whether the prediction layer's target field range matches the training layer's is a cheap, worthwhile sanity check before trusting predictions in an unseen area.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why de-correlating trees actually reduces error: strength versus correlation.</strong> Breiman's (2001) original paper derives an upper bound on the forest's generalization error in terms of two competing quantities: the average individual tree's predictive strength, and the average correlation between trees' errors. Random feature subsetting at each split (governed indirectly by how many fields are available and how many candidate fields a split may consider) trades a small amount of per-tree strength for a larger reduction in inter-tree correlation — and because the error bound scales with correlation directly but only inversely with strength, this trade is usually a net win. This is the theoretical justification behind the practical advice to try more trees before tuning tree depth: adding trees at a fixed correlation/strength ratio (eq. 4 below) strictly cannot hurt the ensemble, while changing depth or the feature-subsetting rate changes that ratio and can help or hurt depending on the dataset.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
@@ -6799,6 +6802,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$\hat{f}_{\text{OOB}}(x_i) = \frac{1}{|\{b: i \notin \mathcal{D}_b\}|}\sum_{b:\, i \notin \mathcal{D}_b} T_b(x_i) \tag{2}$$
   <p style="margin:8px 0;"><strong>Mean decrease in impurity feature importance (summed over all splits on field \(k\), all trees):</strong></p>
   $$\text{Imp}(k) = \frac{1}{B}\sum_{b=1}^{B}\sum_{\text{splits on } k \text{ in } T_b} \Delta \text{impurity} \tag{3}$$
+  <p style="margin:8px 0;"><strong>Breiman's (2001) generalization-error upper bound (\(\bar{\rho}\) = mean pairwise correlation between tree residuals, \(s\) = mean tree strength; the ratio this bound scales with is the theoretical basis for the strength/correlation trade-off above):</strong></p>
+  $$\text{PE}^{*} \le \bar{\rho}\,\frac{1-s^2}{s^2} \tag{4}$$
   </div>
 
   <div class="acad-note">
@@ -6838,6 +6843,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
   <strong>Predicting onto areas outside the training range.</strong> If Random Forest Regression will be used to predict onto parcels or districts the training data did not cover, check that the explanatory fields' ranges in the prediction area overlap the training area's ranges (Data Readiness Audit reports field ranges for exactly this purpose). Predictions for out-of-range inputs are not flagged automatically — they are simply clamped toward the nearest training leaf's average, which can look plausible while being systematically wrong.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A practical tuning order, grounded in the strength/correlation trade-off.</strong> Per equation 4, raise Number of trees first — it is the one setting that cannot make the ensemble worse, only more stable, and is worth generously over-provisioning before touching anything else (200 is a reasonable default; there is rarely harm in 500–1000 for a one-off analysis where a few extra seconds of runtime is a non-issue). Only after that, treat Max tree depth and Minimum samples per leaf as the actual regularization knobs: both directly reduce individual tree strength, so tightening them helps when OOB score and in-sample R2 diverge sharply (overfitting), but can hurt if pushed too far on a dataset that genuinely needs deep splits to capture real non-linear structure.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-et-regression">Extra Trees Regression</a> &middot; <a href="#alg-shap-spatial-map">SHAP Spatial Attribution Map</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a> &middot; <a href="#alg-glr">Generalized Linear Regression</a>
@@ -6845,7 +6853,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
-  <p style="margin:4px 0;"><strong>Breiman, L.</strong> (2001). "Random Forests." <em>Machine Learning</em> 45(1): 5–32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a> — The original Random Forest paper.</p>
+  <p style="margin:4px 0;"><strong>Breiman, L.</strong> (2001). "Random Forests." <em>Machine Learning</em> 45(1): 5–32. DOI: <a href="https://doi.org/10.1023/A:1010933404324">10.1023/A:1010933404324</a> — The original Random Forest paper; source of the strength/correlation generalization-error bound (eq. 4).</p>
   <p style="margin:4px 0;"><strong>Breiman, L.</strong> (1996). "Bagging Predictors." <em>Machine Learning</em> 24(2): 123–140. DOI: <a href="https://doi.org/10.1007/BF00058655">10.1007/BF00058655</a></p>
   <p style="margin:4px 0;"><strong>Hastie, T., Tibshirani, R. &amp; Friedman, J.</strong> (2009). <em>The Elements of Statistical Learning</em> (2nd ed.), Ch. 15. New York: Springer. DOI: <a href="https://doi.org/10.1007/978-0-387-84858-7">10.1007/978-0-387-84858-7</a></p>
   <p style="margin:4px 0;"><strong>Strobl, C., Boulesteix, A.-L., Zeileis, A. &amp; Hothorn, T.</strong> (2007). "Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution." <em>BMC Bioinformatics</em> 8: 25. DOI: <a href="https://doi.org/10.1186/1471-2105-8-25">10.1186/1471-2105-8-25</a> — Documents the Mean Decrease in Impurity bias noted above.</p>
@@ -6885,6 +6893,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$\hat{P}_b(y=c \mid x) = \frac{n_{\ell(x) c}}{\sum_{c'} n_{\ell(x) c'}} \tag{1}$$
   <p style="margin:8px 0;"><strong>Forest-averaged class probability and prediction:</strong></p>
   $$\hat{P}(y=c \mid x) = \frac{1}{B}\sum_{b=1}^{B}\hat{P}_b(y=c \mid x), \qquad \hat{y}(x) = \arg\max_c \hat{P}(y=c \mid x) \tag{2}$$
+  <p style="margin:8px 0;"><strong>Macro-averaged F1, the single-number summary this tool's report favors over raw accuracy on imbalanced targets (\(K\) classes, per-class \(F1_c\)):</strong></p>
+  $$\text{Macro-}F1 = \frac{1}{K}\sum_{c=1}^{K} F1_c, \qquad F1_c = \frac{2\,\text{Precision}_c\cdot\text{Recall}_c}{\text{Precision}_c + \text{Recall}_c} \tag{3}$$
   </div>
 
   <div class="acad-note">
@@ -6923,6 +6933,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </div>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
   <strong>When rf_conf needs to be a real probability, not just a ranking.</strong> If a downstream calculation actually needs calibrated probabilities (for example, combining rf_conf with a cost figure to estimate expected loss), fit a separate calibration step outside this plugin (Platt scaling or isotonic regression against a held-out set) rather than using rf_conf directly — this tool reports the ensemble's raw vote fraction, deliberately, so its meaning stays simple and consistent across every classification tool in this group.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading macro-F1 versus accuracy in the report.</strong> Because macro-F1 (eq. 3) averages each class's F1 with equal weight regardless of how many records it has, a rare class dragging macro-F1 down while overall accuracy stays high is a direct, quantified signal of exactly the accuracy-paradox risk described above — a large gap between accuracy and macro-F1 is the single fastest sanity check for whether a headline accuracy figure is safe to report on its own.
   </p>
 
     <div class="see-also-box">
@@ -6968,7 +6981,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
   <p style="margin:8px 0;"><strong>Split-threshold selection (field \(k\), value range \([a,b]\) at the current node — the sole mechanical difference from Random Forest's optimal-threshold search):</strong></p>
   $$\text{threshold} \sim \text{Uniform}(a, b) \tag{1}$$
-  <p style="margin:8px 0;">Ensemble prediction and feature importance otherwise follow the same averaging formulas as Random Forest Regression (equations 1 and 3 there).</p>
+  <p style="margin:8px 0;">Ensemble prediction and feature importance otherwise follow the same averaging formulas as Random Forest Regression (equations 1 and 3 there); the same strength/correlation generalization-error bound (Random Forest Regression, eq. 4) also governs Extra Trees, with the randomized-threshold mechanism pushing further along the correlation axis than Random Forest's feature-subsetting alone.</p>
   </div>
 
   <div class="acad-note">
@@ -7008,9 +7021,12 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
   <strong>The same no-extrapolation limitation applies here.</strong> Extra Trees averages leaf-level training targets exactly as Random Forest does, so the extrapolation caveat in Random Forest Regression's interpretation guide (predictions for out-of-range explanatory-field values are clamped, not flagged) applies identically — check the prediction area's field ranges against the training layer's before trusting predictions in a substantially different subregion.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>What a large Random Forest/Extra Trees gap suggests.</strong> Because the two engines differ in exactly one mechanical respect (optimized versus randomized split thresholds), a large R2 gap between them on the same fields is informative in a specific way: it suggests the outcome depends on split thresholds being placed precisely at the "right" values in the data rather than merely in the right neighborhood — often a sign of a genuinely sharp, threshold-like effect (a zoning cutoff, a distance band) rather than a smoothly varying relationship, worth investigating with a Partial Dependence Report on the suspected field.
+  </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
+    <strong>See also:</strong> <a href="#alg-rf-regression">Random Forest Regression</a> &middot; <a href="#alg-partial-dependence">Partial Dependence Report</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -7043,9 +7059,12 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   As with the regression version, et_conf is a vote fraction, not an automatically calibrated probability — the same caveat noted for Random Forest Classification (Niculescu-Mizil &amp; Caruana, 2005) applies here without modification.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Training-time savings compound across a full comparison workflow.</strong> Because Extra Trees skips the per-split optimal-threshold search entirely, it is typically the fastest tree-ensemble classifier to fit in this group — a modest advantage on a single run, but a meaningful one when running ML Model Comparison across several model families, or when repeatedly refitting during Permutation Feature Importance's many-repeat shuffling procedure on a large layer.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Follows the same leaf-probability averaging as Random Forest Classification (equations 1–2 there); the only mechanical difference is the random, rather than optimized, split-threshold search at each node (equation 1 of Extra Trees Regression).</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Follows the same leaf-probability averaging as Random Forest Classification (equations 1–2 there); the only mechanical difference is the random, rather than optimized, split-threshold search at each node (equation 1 of Extra Trees Regression). Macro-F1 (Random Forest Classification, eq. 3) is reported identically here.</p>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>sklearn.ensemble.ExtraTreesClassifier</code> with <code>bootstrap=True</code> via <code>core/ml_engines.py::fit_extra_trees_classifier</code>, sharing the same classification-metrics helper (accuracy, confusion matrix, per-class precision/recall/F1) as every other classification tool in this group.
@@ -7083,6 +7102,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </div>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
   <strong>Reading disagreement between the two ensembles.</strong> When Random Forest and Extra Trees disagree on a specific record's predicted class, that record sits near a genuinely ambiguous region of the decision boundary rather than one algorithm simply being "wrong" — such records are good candidates for field verification or for review with SHAP Local Explanation Report to see which fields each model weighted differently.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Building an ensemble-of-ensembles view.</strong> For a genuinely important classification decision, it is reasonable to run Random Forest, Extra Trees, and at least one Gradient Boosting engine on the same fields and treat a record's classification as more trustworthy the more of these independently-randomized models agree on it — an informal but practical extension of the same variance-reduction logic that makes any single one of these ensembles work, applied one level up across model families rather than across trees within one family.
   </p>
 
     <div class="see-also-box">
@@ -7131,6 +7153,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$\min_{w,b} \tfrac{1}{2}\lVert w \rVert^2 + C\sum_i L_\varepsilon(y_i,\, w'\phi(x_i)+b) \tag{2}$$
   <p style="margin:8px 0;"><strong>RBF kernel (this tool's default):</strong></p>
   $$K(x_i, x_j) = \exp\!\left(-\gamma \lVert x_i - x_j \rVert^2\right) \tag{3}$$
+  <p style="margin:8px 0;"><strong>Dual formulation actually solved (Lagrange multipliers \(\alpha_i, \alpha_i^{*}\); only points with non-zero \(\alpha\) — the support vectors — appear in the final sum):</strong></p>
+  $$\hat{y}(x) = \sum_{i} (\alpha_i - \alpha_i^{*})\, K(x_i, x) + b \tag{4}$$
   </div>
 
   <div class="acad-note">
@@ -7169,6 +7193,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </div>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
   <strong>Choosing a kernel.</strong> Start with Linear when there is reason to expect an approximately monotonic, additive relationship — it is far faster to fit and its coefficients, while not exposed as feature_importances_, at least correspond to a fixed direction of effect per field. Move to RBF specifically when Linear's R2 (or a residual plot) suggests curvature the linear kernel cannot capture; Polynomial is rarely the best choice on planning-scale data and is included mainly for completeness and comparison.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>What a small support-vector count means.</strong> Because only points that violate the epsilon tube become support vectors (eq. 4), a fit where nearly every record ends up as a support vector suggests epsilon is too small for this data's noise level — the model is straining to touch almost every point rather than finding a genuinely simpler underlying tube. Conversely, very few support vectors alongside poor R2 suggests epsilon is too large, discarding real signal as within-tolerance noise. This plugin does not currently surface the support-vector count directly, but it is a concept worth understanding when C and Epsilon tuning produces a fit that neither over- nor under-fits convincingly.
   </p>
 
     <div class="see-also-box">
@@ -7213,6 +7240,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$\min_{w,b,\xi} \tfrac{1}{2}\lVert w \rVert^2 + C\sum_i \xi_i \quad \text{s.t.}\quad y_i(w'\phi(x_i)+b) \ge 1-\xi_i,\ \xi_i \ge 0 \tag{1}$$
   <p style="margin:8px 0;"><strong>Decision function:</strong></p>
   $$\hat{y}(x) = \text{sign}\!\left(\sum_{i \in \text{SV}} \alpha_i y_i K(x_i, x) + b\right) \tag{2}$$
+  <p style="margin:8px 0;"><strong>Platt scaling — the calibration model layered on top of the raw decision function \(f(x)\) to produce svc_conf (\(A, B\) fit by maximum likelihood against the training labels):</strong></p>
+  $$P(y=1 \mid f(x)) = \frac{1}{1+\exp(A\,f(x)+B)} \tag{3}$$
   </div>
 
   <div class="acad-note">
@@ -7250,6 +7279,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </div>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
   <strong>svc_conf reflects Platt-scaled calibration, not the raw margin.</strong> Because the confidence field comes from a separate calibration model fit on top of the SVC decision function rather than the margin distance itself, it is somewhat more trustworthy as an actual probability than a raw ensemble vote fraction (Random Forest's rf_conf) — but it is still fit on the same training data being classified, so the same general caution about validating on held-out data (Spatial k-Fold Cross-Validation Evaluator) applies before using svc_conf in a downstream calculation.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Watch fit time on target fields with many categories.</strong> Because the one-vs-one extension fits \(\binom{k}{2}\) internal binary models, a target field with, say, 8 zoning categories fits 28 internal SVCs rather than 1 — still usually fast on planning-scale data, but worth knowing about before assuming SVC will scale the same way as Random Forest Classification does when a categorical field with many distinct values is used as the target.
   </p>
 
     <div class="see-also-box">
@@ -7297,6 +7329,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$F_M(x) = \sum_{m=1}^{M} \nu \cdot h_m(x) \tag{1}$$
   <p style="margin:8px 0;"><strong>Each round fits a tree to the negative gradient of the loss (squared error shown; \(\nu\)=learning rate):</strong></p>
   $$h_m = \arg\min_h \sum_i \left(-\left[\frac{\partial L(y_i, F_{m-1}(x_i))}{\partial F_{m-1}(x_i)}\right] - h(x_i)\right)^2 \tag{2}$$
+  <p style="margin:8px 0;"><strong>Learning-rate/round-count trade-off: shrinking \(\nu\) while raising \(M\) proportionally traces out approximately the same final fit (Friedman, 2001) but with a smoother, less overfitting-prone optimization path — the formal justification behind the "lower the rate and raise the round count together" advice below:</strong></p>
+  $$F_M(x) \approx F_{M'}(x) \text{ when } \nu \cdot M \approx \nu' \cdot M' \tag{3}$$
   </div>
 
   <div class="acad-note">
@@ -7343,8 +7377,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 
 <h5>6. Literature</h5>
   <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
-  <p style="margin:4px 0;"><strong>Friedman, J.H.</strong> (2001). "Greedy Function Approximation: A Gradient Boosting Machine." <em>Annals of Statistics</em> 29(5): 1189–1232. DOI: <a href="https://doi.org/10.1214/aos/1013203451">10.1214/aos/1013203451</a> — The original Gradient Boosting paper.</p>
-  <p style="margin:4px 0;"><strong>Friedman, J.H.</strong> (2002). "Stochastic Gradient Boosting." <em>Computational Statistics &amp; Data Analysis</em> 38(4): 367–378. DOI: <a href="https://doi.org/10.1016/S0167-9473(01)00065-2">10.1016/S0167-9473(01)00065-2</a></p>
+  <p style="margin:4px 0;"><strong>Friedman, J.H.</strong> (2001). "Greedy Function Approximation: A Gradient Boosting Machine." <em>Annals of Statistics</em> 29(5): 1189–1232. DOI: <a href="https://doi.org/10.1214/aos/1013203451">10.1214/aos/1013203451</a> — The original Gradient Boosting paper; source of the learning-rate/round-count trade-off (eq. 3).</p>
+  <p style="margin:4px 0;"><strong>Friedman, J.H.</strong> (2002). "Stochastic Gradient Boosting." <em>Computational Statistics &amp; Data Analysis</em> 38(4): 367–378. DOI: <a href="https://doi.org/10.1016/S0167-9473(01)00065-2">10.1016/S0167-9473(01)00065-2</a> — Introduces row subsampling per boosting round as a further variance-reduction technique, used internally by several of this group's engines.</p>
   </div>
 </div>
 </article>
@@ -7378,6 +7412,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$\mathcal{L}^{(m)} = \sum_i \left[g_i h_m(x_i) + \tfrac{1}{2}h_i h_m(x_i)^2\right] + \Omega(h_m) \tag{1}$$
   <p style="margin:8px 0;"><strong>Complexity penalty (leaf count \(T\), leaf weights \(w_j\)):</strong></p>
   $$\Omega(h) = \gamma T + \tfrac{1}{2}\lambda \sum_{j=1}^{T} w_j^2 \tag{2}$$
+  <p style="margin:8px 0;"><strong>Closed-form optimal weight for leaf \(j\) given a fixed tree structure (\(I_j\) = records falling in leaf \(j\)) — the direct payoff of using second-order information:</strong></p>
+  $$w_j^{*} = -\frac{\sum_{i \in I_j} g_i}{\sum_{i \in I_j} h_i + \lambda} \tag{3}$$
   </div>
 
   <div class="acad-note">
@@ -7454,7 +7490,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </p>
 
   <h5>2. Mathematical Formulation</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Follows the same additive-ensemble and gradient-fitting formulation as Gradient Boosting Regression (scikit-learn), equations 1–2 there; the mechanical difference is leaf-wise rather than level-wise tree growth, plus LightGBM's histogram-based split search and gradient-based one-side sampling for further speed on large datasets.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Follows the same additive-ensemble and gradient-fitting formulation as Gradient Boosting Regression (scikit-learn), equations 1–2 there; the mechanical difference is leaf-wise rather than level-wise tree growth, plus LightGBM's histogram-based split search and gradient-based one-side sampling for further speed on large datasets. GOSS's sampling probability for a small-gradient record is not uniform but weighted to keep the gradient-sum estimate unbiased: retained small-gradient records are up-weighted by a constant factor \((1-a)/b\) (top fraction \(a\) kept in full, remaining fraction sampled at rate \(b\)) when accumulating split-gain statistics, exactly compensating for the records that were dropped.</p>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>lightgbm.LGBMRegressor</code> (<code>core/ml_engines.py::fit_gbm_regressor</code>, engine="lightgbm"), exposing native feature importances.
@@ -7530,7 +7566,10 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </p>
 
   <h5>2. Mathematical Formulation</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Follows the same additive-ensemble structure as Gradient Boosting Regression (equation 1 there), with the gradient of equation 2 computed against the binomial/multinomial deviance loss instead of squared error, and predictions converted to class probabilities via a softmax (or sigmoid, for two classes) of the ensemble's raw score.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Follows the same additive-ensemble structure as Gradient Boosting Regression (equation 1 there), with the gradient of equation 2 computed against the binomial/multinomial deviance loss instead of squared error, and predictions converted to class probabilities via a softmax (or sigmoid, for two classes) of the ensemble's raw score. Binomial deviance for the two-class case, evaluated at the ensemble's raw score \(F(x_i)\):</p>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  $$L(y_i, F(x_i)) = \log\!\left(1+e^{-2y_iF(x_i)}\right), \qquad y_i \in \{-1,+1\} \tag{1}$$
+  </div>
 
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>sklearn.ensemble.HistGradientBoostingClassifier</code> (<code>core/ml_engines.py::fit_gbm_classifier</code>, engine="sklearn"). No native feature importances — the report directs the analyst to Permutation Feature Importance.
@@ -7602,6 +7641,10 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <strong>Where the second-order advantage shows up most.</strong> The Hessian-informed leaf weights that give XGBoost regression a more precisely targeted correction per round (see the regression entry) matter somewhat differently for classification: because the binomial deviance loss's curvature varies with how confident the current ensemble already is about a record (near-certain predictions have a flatter loss curvature than borderline ones), second-order information lets XGBoost allocate less correction effort to already-confident, easy records and more to borderline ones — a natural fit for planning classification tasks where most records are easy and a genuinely ambiguous minority drive most of the error.
   </p>
 
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Regularization interacts with class imbalance.</strong> The L1/L2 leaf-weight penalty (Gradient Boosting Regression (XGBoost), eq. 2) shrinks every leaf's contribution toward zero somewhat, which on an imbalanced target has an asymmetric practical effect: predictions for the minority class, already less confidently supported by fewer training examples, are pulled toward the majority-class default slightly more than majority-class predictions are — one contributor (alongside plain sample scarcity) to minority-class recall being the metric most worth watching closely for this engine specifically.
+  </p>
+
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>xgboost.XGBClassifier</code> (<code>core/ml_engines.py::fit_gbm_classifier</code>, engine="xgboost").
   </div>
@@ -7670,6 +7713,10 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Ke et al.'s (2017) leaf-wise growth strategy (see Gradient Boosting Regression (LightGBM)) applies unchanged to classification, fitting the binomial/multinomial deviance gradient at each round instead of squared error.</p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Sharper decision boundaries, at an overfitting cost.</strong> Because leaf-wise growth concentrates splitting effort wherever the loss is currently worst, LightGBM classification can carve out sharper, more localized decision boundaries around a small cluster of hard-to-classify records than a level-wise engine growing the same number of leaves — useful when a genuine minority subclass exists, but also the mechanism behind this engine's greater tendency to overfit small training sets if Max tree depth and learning rate are not actively constrained.
+  </p>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>GOSS's small-gradient down-sampling has a class-imbalance interaction worth knowing.</strong> Because minority-class records typically carry larger gradients for longer during training (the ensemble takes more rounds to become confident about them), GOSS's keep-large-gradients rule (LightGBM Regression) tends to retain minority-class records preferentially relative to easy majority-class ones — a modest, incidental partial counterweight to the accuracy-paradox risk, though not a substitute for actively checking per-class recall.
   </p>
 
   <div class="acad-note">
@@ -7789,6 +7836,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="interp-box">
   <strong>CatBoost's overfitting profile differs from a max-depth story alone.</strong> Because symmetric trees are already a strong regularizer, CatBoost at default settings often needs less manual depth-limiting than XGBoost or LightGBM to reach a comparable fit; a first read should still confirm with Spatial k-Fold Cross-Validation Evaluator rather than trusting in-sample R2. Compare fitted values against the other three GBM engines on the same fields — the four engines agreeing closely is stronger evidence the underlying relationship is real than any single engine's fit statistics alone.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When ordered boosting's benefit is largest.</strong> Prediction shift is most consequential on smaller training sets, where a training example's own influence on the model that produces its gradient is proportionally larger — exactly the single-district, hundreds-to-low-thousands-of-records regime this plugin most often operates in. On very large datasets the effect of any one point on the overall fit shrinks, and CatBoost's advantage over the other three engines tends to narrow; this is one reason CatBoost is worth trying specifically (not just as a completeness check) on smaller planning layers.
+  </p>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-gbm-reg-sklearn">Gradient Boosting Regression (scikit-learn)</a> &middot; <a href="#alg-gbm-reg-xgboost">Gradient Boosting Regression (XGBoost)</a> &middot; <a href="#alg-gbm-reg-lightgbm">Gradient Boosting Regression (LightGBM)</a> &middot; <a href="#alg-spatial-cv">Spatial k-Fold CV Evaluator</a>
@@ -7910,7 +7960,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </div>
 
   <div class="acad-note">
-  <strong>Implementation note.</strong> Wraps <code>sklearn.neural_network.MLPRegressor</code> inside a <code>StandardScaler</code> pipeline (<code>core/ml_engines.py::fit_mlp_regressor</code>) — features and target are standardized internally. The report shows training convergence status (iterations used versus the cap); a model that hits the cap without converging should not be trusted.
+  <strong>Implementation note.</strong> Wraps <code>sklearn.neural_network.MLPRegressor</code> inside a <code>StandardScaler</code> pipeline (<code>core/ml_engines.py::fit_mlp_regressor</code>) — features and target are standardized internally. The report shows training convergence status (iterations used versus the cap); a model that hits the cap without converging should not be trusted. Weight updates use scikit-learn's default Adam optimizer (Kingma &amp; Ba, 2015) rather than plain stochastic gradient descent — an adaptive per-parameter learning rate scheme that converges faster and more reliably than fixed-rate SGD on the kind of modest, noisy planning datasets this tool is used on, though "Maximum training iterations" still refers to Adam update steps, not a separate hyperparameter.
   </div>
 
   <h5>3. Parameters</h5>
@@ -7955,6 +8005,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="margin:4px 0;"><strong>Rumelhart, D.E., Hinton, G.E. &amp; Williams, R.J.</strong> (1986). "Learning Representations by Back-Propagating Errors." <em>Nature</em> 323: 533–536. DOI: <a href="https://doi.org/10.1038/323533a0">10.1038/323533a0</a></p>
   <p style="margin:4px 0;"><strong>Hornik, K., Stinchcombe, M. &amp; White, H.</strong> (1989). "Multilayer Feedforward Networks Are Universal Approximators." <em>Neural Networks</em> 2(5): 359–366. DOI: <a href="https://doi.org/10.1016/0893-6080(89)90020-8">10.1016/0893-6080(89)90020-8</a></p>
   <p style="margin:4px 0;"><strong>Grinsztajn, L., Oyallon, E. &amp; Varoquaux, G.</strong> (2022). "Why Do Tree-Based Models Still Outperform Deep Learning on Typical Tabular Data?" <em>Advances in Neural Information Processing Systems</em> 35: 507–520.</p>
+  <p style="margin:4px 0;"><strong>Kingma, D.P. &amp; Ba, J.</strong> (2015). "Adam: A Method for Stochastic Optimization." <em>International Conference on Learning Representations (ICLR)</em>. — Source of the optimizer scikit-learn's MLP uses by default.</p>
   </div>
 </div>
 </article>
@@ -7981,11 +8032,16 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   The same tabular-data disadvantage documented for the regression version (Grinsztajn, Oyallon &amp; Varoquaux, 2022) applies to classification as well — on the modest, structured planning datasets this plugin targets, Random Forest Classification or a Gradient Boosting engine will usually match or beat an MLP classifier's accuracy with far less risk of a non-converging fit.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why softmax, not one sigmoid per class.</strong> A separate independent sigmoid per class would let a record's class probabilities sum to something other than 1 (or nowhere near it); the softmax normalization (eq. 1) is specifically constructed so the outputs form a valid probability distribution over mutually exclusive classes, which is what a well-posed single-label classification problem requires and what the cross-entropy loss below is derived to optimize against.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
   <p style="margin:8px 0;"><strong>Softmax output layer (\(z\) = final layer's pre-activation scores):</strong></p>
   $$\hat{P}(y=c\mid x) = \frac{\exp(z_c)}{\sum_{c'}\exp(z_{c'})} \tag{1}$$
+  <p style="margin:8px 0;"><strong>Cross-entropy loss the network minimizes during training (\(y_c\) = 1 if \(c\) is the true class, 0 otherwise):</strong></p>
+  $$L = -\sum_{c} y_c \log \hat{P}(y=c\mid x) \tag{2}$$
   </div>
 
   <div class="acad-note">
@@ -8148,6 +8204,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
   <p style="margin:8px 0;"><strong>Importance of field \(k\) (score \(s\) = R2 or accuracy; \(X_{\pi_k}\) = data with field \(k\) permuted):</strong></p>
   $$\text{Imp}(k) = s(model, X, y) - \mathbb{E}_{\pi_k}\big[s(model, X_{\pi_k}, y)\big] \tag{1}$$
+  <p style="margin:8px 0;"><strong>Standard error of the importance estimate across the \(R\) repeats, reported alongside Imp(k) to show how noisy each field's estimate is:</strong></p>
+  $$\text{SE}(k) = \frac{1}{\sqrt{R}}\, \text{std}_r\!\left(s(model, X, y) - s(model, X_{\pi_k}^{(r)}, y)\right) \tag{2}$$
   </div>
 
   <div class="acad-note">
@@ -8220,6 +8278,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
   <p style="margin:8px 0;"><strong>Partial dependence of the model \(\hat{f}\) on feature \(x_S\) (fixed value \(v\)), averaged over the observed distribution of the remaining fields \(x_C\):</strong></p>
   $$\text{PD}(v) = \frac{1}{n}\sum_{i=1}^{n} \hat{f}(x_S=v,\, x_{C}^{(i)}) \tag{1}$$
+  <p style="margin:8px 0;"><strong>Individual Conditional Expectation curve for one record \(i\) (Goldstein et al., 2015) — PD(v) above is exactly the average of these across all records; comparing the two reveals whether that average is representative:</strong></p>
+  $$\text{ICE}_i(v) = \hat{f}(x_S=v,\, x_C^{(i)}) \tag{2}$$
   </div>
 
   <div class="acad-note">
@@ -8429,6 +8489,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>Reading a mapped SHAP field.</strong> Because SHAP values are signed and additive (equation 2 in SHAP Global Feature Importance), a diverging color ramp centered on zero is the correct symbology: positive shap_&lt;field&gt; values push a record's prediction above the average (shap_base), negative values push it below. A field with a coherent spatial pattern when mapped this way — not scattered noise — is genuinely operating differently across the study area, a pattern a global ranking alone cannot reveal.
   </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why every field gets its own column instead of one combined "top driver" column.</strong> A tempting simplification would be a single mapped field showing, per record, which explanatory field contributed most — but that discards magnitude and sign information, and different fields can be the top driver in adjoining records for reasons that look like noise on such a map even when each individual shap_&lt;field&gt; surface is smooth and coherent. Exporting the full set of per-field columns costs a little more storage and requires the analyst to choose which field to symbolize, but preserves the information a single "winner" column would destroy.
+  </p>
 
   <h5>2. Mathematical Formulation</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">Uses the identical Shapley-value formulation as SHAP Global Feature Importance (equations 1–2 there); this tool's only addition is writing the per-record \(\phi_k(x_i)\) values to the output layer instead of (or alongside) averaging them into a single ranking.</p>
@@ -8505,6 +8568,10 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
   <strong>The natural companion to DiCE Counterfactual Explanation, not a substitute for it.</strong> This tool answers "what drove this record's prediction" — a backward-looking, attribution question. DiCE Counterfactual Explanation (classification targets only) answers the forward-looking complement: "what would need to change for a different outcome." Running both on the same record gives a complete picture: this tool identifies which fields the model currently leans on, and DiCE shows whether nudging those same fields (or different ones entirely) would actually flip the outcome — the two do not always agree, and when they disagree it usually means the record sits in a region where the model's decision boundary is shaped by field interactions this single-record SHAP breakdown does not fully expose on its own.
+  </p>
+
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why the background sample still matters for a single-record explanation.</strong> Even though only one record is explained, its SHAP values are computed relative to a background distribution representing "typical" field values (equation 1's coalition sums, SHAP Global Feature Importance) — drawn from the full complete-case dataset, not just the one record. This means the same record's SHAP breakdown can differ depending on what population it is being explained relative to: a parcel that looks unusual against a citywide background may look unremarkable against a background restricted to its own district, and vice versa. This tool always uses the full input layer as background, matching the other two SHAP tools for consistency.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -9224,6 +9291,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   $$N_\varepsilon(p) = \{q : d(p,q) \le \varepsilon\}, \qquad p \text{ is core} \iff |N_\varepsilon(p)| \ge \text{MinPts} \tag{1}$$
   <p style="margin:8px 0;"><strong>Density-reachability (clusters = maximal sets connected by chains of core points):</strong></p>
   $$q \text{ reachable from } p \iff \exists\, p=p_1,\dots,p_n=q,\ p_{i+1}\in N_\varepsilon(p_i),\ p_i \text{ core} \tag{2}$$
+  <p style="margin:8px 0;">Unlike K-Means, DBSCAN has no explicit objective function it minimizes globally — a cluster is simply a maximal connected component of the density-reachability graph implied by equations 1–2, which is what allows it to trace arbitrarily elongated or non-convex shapes a centroid-based method structurally cannot.</p>
   </div>
 
   <div class="acad-note">
@@ -9295,6 +9363,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>sklearn.cluster.HDBSCAN</code>, available since scikit-learn 1.3, after Z-score standardizing the selected fields (<code>core/ml_engines.py::fit_hdbscan</code>). On an older scikit-learn, this raises the standard optional-dependency error naming the required version.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>What "Excess of Mass" actually selects for.</strong> Rather than picking the single most persistent cluster at one arbitrary cut through the density hierarchy, the Excess of Mass criterion selects, independently for each branch of the hierarchy, whichever level maximizes that branch's total stability — the sum, across the density range the cluster persists over, of how many points it contains at each level. This tends to favor clusters that are both large and long-lived over small clusters that briefly look tight at one particular density threshold, a property directly relevant when the goal is finding genuine planning typologies rather than incidental local density bumps.
+  </p>
 
   <h5>3. Parameters</h5>
   <table class="params-table">
@@ -9368,6 +9439,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div class="acad-note">
   <strong>Implementation note.</strong> Wraps <code>sklearn.mixture.GaussianMixture</code> after Z-score standardizing the selected fields (<code>core/ml_engines.py::fit_gmm</code>). Covariance type controls per-component shape flexibility (Full to Spherical); Full needs the most data per cluster to fit reliably, Spherical is closest to K-Means and most stable on small datasets.
   </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>EM finds a local, not global, optimum.</strong> Because the log-likelihood surface EM climbs is generally non-convex, different random initializations can converge to different local optima — the practical reason scikit-learn's default fits several random restarts internally and keeps the best. On a small or genuinely ambiguous dataset, re-running this tool can occasionally produce a different cluster assignment; treat a result that is unstable across repeated runs (rather than merely across different K or covariance-type choices) as a sign the data does not support a confident mixture-model decomposition at all, and consider HDBSCAN's density-based alternative instead.
+  </p>
 
   <h5>3. Parameters</h5>
   <table class="params-table">
