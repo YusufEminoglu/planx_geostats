@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.11.1] - 2026-08-19
+
+- Documentation-only release: GEOSTATS_REFERENCE_MANUAL.html gains the Report includes note for every tool that gained a chart across the last several releases (Spatial Durbin, GWR, MGWR, ESF, Spatial Regime, Quantile Regression, all 10 ML regressors residual-vs-fitted scatterplot, and the SHAP Local Explanation waterfall chart), plus fills in a small pre-existing gap from the v2.7.0 classifier sweep (GBM x4, MLP, EBM, and TabPFN classification confusion-matrix notes). No code changes.
+
 ## [2.11.0] - 2026-08-19
 
 - Completes the VISUALIZATION_PATHWAY.md sweep. Every remaining regression tool gains a residual-vs-fitted scatterplot: Quantile Regression, Spatial Regime Regression, and all 10 ML regressors (Random Forest, Extra Trees, SVR, Neural Network/MLP, Explainable Boosting Machine, TabPFN, and all 4 Gradient Boosting engines via the shared _gbm_base.py). Tier 3 lands: core/charts.py gains a new waterfall_svg() primitive, wired into SHAP Local Explanation Report - the standard SHAP local-explanation visual. Every algorithm report in the plugin that computes a chartable statistic now visualizes it inline, no external dependency.

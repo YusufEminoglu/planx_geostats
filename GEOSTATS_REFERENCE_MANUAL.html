@@ -5654,6 +5654,7 @@ Spatial econometric and regression models that estimate relationships between a 
   </table>
   </div>
   <p style="font-size:.84rem;color:var(--gs-slate-600);margin:4px 0 10px;">The HTML report additionally lists coefficients (Intercept, each X variable, each WX variable, and rho) with standard errors, t-statistics, and p-values.</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin:4px 0 10px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">
@@ -5843,7 +5844,7 @@ Spatial econometric and regression models that estimate relationships between a 
       <tr><td class="param-name">KERNEL_TYPE</td><td class="param-type">Enum</td><td class="param-default">Adaptive Bisquare</td><td><strong>Fixed Gaussian:</strong> continuous decay, all features contribute. <strong>Fixed Bisquare:</strong> hard cutoff at bandwidth. <strong>Adaptive Bisquare:</strong> bandwidth = neighbor count (recommended for uneven density)</td></tr>
       <tr><td class="param-name">BANDWIDTH</td><td class="param-type">Double</td><td class="param-default">30.0</td><td>For fixed kernels: distance in map units. For adaptive kernels: number of nearest neighbors. Determines the spatial scale of analysis</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output feature layer with local coefficients, standard errors, t-values, local R², residuals. Graduated on <code>local_r2</code></td></tr>
-      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Diagnostics report: global R², AICc, RSS, effective df, local R² distribution, low-support count, residual spatial autocorrelation, kernel configuration, model quality warnings, next-action recommendation</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Diagnostics report: global R², AICc, RSS, effective df, local R² distribution, low-support count, residual spatial autocorrelation, kernel configuration, model quality warnings, next-action recommendation, and a residual-vs-predicted scatterplot (inline SVG)</td></tr>
     </tbody>
   </table>
 
@@ -6009,7 +6010,7 @@ Spatial econometric and regression models that estimate relationships between a 
       <tr><td class="param-name">N_CHUNKS</td><td class="param-type">Integer</td><td class="param-default">1</td><td>Number of chunks for memory-constrained fitting. Higher values reduce peak memory at the cost of runtime</td></tr>
       <tr><td class="param-name">SPHERICAL</td><td class="param-type">Boolean</td><td class="param-default">false</td><td>Use great-circle (spherical) distances for longitude/latitude coordinates. Enable only if your CRS is geographic; otherwise use a projected CRS</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output feature layer with MGWR local diagnostics. Graduated on standardized residuals (<code>mgwr_std</code>) with a diverging 7-class scheme</td></tr>
-      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Diagnostics report: bandwidths per variable, ENP_j, model fit statistics, residual spatial autocorrelation, model quality warnings, interpretation and caveats</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Diagnostics report: bandwidths per variable, ENP_j, model fit statistics, residual spatial autocorrelation, model quality warnings, interpretation and caveats, and a residual-vs-predicted scatterplot (inline SVG)</td></tr>
     </tbody>
   </table>
 
@@ -6171,6 +6172,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <tr><td class="param-name">spatial_filter</td><td class="param-type">Double</td><td>Contribution of the selected eigenvectors alone to the fitted value - the isolated spatial-structure component, useful to map on its own</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -6558,6 +6560,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <tr><td class="param-name">regi_used</td><td class="param-type">Integer</td><td>1 if the record had complete values and was used, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -6650,6 +6653,7 @@ Spatial econometric and regression models that estimate relationships between a 
     <tr><td class="param-name">qr_used</td><td class="param-type">Integer</td><td>1 if the record had complete values and was used, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -6849,6 +6853,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">rf_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7028,6 +7033,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">et_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7202,6 +7208,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">svr_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7379,6 +7386,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7462,6 +7470,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7538,6 +7547,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7617,6 +7627,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7691,6 +7702,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7765,6 +7777,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7848,6 +7861,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7921,6 +7935,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">gbm_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8004,6 +8019,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">mlp_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8089,6 +8105,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">mlp_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8618,7 +8635,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </table>
 
   <h5>4. Output Description</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report only — the base value, predicted value, and a ranked table of every field's signed SHAP contribution for the one requested record.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report only — a waterfall chart plus the base value, predicted value, and a ranked table of every field's signed SHAP contribution for the one requested record.</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> a waterfall chart (inline SVG) — base value, each field's signed contribution in ranked order, then the final prediction — the standard SHAP local-explanation visual.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">
@@ -8782,6 +8800,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">ebm_&lt;field&gt;</td><td class="param-type">Double</td><td>Exact contribution of that field to this record's prediction (one column per explanatory field)</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8866,6 +8885,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">ebm_&lt;field&gt;</td><td class="param-type">Double</td><td>Exact log-odds contribution of that field to this record's prediction (one column per explanatory field)</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -9194,6 +9214,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">tabpfn_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a residual-vs-fitted scatterplot (inline SVG).</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -9271,6 +9292,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">tabpfn_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
