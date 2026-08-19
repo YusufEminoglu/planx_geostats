@@ -29,6 +29,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_classification_matrix, extract_regression_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.symbology import apply_renderer, diverging_residual_renderer
 from ..core.xai_engines import compute_shap_values, shap_global_importance
 from ..dependencies import optional_dependency_error
 
@@ -55,6 +56,7 @@ class SHAPSpatialMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     def __init__(self):
         super().__init__()
         self.out_layer_id = None
+        self.top_shap_field = None
 
     def name(self) -> str:
         return "shap_spatial_map"
@@ -229,6 +231,8 @@ class SHAPSpatialMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.setProgress(int(20 + 70 * (current / total)))
 
         importance_rows = shap_global_importance(shap_values, feature_fields)
+        if importance_rows:
+            self.top_shap_field = f"shap_{importance_rows[0][0]}"
         explained_class = class_labels[class_index] if task_type == "classification" else None
         self._write_html(
             html_path, target_field, model_key, explained_class, len(explained_fids), len(y), base_value,
@@ -243,6 +247,8 @@ class SHAPSpatialMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "shap_used": "1 if this record was sampled and explained, 0 otherwise",
         }
         apply_output_metadata(layer, "PlanX GeoStats SHAP spatial attribution output", field_descriptions, "shap_spatial_map")
+        if self.top_shap_field:
+            apply_renderer(layer, diverging_residual_renderer(layer, layer.geometryType(), self.top_shap_field))
         return {}
 
     def _write_html(self, path, target_field, model_key, explained_class, n_explained, n_total, base_value, importance_rows, skipped):

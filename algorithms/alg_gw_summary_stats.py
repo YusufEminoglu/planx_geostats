@@ -25,6 +25,7 @@ from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
 from ..core.stats_engines import calculate_gw_summary_stats
+from ..core.symbology import apply_renderer, sequential_quantile_renderer
 from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
@@ -212,4 +213,5 @@ class GWSummaryStatsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             "gw_summary_statistics",
         )
+        apply_renderer(layer, sequential_quantile_renderer(layer, layer.geometryType(), "gw_std"))
         return {}

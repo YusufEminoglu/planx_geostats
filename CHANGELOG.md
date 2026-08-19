@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.5.0] - 2026-08-19
+
+- Two more output layers gain automatic symbology, closing out the v3.x initiative: GW Summary Statistics colors by gw_std (sequential quantile), SHAP Spatial Attribution Map auto-symbolizes its highest mean-|SHAP| field (diverging, zero-centered). Every multi-feature output-layer algorithm in the plugin now ships with automatic QGIS symbology.
+
 ## [3.4.0] - 2026-08-19
 
 - Seven more output layers gain automatic symbology: DBSCAN and HDBSCAN clustering now color by cluster_id with noise points (-1) in a fixed neutral gray; Gaussian Mixture clustering and Spatial k-Fold CV Evaluator color by cluster_id/cv_fold; Model Residual Spatial Autocorrelation Check gains diverging residual coloring; Prediction Uncertainty Map and Conformal Prediction Interval gain a new sequential single-hue coloring (core/symbology.py::sequential_quantile_renderer(), colorblind-safe) on their uncertainty/interval-width field.

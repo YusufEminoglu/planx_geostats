@@ -6691,7 +6691,7 @@ Spatial econometric and regression models that estimate relationships between a 
 </div>
 <div class="alg-card-body">
   <div class="alg-desc">
-    Computes a local, kernel-weighted mean, standard deviation, and skewness of one numeric field at every feature — a spatial analog of a rolling average, using the same Fixed Gaussian / Fixed Bisquare / Adaptive Bisquare kernel families as GWR and MGWR so bandwidth intuition carries over directly.
+    Computes a local, kernel-weighted mean, standard deviation, and skewness of one numeric field at every feature — a spatial analog of a rolling average, using the same Fixed Gaussian / Fixed Bisquare / Adaptive Bisquare kernel families as GWR and MGWR so bandwidth intuition carries over directly. <strong>Output layer includes automatic sequential quantile symbology (5-class, light-to-dark) on gw_std</strong>, so areas of locally high vs. low spread are visible on the map without a manual classification step.
   </div>
 
   <h5>1. Theoretical Background</h5>
@@ -8529,7 +8529,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <strong>Reading a mapped SHAP field.</strong> Because SHAP values are signed and additive (equation 2 in SHAP Global Feature Importance), a diverging color ramp centered on zero is the correct symbology: positive shap_&lt;field&gt; values push a record's prediction above the average (shap_base), negative values push it below. A field with a coherent spatial pattern when mapped this way — not scattered noise — is genuinely operating differently across the study area, a pattern a global ranking alone cannot reveal.
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
-  <strong>Why every field gets its own column instead of one combined "top driver" column.</strong> A tempting simplification would be a single mapped field showing, per record, which explanatory field contributed most — but that discards magnitude and sign information, and different fields can be the top driver in adjoining records for reasons that look like noise on such a map even when each individual shap_&lt;field&gt; surface is smooth and coherent. Exporting the full set of per-field columns costs a little more storage and requires the analyst to choose which field to symbolize, but preserves the information a single "winner" column would destroy.
+  <strong>Why every field gets its own column instead of one combined "top driver" column.</strong> A tempting simplification would be a single mapped field showing, per record, which explanatory field contributed most — but that discards magnitude and sign information, and different fields can be the top driver in adjoining records for reasons that look like noise on such a map even when each individual shap_&lt;field&gt; surface is smooth and coherent. Exporting the full set of per-field columns costs a little more storage and preserves the information a single "winner" column would destroy. <strong>Output layer includes automatic diverging symbology (zero-centered, 7-class) on the highest mean-|SHAP| field</strong> from SHAP Global Feature Importance's own ranking, as a sensible default view — re-symbolize any other shap_&lt;field&gt; column the same way to inspect a different driver.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
