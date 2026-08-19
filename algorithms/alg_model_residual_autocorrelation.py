@@ -34,6 +34,7 @@ from ..core.analysis_diagnostics import (
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, build_cv_estimator, extract_regression_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 from ..core.weights import build_weights_matrix
 from ..dependencies import optional_dependency_error
 
@@ -241,6 +242,19 @@ class ModelResidualAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm
             "until this check comes back clean - in-sample fit alone cannot "
             "tell you whether location itself is missing from the model.",
         )
+        residual_values = summary.get("residual_values") or []
+        residual_lag = summary.get("residual_lag") or []
+        if residual_values:
+            residual_chart = scatter_plot_svg(
+                residual_values,
+                residual_lag,
+                x_label="Residual (observed - predicted)",
+                y_label="Spatial lag of residual",
+                trend_line=True,
+                quadrant_shading=True,
+            )
+        else:
+            residual_chart = "<p>Residual scatterplot unavailable for this run.</p>"
         content = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Model Residual Spatial Autocorrelation Report</title>
 <style>
@@ -251,12 +265,15 @@ table {{ width: 100%; border-collapse: collapse; margin-top: 14px; }}
 th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left; font-size: .9rem; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Model Residual Spatial Autocorrelation Check</h1>
 <p>Target: <strong>{html.escape(target_field)}</strong> | Model: <strong>{html.escape(CV_MODEL_LABELS[model_key])}</strong></p>
 <div class="summary">Skipped {skipped} record(s) with missing or non-numeric values.</div>
 {residual_spatial_autocorrelation_html(summary)}
+<h2>Residual Moran Scatterplot</h2>
+{residual_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

@@ -23,6 +23,8 @@ from qgis.core import (
 
 from ..core.weights import build_weights_matrix
 from ..core.advanced_stats_engines import calculate_global_lee_l
+from ..core.stats_engines import calculate_bivariate_lee_l
+from ..core.charts import chart_css, scatter_plot_svg
 from ..core.analysis_diagnostics import (
     caveats_html,
     crs_unit_warning,
@@ -241,16 +243,25 @@ class GlobalLeesLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             f"Global L = {result['observed_l']:.4f}, z = {result['z_score']:.3f}, p = {result['p_value']:.4f}"
         )
 
+        _local_l, spatial_lag_y, _classes = calculate_bivariate_lee_l(
+            x_arr, y_arr, neighbors, weights, valid_id_order
+        )
+        x_std = float(np.std(x_arr))
+        scatter_zx = ((x_arr - np.mean(x_arr)) / x_std).tolist() if x_std > 0 else []
+        scatter_lag_y = spatial_lag_y.tolist() if x_std > 0 else []
+
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(
             html_path, field_x_name, field_y_name, len(valid_id_order), result,
             numeric_summary, neighborhood_summary, crs_warning, weight_type, permutations,
+            scatter_zx, scatter_lag_y,
         )
 
         return {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def write_html_report(
         self, path, field_x, field_y, n, result, numeric_summary, neighborhood_summary, crs_warning, weight_type, permutations,
+        scatter_zx, scatter_lag_y,
     ):
         l_val = result["observed_l"]
         z = result["z_score"]
@@ -322,6 +333,7 @@ class GlobalLeesLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     h2 {{ color: #1a202c; font-size: 1.15rem; margin: 0 0 12px 0; }}
     .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
     {analyst_guidance_css()}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -351,6 +363,19 @@ class GlobalLeesLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             <tr><td class="metric-name">p-value</td><td class="metric-val">{p:.6f}</td></tr>
         </tbody>
     </table>
+
+    <section>
+        <h2>Bivariate Lee's L Scatterplot</h2>
+        {scatter_plot_svg(
+            scatter_zx,
+            scatter_lag_y,
+            x_label=f"Standardized {field_x}",
+            y_label=f"Spatial lag of standardized {field_y}",
+            trend_line=True,
+            quadrant_shading=True,
+        ) if scatter_zx else "<p>Bivariate scatterplot unavailable: Field X has zero variance.</p>"}
+        <p class="chart-caption">Each point is one feature: x is Field X's standardized value, y is the row-standardized spatial lag of Field Y's standardized value. The trend line's slope reflects the same co-clustering the Global L statistic summarizes as a single number.</p>
+    </section>
 
     {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
 

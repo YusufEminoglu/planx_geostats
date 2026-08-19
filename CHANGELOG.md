@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.4.0] - 2026-08-19
+
+- Four more spatial-autocorrelation reports gain charts: Geary's C gets a permutation-histogram (observed C marked), reusing the same permuted values the statistic already computes; Model Residual Spatial Autocorrelation Check gains a residual Moran scatterplot; Global Bivariate Lee's L gains a bivariate Moran-style scatterplot (standardized Field X vs. spatial lag of standardized Field Y); Incremental Spatial Autocorrelation's existing hand-rolled correlogram was refactored onto the shared line_chart_svg() helper (same visual output). core/analysis_diagnostics.py and core/advanced_stats_engines.py now expose the per-point/permutation arrays these charts need alongside their existing summary statistics. Manual entries updated.
+
 ## [2.3.0] - 2026-08-19
 
 - First three HTML reports now draw the inline-SVG charts core/charts.py added last release: Global Moran's I gets a proper Moran scatterplot (standardized value vs. spatial lag, OLS trend line, HH/HL/LH/LL quadrant shading); Attribute Randomization Sensitivity Test's existing hand-rolled histogram was refactored to use the shared histogram_svg() helper (same visual output, now shared code); Permutation Feature Importance gained a ranked bar chart above its table. Manual entries updated to describe the new charts.

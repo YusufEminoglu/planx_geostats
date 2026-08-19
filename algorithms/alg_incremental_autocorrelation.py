@@ -24,6 +24,7 @@ from qgis.core import (
 from ..core.stats_engines import calculate_incremental_autocorrelation
 from ..core.analysis_diagnostics import crs_unit_warning, numeric_quality_summary, push_diagnostics
 from ..core.weights import geometry_centroid_point
+from ..core.charts import chart_css, line_chart_svg
 
 from ._icons import algorithm_icon
 
@@ -225,36 +226,16 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         return {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def _write_html(self, path, field, n, results, peak, skipped, crs_warning):
-        # SVG line chart
-        svg_w, svg_h = 600, 250
-        pad_l, pad_b, pad_t, pad_r = 60, 40, 30, 20
-        plot_w = svg_w - pad_l - pad_r
-        plot_h = svg_h - pad_t - pad_b
-
         dists = [r["distance"] for r in results]
         zs = [r["z_score"] for r in results]
-        d_min, d_max = min(dists), max(dists)
-        z_min, z_max = min(zs), max(zs)
-        z_range = z_max - z_min if z_max != z_min else 1.0
-        d_range = d_max - d_min if d_max != d_min else 1.0
-
-        def to_svg(d, z):
-            sx = pad_l + (d - d_min) / d_range * plot_w
-            sy = pad_t + plot_h - ((z - z_min) / z_range * plot_h)
-            return sx, sy
-
-        # Polyline points
-        pts = " ".join(f"{to_svg(d, z)[0]:.1f},{to_svg(d, z)[1]:.1f}" for d, z in zip(dists, zs))
-
-        # Dots
-        dots = ""
-        for d, z in zip(dists, zs):
-            sx, sy = to_svg(d, z)
-            dots += f'<circle cx="{sx:.1f}" cy="{sy:.1f}" r="4" fill="#4299e1"/>'
-
-        # Peak marker
-        px, py = to_svg(peak["distance"], peak["z_score"])
-        peak_marker = f'<circle cx="{px:.1f}" cy="{py:.1f}" r="7" fill="none" stroke="#e31a1c" stroke-width="2.5"/>'
+        correlogram_html = line_chart_svg(
+            dists,
+            {"z-score": zs},
+            x_label="Distance (map units)",
+            y_label="z-score",
+            markers=[(peak["distance"], peak["z_score"], "Peak")],
+            width=600,
+        )
 
         # Table rows
         rows = ""
@@ -301,6 +282,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     th {{ background: #ebf8ff; color: #2b6cb0; font-weight: 700; text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }}
     .metric-val {{ font-family: monospace; font-weight: 600; }}
     footer {{ margin-top: 35px; border-top: 1px solid #edf2f7; padding-top: 12px; font-size: .8rem; color: #a0aec0; text-align: center; }}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -319,17 +301,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     <p>Incremental Spatial Autocorrelation scans multiple distance bands to identify the scale where global clustering is strongest. Treat the peak as a candidate analysis distance, not as an automatic final setting; compare it with domain knowledge and neighborhood support.</p>
     {crs_block}
 
-    <svg width="{svg_w}" height="{svg_h}" viewBox="0 0 {svg_w} {svg_h}">
-        <rect x="{pad_l}" y="{pad_t}" width="{plot_w}" height="{plot_h}" fill="#f8fafc" stroke="#e2e8f0"/>
-        <polyline points="{pts}" fill="none" stroke="#4299e1" stroke-width="2.5" stroke-linejoin="round"/>
-        {dots}
-        {peak_marker}
-        <text x="{pad_l - 10}" y="{pad_t - 8}" fill="#718096" font-size="11" text-anchor="end">z-score</text>
-        <text x="{pad_l}" y="{svg_h - 5}" fill="#718096" font-size="10">{d_min:.0f}</text>
-        <text x="{svg_w - pad_r}" y="{svg_h - 5}" fill="#718096" font-size="10" text-anchor="end">{d_max:.0f}</text>
-        <text x="{pad_l - 5}" y="{pad_t + 10}" fill="#718096" font-size="10" text-anchor="end">{z_max:.2f}</text>
-        <text x="{pad_l - 5}" y="{pad_t + plot_h}" fill="#718096" font-size="10" text-anchor="end">{z_min:.2f}</text>
-    </svg>
+    {correlogram_html}
 
     <table>
         <thead><tr><th>Distance</th><th>Moran's I</th><th>z-score</th><th>p-value</th><th>Min / Median / Max Neighbors</th><th>Isolated</th></tr></thead>

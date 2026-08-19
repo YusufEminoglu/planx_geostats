@@ -120,6 +120,7 @@ def calculate_geary_c(
         "permuted_std": perm_std,
         "z_score": float(z_score),
         "p_value": float(p_value),
+        "permuted_values": perm_c.tolist(),
     }
 
 

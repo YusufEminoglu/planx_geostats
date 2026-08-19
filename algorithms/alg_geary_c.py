@@ -33,6 +33,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, histogram_svg
 
 from ._icons import algorithm_icon
 
@@ -317,6 +318,7 @@ class GearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     h2 {{ color: #1a202c; font-size: 1.15rem; margin: 0 0 12px 0; }}
     .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
     {analyst_guidance_css()}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -347,6 +349,16 @@ class GearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             <tr><td class="metric-name">p-value</td><td class="metric-val">{p:.6f}</td></tr>
         </tbody>
     </table>
+
+    <section>
+        <h2>Permutation Reference Distribution</h2>
+        {histogram_svg(
+            result.get("permuted_values", []),
+            observed=c,
+            x_label="Permuted Geary's C",
+        )}
+        <p class="chart-caption">Distribution of Geary's C computed on {permutations} random reassignments of the analysis field across the same spatial structure. The dashed line marks the observed C; a value falling in the tail of this distribution is what makes the result significant.</p>
+    </section>
 
     {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
 

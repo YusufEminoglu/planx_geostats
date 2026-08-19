@@ -136,6 +136,7 @@ def residual_spatial_autocorrelation_summary(
     s0 = 0.0
     row_sums = np.zeros(len(ids))
     col_sums = np.zeros(len(ids))
+    lag_raw = np.zeros(len(ids))
     numerator = 0.0
     for i, fid in enumerate(ids):
         for nid, weight in zip(filtered_neighbors.get(fid, []), filtered_weights.get(fid, [])):
@@ -145,6 +146,7 @@ def residual_spatial_autocorrelation_summary(
                 s0 += w
                 row_sums[i] += w
                 col_sums[j] += w
+                lag_raw[i] += w * centered[j]
                 numerator += w * centered[i] * centered[j]
 
     if s0 <= 0.0:
@@ -193,6 +195,9 @@ def residual_spatial_autocorrelation_summary(
     else:
         status = "No strong residual spatial pattern"
 
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lag = np.where(row_sums > 0, lag_raw / row_sums, 0.0)
+
     return {
         "available": True,
         "moran_i": float(moran_i),
@@ -203,6 +208,8 @@ def residual_spatial_autocorrelation_summary(
         "neighbor_summary": n_summary,
         "status": status,
         "message": "",
+        "residual_values": centered.tolist(),
+        "residual_lag": lag.tolist(),
     }
 
 
