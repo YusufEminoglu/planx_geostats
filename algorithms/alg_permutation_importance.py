@@ -28,6 +28,7 @@ from ..core.ml_engines import (
     permutation_feature_importance,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, bar_chart_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -176,6 +177,12 @@ class PermutationImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             f"<tr><td>{html.escape(name)}</td><td>{mean:.6f}</td><td>{std:.6f}</td></tr>"
             for name, mean, std in results["rows"]
         )
+        importance_chart = bar_chart_svg(
+            [name for name, _mean, _std in results["rows"]],
+            [mean for _name, mean, _std in results["rows"]],
+            title="",
+            value_suffix=f" {results['scoring']} drop",
+        )
         guidance = analyst_guidance_html(
             "Permutation Feature Importance",
             "Ranks fields by how much a fitted model's score drops when that "
@@ -208,6 +215,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Permutation Feature Importance</h1>
@@ -217,6 +225,7 @@ Baseline {html.escape(results['scoring'])} = {results['baseline_score']:.6f}<br>
 Skipped {skipped} record(s) with missing values.
 </div>
 <h2>Importance by Field (mean score drop &plusmn; std across repeats)</h2>
+{importance_chart}
 <table><thead><tr><th>Field</th><th>Mean importance</th><th>Std</th></tr></thead><tbody>{rows}</tbody></table>
 {guidance}
 </div></body></html>"""

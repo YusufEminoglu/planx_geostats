@@ -1593,6 +1593,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
       <li><strong>Neighborhood summary</strong> — min/median/max neighbors per feature, isolated features count, fully-connected flag</li>
       <li><strong>CRS warning</strong> — alerts if a geographic CRS is used with distance-based weights</li>
       <li><strong>Analyst guidance</strong> — assumptions checklist, common pitfalls, recommended companion tools</li>
+      <li><strong>Report includes:</strong> a Moran scatterplot (standardized value vs. row-standardized spatial lag, OLS trend line, HH/HL/LH/LL quadrant shading) — the standard visual companion to the I statistic above</li>
     </ul>
   </div>
 
@@ -8232,7 +8233,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </table>
 
   <h5>4. Output Description</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report only — a table of each field's mean importance and standard deviation across repeats, plus the baseline (unshuffled) score.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report — a ranked horizontal bar chart of each field's mean importance, followed by a table with the standard deviation across repeats and the baseline (unshuffled) score.</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> a ranked bar chart (inline SVG, no external dependency) of mean importance by field, drawn directly from the same sorted values shown in the table below it.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">

@@ -32,6 +32,7 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.sensitivity_audit import sensitivity_verdict
 from ..core.weights import geometry_centroid_point
+from ..core.charts import chart_css, histogram_svg
 
 from ._icons import algorithm_icon
 
@@ -277,34 +278,14 @@ class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         next_action = interpretation["next_action"]
         caution_items = "".join(f"<li>{html.escape(item)}</li>" for item in interpretation["cautions"])
 
-        # Simple ASCII histogram of simulated values
         sim_vals = r["simulated_values"]
-        n_bins = 20
-        hist_min = min(sim_vals)
-        hist_max = max(sim_vals)
-        if hist_max == hist_min:
-            hist_max = hist_min + 1
-        bin_width = (hist_max - hist_min) / n_bins
-        bins = [0] * n_bins
-        for v in sim_vals:
-            b = int((v - hist_min) / bin_width)
-            b = min(b, n_bins - 1)
-            bins[b] += 1
-        max_count = max(bins) if bins else 1
-
-        # SVG histogram
-        svg_w, svg_h = 580, 200
-        bar_w = svg_w / n_bins
-        svg_bars = ""
-        for i, count in enumerate(bins):
-            bar_h = (count / max_count) * (svg_h - 30) if max_count > 0 else 0
-            x = i * bar_w
-            y = svg_h - 20 - bar_h
-            svg_bars += f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w - 1:.1f}" height="{bar_h:.1f}" fill="#4299e1" opacity="0.8"/>'
-
-        # Observed line
-        obs_x = ((obs_i - hist_min) / (hist_max - hist_min)) * svg_w
-        obs_x = max(0, min(obs_x, svg_w))
+        histogram_html = histogram_svg(
+            list(sim_vals),
+            bins=20,
+            observed=obs_i,
+            x_label="Simulated Moran's I",
+            width=580,
+        )
 
         content = f"""<!DOCTYPE html>
 <html>
@@ -411,6 +392,7 @@ class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         color: #a0aec0;
         text-align: center;
     }}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -446,13 +428,7 @@ class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     <div class="hist-section">
         <h3>Reference Distribution of Simulated Moran's I Values</h3>
-        <svg width="{svg_w}" height="{svg_h + 10}" viewBox="0 0 {svg_w} {svg_h + 10}">
-            {svg_bars}
-            <line x1="{obs_x:.1f}" y1="0" x2="{obs_x:.1f}" y2="{svg_h - 20}" stroke="#e31a1c" stroke-width="2.5" stroke-dasharray="6,3"/>
-            <text x="{obs_x + 4:.1f}" y="14" fill="#e31a1c" font-size="11" font-weight="bold">Observed I</text>
-            <text x="0" y="{svg_h}" fill="#718096" font-size="10">{hist_min:.4f}</text>
-            <text x="{svg_w - 60}" y="{svg_h}" fill="#718096" font-size="10">{hist_max:.4f}</text>
-        </svg>
+        {histogram_html}
     </div>
 
     <h2>Recommended Next Action</h2>

@@ -33,6 +33,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 from ..core.spatial_autocorrelation_audit import global_moran_interpretation
 
 from ._icons import algorithm_icon
@@ -230,6 +231,8 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if feedback.isCanceled():
             return {}
 
+        scatter_z, scatter_lag = self._moran_scatter_arrays(y, neighbors, weights, valid_id_order)
+
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(
             html_path,
@@ -244,12 +247,40 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             neighborhood_summary,
             crs_warning,
             weight_type,
+            scatter_z,
+            scatter_lag,
         )
 
         return {
             self.HTML_REPORT: html_path,
             "HTML_REPORT_OUT": html_path
         }
+
+    @staticmethod
+    def _moran_scatter_arrays(y, neighbors, weights, id_order):
+        """Standardized attribute value (z) and its row-standardized spatial
+        lag (Wz) per feature -- the standard Moran scatterplot axes (Anselin,
+        1996). Derived from the same y/neighbors/weights already computed for
+        calculate_global_moran(), not a new statistic."""
+        y_mean = float(np.mean(y))
+        y_std = float(np.std(y))
+        if y_std == 0:
+            return [], []
+        z_scores = [(float(v) - y_mean) / y_std for v in y]
+        id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+        lag = []
+        for fid in id_order:
+            neighs = neighbors.get(fid, [])
+            w_list = weights.get(fid, [])
+            acc = 0.0
+            w_sum = 0.0
+            for j_fid, w in zip(neighs, w_list):
+                j = id_to_idx.get(j_fid)
+                if j is not None:
+                    acc += w * z_scores[j]
+                    w_sum += w
+            lag.append(acc / w_sum if w_sum > 0 else 0.0)
+        return z_scores, lag
 
     def write_html_report(
         self,
@@ -265,6 +296,8 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         neighborhood_summary: dict,
         crs_warning: str,
         weight_type: str,
+        scatter_z: list,
+        scatter_lag: list,
     ):
         interpretation = global_moran_interpretation(z, p, neighborhood_summary)
         pattern = interpretation["pattern"]
@@ -402,6 +435,7 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         border-radius: 4px;
     }}
     {analyst_guidance_css()}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -451,6 +485,20 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             </tr>
         </tbody>
     </table>
+
+    <section>
+        <h2>Moran Scatterplot</h2>
+        {scatter_plot_svg(
+            scatter_z,
+            scatter_lag,
+            x_label="Standardized value (z)",
+            y_label="Spatial lag (Wz)",
+            title="",
+            trend_line=True,
+            quadrant_shading=True,
+        ) if scatter_z else "<p>Moran scatterplot unavailable: the analysis field has zero variance.</p>"}
+        <p class="chart-caption">Each point is one feature: x is its standardized value, y is the row-standardized average of its neighbors' standardized values. The dashed trend line's slope is a visual proxy for Moran's I itself. Upper-right/lower-left (blue) quadrants are positive spatial association (HH/LL); upper-left/lower-right (amber) are negative association (HL/LH) -- spatial outliers relative to their neighbors.</p>
+    </section>
 
     {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.0] - 2026-08-19
+
+- First three HTML reports now draw the inline-SVG charts core/charts.py added last release: Global Moran's I gets a proper Moran scatterplot (standardized value vs. spatial lag, OLS trend line, HH/HL/LH/LL quadrant shading); Attribute Randomization Sensitivity Test's existing hand-rolled histogram was refactored to use the shared histogram_svg() helper (same visual output, now shared code); Permutation Feature Importance gained a ranked bar chart above its table. Manual entries updated to describe the new charts.
+
 ## [2.2.0] - 2026-08-19
 
 - Add core/charts.py, a new dependency-free inline-SVG chart toolkit (bar/scatter/line/histogram/heatmap/rose/Lorenz charts plus KPI dashboard cards) that HTML reports will draw on starting next release. Stdlib-only (html, math), no matplotlib/PIL/network calls, enforced by a new AST-based smoke test alongside structural SVG-validity and edge-case coverage in tests/smoke_provider_catalog.py. No algorithm report output changed yet - this release ships the shared toolkit only, per VISUALIZATION_PATHWAY.md (now committed) increment 1.
