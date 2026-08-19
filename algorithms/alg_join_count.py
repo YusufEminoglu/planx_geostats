@@ -29,6 +29,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, bar_chart_svg
 
 from ._icons import algorithm_icon
 
@@ -300,6 +301,16 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 f"<td class='metric-val'>{sub['p_value']:.4f}</td></tr>\n"
             )
 
+        join_labels = ["BB (Black-Black)", "WW (White-White)", "BW (Black-White)"]
+        join_subs = [bb, ww, bw]
+        join_significant = [i for i, sub in enumerate(join_subs) if sub["p_value"] < 0.05]
+        join_chart = bar_chart_svg(
+            join_labels,
+            [sub["observed"] for sub in join_subs],
+            value_suffix=" joins",
+            highlight_index=join_significant[0] if join_significant else None,
+        )
+
         guidance_html = analyst_guidance_html(
             "Join Count Statistics",
             "Join Count Statistics test spatial clustering of a binary/categorical variable by counting same-category (BB), complement (WW), and cross-category (BW) neighbor pairs.",
@@ -345,6 +356,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     h2 {{ color: #1a202c; font-size: 1.15rem; margin: 0 0 12px 0; }}
     .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
     {analyst_guidance_css()}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -362,6 +374,12 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     <section>
         <h2>Executive Summary</h2>
         <p>Join Count Statistics count same-category (Black-Black) and cross-category (Black-White) neighboring pairs to test spatial clustering of a binary variable, using the raw adjacency graph and {permutations} random permutations for significance.</p>
+    </section>
+
+    <section>
+        <h2>Observed Join Counts by Type</h2>
+        {join_chart}
+        <p class="chart-caption">Highlighted bar (if any) is the join type with a statistically significant departure from its permuted expectation; see the table below for expected counts and p-values.</p>
     </section>
 
     <table>

@@ -23,6 +23,7 @@ from qgis.core import (
 
 from ..core.advanced_stats_engines import calculate_geodetector_q, bin_into_quantiles
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, bar_chart_svg
 
 from ._icons import algorithm_icon
 
@@ -277,6 +278,12 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 f"<td class='metric-val'>{variance:.4f}</td></tr>\n"
             )
 
+        strata_chart = bar_chart_svg(
+            [f"Stratum {stratum['stratum']}" for stratum in result["per_stratum"]],
+            [stratum["mean"] for stratum in result["per_stratum"]],
+            value_suffix=" mean",
+        )
+
         guidance_html = analyst_guidance_html(
             "Geodetector Q-Statistic",
             "The Geodetector Q-statistic tests spatial stratified heterogeneity - whether a categorical partition of the study area explains variance in a continuous outcome - a different paradigm from weights-based spatial autocorrelation.",
@@ -323,6 +330,7 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
     .scroll-table {{ overflow-x: auto; }}
     {analyst_guidance_css()}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -356,6 +364,7 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     <section>
         <h2>Per-Stratum Breakdown</h2>
+        {strata_chart}
         <div class="scroll-table">
         <table>
             <thead><tr><th>Stratum</th><th>N</th><th>Mean</th><th>Variance</th></tr></thead>

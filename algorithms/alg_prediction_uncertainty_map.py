@@ -30,6 +30,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import UNCERTAINTY_MODEL_KEYS, extract_regression_matrix, prediction_uncertainty
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, histogram_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -220,6 +221,7 @@ class PredictionUncertaintyMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         std = results["std"]
         threshold = float(np.percentile(std, 90))
         high_uncertainty_count = int(np.sum(std >= threshold))
+        std_chart = histogram_svg(std.tolist(), x_label="unc_std")
         guidance = analyst_guidance_html(
             "Prediction Uncertainty Map",
             "Spread of individual tree predictions around their mean, per "
@@ -248,6 +250,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
 h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Prediction Uncertainty Map</h1>
@@ -256,6 +259,8 @@ h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 Mean unc_std = {float(np.mean(std)):.6f} | 90th percentile unc_std = {threshold:.6f} ({high_uncertainty_count} record(s) at or above it)<br>
 Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
+<h2>Distribution of Prediction Uncertainty (unc_std)</h2>
+{std_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

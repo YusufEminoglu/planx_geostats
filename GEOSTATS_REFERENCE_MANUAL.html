@@ -2553,6 +2553,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <tr><td class="param-name">bb / ww / bw</td><td class="param-type">Object</td><td>Per-join-type result: observed count, permuted mean, permuted std., z-score, p-value</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a bar chart (inline SVG) of observed BB/WW/BW join counts, with the statistically significant join type (if any) highlighted.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -2779,6 +2780,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <tr><td class="param-name">per_stratum</td><td class="param-type">Object</td><td>Per-stratum sample size, mean, and standard deviation</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a bar chart (inline SVG) of the per-stratum mean, drawn from the same values shown in the per-stratum breakdown table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -4370,6 +4372,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
     <tr><td class="param-name">z_score / p_value</td><td class="param-type">Double</td><td>Standardized z-score and two-tailed Monte Carlo p-value</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a histogram (inline SVG) of the permutation reference distribution with the observed CLQ marked, the same visual pattern Geary's C and the Sensitivity Test use for their own Monte Carlo distributions.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8692,8 +8695,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 
   <h5>4. Output Description</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
-  This tool produces an HTML report only (no output vector layer, since it explains one record, not the whole layer): for each of the N_COUNTERFACTUALS returned, the fields that changed, their original and counterfactual values, and the class the counterfactual would produce.
+  This tool produces an HTML report only (no output vector layer, since it explains one record, not the whole layer): for each of the N_COUNTERFACTUALS returned, a diverging bar chart of the changed fields plus a table with the fields that changed, their original and counterfactual values, and the class the counterfactual would produce.
   </p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> a small diverging before→after bar chart (inline SVG) per counterfactual, one bar per changed field, signed by direction of change.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">
@@ -9018,6 +9022,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">unc_high</td><td class="param-type">Double</td><td>90th percentile of per-tree predictions</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a histogram (inline SVG) of unc_std across all records, so the overall shape of the uncertainty distribution (and the 90th-percentile threshold) is visible at a glance.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>

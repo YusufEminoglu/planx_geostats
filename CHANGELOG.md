@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.0] - 2026-08-19
+
+- Begins Tier 2 of the visualization pathway. Getis-Ord Gi*, Local Moran's I, Local Geary's C, Bivariate LISA, and Linear Directional Mean turned out to be map-output-only tools with no HTML report to chart, so this release covers the Tier-2 candidates that do produce a report: Colocation Quotient gains a permutation-histogram (observed CLQ marked); Join Count Statistics gains a bar chart of observed BB/WW/BW counts; Geodetector Q-Statistic gains a bar chart of per-stratum means; Prediction Uncertainty Map gains a histogram of unc_std; DiCE Counterfactual Explanation gains a diverging before-after bar chart per counterfactual (reusing bar_chart_svg, already zero-anchored and diverging for mixed-sign values). core/advanced_stats_engines.py::calculate_colocation_quotient now also returns its permuted-value array. Manual entries updated.
+
 ## [2.7.0] - 2026-08-19
 
 - The remaining 7 classifier reports (Neural Network/MLP, Explainable Boosting Machine, TabPFN, and all 4 Gradient Boosting engines via the shared _gbm_base.py) gain the same confusion-matrix heatmap the first 3 classifiers got last release - every classifier in the plugin now charts its confusion matrix. Added the default dashboard KPI summary row (3 key numbers right under the title, before the existing tables) to the 3 tools that validated the chart pattern first: Global Moran's I, Spatial Gini, and ML Model Comparison. Manual entries updated.

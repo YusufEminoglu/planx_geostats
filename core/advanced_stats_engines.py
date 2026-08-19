@@ -613,6 +613,7 @@ def calculate_colocation_quotient(
         "z_score": float(z_score),
         "p_value": float(p_value),
         "local_clq": local_clq,
+        "permuted_values": perm_clq.tolist(),
     }
 
 

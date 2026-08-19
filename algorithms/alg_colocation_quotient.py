@@ -24,6 +24,7 @@ from qgis.core import (
 from ..core.weights import geometry_centroid_point
 from ..core.advanced_stats_engines import calculate_colocation_quotient
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, histogram_svg
 
 from ._icons import algorithm_icon
 
@@ -264,6 +265,12 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if category_a == category_b:
             reverse_note = f"Self-colocation test: does '{html.escape(category_a)}' cluster with itself more than chance would predict."
 
+        clq_chart = histogram_svg(
+            result.get("permuted_values", []),
+            observed=clq,
+            x_label="Permuted CLQ",
+        )
+
         if is_significant and clq > 1.0:
             next_action = "Map the qualifying Category A features and inspect where the attraction concentrates; consider Local Moran's I or Getis-Ord Gi* on a derived count-density field for a spatial hot-spot view."
         elif is_significant and clq < 1.0:
@@ -317,6 +324,7 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
     .note-box {{ background: #fffaf0; border-left: 5px solid #dd6b20; padding: 14px 16px; border-radius: 4px; font-size: .88rem; }}
     {analyst_guidance_css()}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -351,6 +359,12 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     </table>
 
     <div class="note-box">{reverse_note}</div>
+
+    <section>
+        <h2>Permutation Reference Distribution</h2>
+        {clq_chart}
+        <p class="chart-caption">Distribution of CLQ(A &rarr; B) computed on {permutations} random reassignments of category labels across the same point locations. The dashed line marks the observed CLQ.</p>
+    </section>
 
     <section style="margin-top:28px;">
         <h2>Recommended Next Action</h2>

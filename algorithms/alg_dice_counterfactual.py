@@ -23,6 +23,7 @@ from qgis.core import (
 
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_classification_matrix, fit_dice_counterfactuals
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, bar_chart_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -228,8 +229,14 @@ class DiCECounterfactualAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
             if not rows:
                 rows = "<tr><td colspan=\"4\">No field changes reported.</td></tr>"
+            changed = {name: after - before for name, (before, after) in cf["changes"].items() if after != before}
+            delta_chart = (
+                bar_chart_svg(list(changed.keys()), list(changed.values()), title="", value_suffix=" change")
+                if changed else "<p>No field changes to chart.</p>"
+            )
             blocks.append(
                 f"<h2>Counterfactual {i} &rarr; {html.escape(cf_class)}</h2>"
+                f"{delta_chart}"
                 f"<table><thead><tr><th>Field</th><th>Original</th><th>Counterfactual</th><th>Change</th></tr></thead>"
                 f"<tbody>{rows}</tbody></table>"
             )
@@ -269,6 +276,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>DiCE Counterfactual Explanation - Feature ID {feature_id}</h1>
