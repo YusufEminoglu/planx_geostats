@@ -2,7 +2,10 @@
 """Anselin Local Moran's I (LISA) Processing Algorithm."""
 from __future__ import annotations
 
+import html
 import logging
+import os
+import tempfile
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
@@ -15,11 +18,13 @@ from qgis.core import (
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
+    QgsProcessingOutputHtml,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterEnum,
     QgsProcessingParameterNumber,
     QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterFileDestination,
     QgsFeatureSink
 )
 
@@ -27,7 +32,9 @@ from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_local_moran
 from ..core.layer_metadata import apply_output_metadata
 from ..core.local_pattern_audit import local_moran_class_summary
-from ..core.symbology import apply_renderer, lisa_quadrant_renderer
+from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
+from ..core.symbology import LISA_QUADRANT_STYLE, apply_renderer, lisa_quadrant_renderer
 
 from ._icons import algorithm_icon
 
@@ -42,6 +49,7 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     KNN = "KNN"
     DISTANCE_BAND = "DISTANCE_BAND"
     OUTPUT = "OUTPUT"
+    HTML_REPORT = "HTML_REPORT"
 
     def __init__(self):
         super().__init__()
@@ -136,11 +144,29 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Cluster Analysis Output Layer"
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.HTML_REPORT,
+                "Output HTML report",
+                fileFilter="HTML files (*.html)",
+                optional=True
+            )
+        )
+        self.addOutput(
+            QgsProcessingOutputHtml(
+                "HTML_REPORT_OUT",
+                "LISA cluster and outlier classification report"
+            )
+        )
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.INPUT, context)
         if source is None:
             raise QgsProcessingException("Invalid input layer source.")
+
+        html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
+        if not html_path:
+            html_path = os.path.join(tempfile.gettempdir(), "planx_local_moran_report.html")
 
         field_name = self.parameterAsString(parameters, self.FIELD, context)
         weight_type_idx = self.parameterAsEnum(parameters, self.WEIGHT_TYPE, context)
@@ -264,7 +290,90 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
 
-        return {self.OUTPUT: dest_id}
+        feedback.pushInfo("Generating HTML report...")
+        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count)
+
+        return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
+
+    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count):
+        counts = class_summary["counts"]
+        donut_labels = [label for _, _, label in LISA_QUADRANT_STYLE]
+        donut_values = [counts.get(code, 0) for code, _, _ in LISA_QUADRANT_STYLE]
+        donut_colors = {label: color for code, color, label in LISA_QUADRANT_STYLE}
+
+        kpi_row = kpi_card_row_html([
+            {"label": "Cluster features", "value": str(class_summary["cluster_count"]), "sublabel": "HH + LL", "tone": "good" if class_summary["cluster_count"] else "neutral"},
+            {"label": "Outlier features", "value": str(class_summary["outlier_count"]), "sublabel": "HL + LH", "tone": "warn" if class_summary["outlier_count"] else "neutral"},
+            {"label": "Significant total", "value": f"{class_summary['significant_count']} / {n}", "sublabel": f"Dominant: {class_summary['dominant_label']}"},
+        ])
+
+        guidance_html = analyst_guidance_html(
+            "Local Moran's I (LISA)",
+            "Local Moran's I decomposes global spatial autocorrelation into per-feature contributions, classifying each feature as part of a cluster (HH/LL) or a spatial outlier (HL/LH) relative to its neighbors.",
+            [
+                "lisa_nbrs is checked before trusting a 'Not Significant' result - zero valid neighbors looks identical to a genuine null result.",
+                "A significant class forms a spatially coherent group with its neighbors, not an isolated single cell.",
+                "Global Moran's I was run first and shows a genuine global signal exists.",
+            ],
+            [
+                f"{isolated_count} feature(s) had zero valid neighbors" if isolated_count else "No isolated (zero-neighbor) features were found.",
+                "Each feature tested independently at p < 0.05 with no multiple-testing correction - roughly 5% of features cross that threshold by chance alone under complete spatial randomness.",
+                "A single significant cell surrounded by 'Not Significant' cells is a common false-positive pattern.",
+            ],
+            [
+                "Getis-Ord Gi* for pure hot/cold magnitude ranking without the outlier classes",
+                "Local Geary's C as a dissimilarity-based cross-check of the same clusters",
+                "Bivariate LISA if the cluster/outlier pattern should be tested against a second field",
+            ],
+            "Use HH/LL clusters to prioritize contiguous intervention areas; use HL/LH outliers to flag individual sites that break from their surroundings and may warrant field verification.",
+        )
+
+        donut_html = donut_chart_svg(donut_labels, donut_values, colors=donut_colors, title="LISA Class Breakdown")
+
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PlanX GeoStats Lab LISA Cluster and Outlier Report</title>
+<style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #2d3748; background-color: #f7fafc; margin: 0; padding: 20px; line-height: 1.5; }}
+    .container {{ max-width: 760px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }}
+    header {{ border-bottom: 2px solid #edf2f7; padding-bottom: 20px; margin-bottom: 25px; }}
+    h1 {{ color: #1a202c; margin: 0 0 5px 0; font-size: 1.6rem; }}
+    .subtitle {{ color: #718096; margin: 0; font-size: 0.95rem; }}
+    section {{ margin: 28px 0; }}
+    h2 {{ color: #1a202c; font-size: 1.15rem; margin: 0 0 12px 0; }}
+    footer {{ margin-top: 40px; border-top: 1px solid #edf2f7; padding-top: 15px; font-size: 0.8rem; color: #a0aec0; text-align: center; }}
+    {analyst_guidance_css()}
+    {chart_css()}
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Cluster and Outlier Analysis (Local Moran's I)</h1>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
+    </header>
+
+    {kpi_row}
+
+    <section>
+        <h2>LISA Class Breakdown</h2>
+        {donut_html}
+        <p class="chart-caption">{html.escape(class_summary["message"])}</p>
+    </section>
+
+    {guidance_html}
+
+    <footer>
+        Generated by PlanX GeoStats Lab spatial statistics engine.
+    </footer>
+</div>
+</body>
+</html>
+"""
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html_content)
 
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:

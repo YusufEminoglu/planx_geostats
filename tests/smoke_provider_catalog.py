@@ -681,6 +681,18 @@ def _charts_representative_calls(charts):
         ("waterfall_svg", charts.waterfall_svg(["road_density", "gridiron_index", "transit_accessibility"], [0.8, 0.3, -0.1], 5.0)),
         ("waterfall_svg:empty", charts.waterfall_svg([], [], 5.0)),
         ("waterfall_svg:zero_delta", charts.waterfall_svg(["a"], [0.0], 0.0)),
+        (
+            "donut_chart_svg",
+            charts.donut_chart_svg(
+                ["HH", "LL", "HL", "LH", "Not Significant"],
+                [12, 9, 2, 1, 40],
+                colors={"HH": "#e31a1c", "LL": "#1f78b4", "Not Significant": "#f7f7f7"},
+                title="t",
+            ),
+        ),
+        ("donut_chart_svg:empty", charts.donut_chart_svg([], [])),
+        ("donut_chart_svg:all_zero", charts.donut_chart_svg(["a", "b"], [0.0, 0.0])),
+        ("donut_chart_svg:single", charts.donut_chart_svg(["a"], [5.0])),
     ]
     return calls
 

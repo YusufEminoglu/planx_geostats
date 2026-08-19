@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.6.0] - 2026-08-19
+
+- Four flagship LISA-family tools (Getis-Ord Gi*, Local Moran's I, Local Geary's C, Bivariate LISA) gain a full HTML report with a new donut chart matching their map symbology 1:1, plus a KPI row and analyst guidance. Local Geary's C and Bivariate LISA switch onto the shared LISA quadrant renderer, and Getis-Ord Gi* onto a new shared gi_confidence_renderer(), removing the last hand-rolled renderer duplicates. Also closes a real gap: 4 algorithms were missing from the real-QGIS runtime matrix test entirely - now covers all 81 algorithms.
+
 ## [3.5.0] - 2026-08-19
 
 - Two more output layers gain automatic symbology, closing out the v3.x initiative: GW Summary Statistics colors by gw_std (sequential quantile), SHAP Spatial Attribution Map auto-symbolizes its highest mean-|SHAP| field (diverging, zero-centered). Every multi-feature output-layer algorithm in the plugin now ships with automatic QGIS symbology.

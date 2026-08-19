@@ -2,28 +2,29 @@
 """Getis-Ord Gi* Hotspot Analysis Processing Algorithm."""
 from __future__ import annotations
 
+import html
 import logging
+import os
+import tempfile
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtGui import QColor
 from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProject,
     QgsFeature,
     QgsField,
-    QgsSymbol,
-    QgsRendererCategory,
-    QgsCategorizedSymbolRenderer,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
+    QgsProcessingOutputHtml,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterEnum,
     QgsProcessingParameterNumber,
     QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterFileDestination,
     QgsFeatureSink
 )
 
@@ -31,6 +32,9 @@ from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_getis_ord
 from ..core.layer_metadata import apply_output_metadata
 from ..core.local_pattern_audit import getis_ord_class_summary
+from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
+from ..core.symbology import GI_CONFIDENCE_STYLE, apply_renderer, gi_confidence_renderer
 
 from ._icons import algorithm_icon
 
@@ -45,6 +49,7 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     KNN = "KNN"
     DISTANCE_BAND = "DISTANCE_BAND"
     OUTPUT = "OUTPUT"
+    HTML_REPORT = "HTML_REPORT"
 
     def __init__(self):
         super().__init__()
@@ -143,12 +148,30 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Hot Spot analysis output layer"
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.HTML_REPORT,
+                "Output HTML report",
+                fileFilter="HTML files (*.html)",
+                optional=True
+            )
+        )
+        self.addOutput(
+            QgsProcessingOutputHtml(
+                "HTML_REPORT_OUT",
+                "Hot spot classification report"
+            )
+        )
 
     def processAlgorithm(self, parameters, context, feedback):
         # Retrieve parameters
         source = self.parameterAsSource(parameters, self.INPUT, context)
         if source is None:
             raise QgsProcessingException("Invalid input layer source.")
+
+        html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
+        if not html_path:
+            html_path = os.path.join(tempfile.gettempdir(), "planx_getis_ord_report.html")
 
         field_name = self.parameterAsString(parameters, self.FIELD, context)
         weight_type_idx = self.parameterAsEnum(parameters, self.WEIGHT_TYPE, context)
@@ -272,7 +295,91 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
 
-        return {self.OUTPUT: dest_id}
+        feedback.pushInfo("Generating HTML report...")
+        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count)
+
+        return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
+
+    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count):
+        counts = class_summary["counts"]
+        donut_labels = [label for _, _, label in GI_CONFIDENCE_STYLE]
+        donut_values = [counts.get(val, 0) for val, _, _ in GI_CONFIDENCE_STYLE]
+        donut_colors = {label: color for val, color, label in GI_CONFIDENCE_STYLE}
+
+        kpi_row = kpi_card_row_html([
+            {"label": "Hot spot features", "value": str(class_summary["hot_count"]), "sublabel": "gi_conf > 0", "tone": "warn" if class_summary["hot_count"] else "neutral"},
+            {"label": "Cold spot features", "value": str(class_summary["cold_count"]), "sublabel": "gi_conf < 0", "tone": "good" if class_summary["cold_count"] else "neutral"},
+            {"label": "Significant total", "value": f"{class_summary['significant_count']} / {n}", "sublabel": f"Dominant: {class_summary['dominant_label']}"},
+        ])
+
+        guidance_html = analyst_guidance_html(
+            "Getis-Ord Gi* Hot Spot Analysis",
+            "Gi* tests whether each feature and its neighbors together form a statistically significant concentration of high (hot) or low (cold) values relative to the whole study area.",
+            [
+                "gi_nbrs is checked before trusting a 'Not Significant' result - zero valid neighbors looks identical to a genuine null result.",
+                "The weight type (Queen/Rook/KNN/Distance Band) is a defensible neighborhood definition for this layer.",
+                "A hot or cold spot forms a spatially coherent group rather than an isolated significant cell.",
+            ],
+            [
+                f"{isolated_count} feature(s) had zero valid neighbors" if isolated_count else "No isolated (zero-neighbor) features were found.",
+                "A significant class appearing as a single isolated cell rather than a coherent cluster.",
+                "Each feature tested independently at p < 0.05/0.10/0.01 with no multiple-testing correction.",
+            ],
+            [
+                "Local Moran's I (LISA) for cluster AND outlier detection (HL/LH), not just hot/cold magnitude",
+                "Incremental Spatial Autocorrelation to pick a defensible neighborhood scale first",
+                "Spatial Gini / Colocation Quotient to quantify the concentration Gi* is flagging",
+            ],
+            "Use hot/cold spot classes to prioritize field verification or targeted intervention areas, not as a standalone causal claim about why a concentration exists.",
+        )
+
+        kpi_row_html = kpi_row
+        donut_html = donut_chart_svg(donut_labels, donut_values, colors=donut_colors, title="Hot/Cold Spot Class Breakdown")
+
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PlanX GeoStats Lab Hot Spot Analysis Report</title>
+<style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #2d3748; background-color: #f7fafc; margin: 0; padding: 20px; line-height: 1.5; }}
+    .container {{ max-width: 760px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }}
+    header {{ border-bottom: 2px solid #edf2f7; padding-bottom: 20px; margin-bottom: 25px; }}
+    h1 {{ color: #1a202c; margin: 0 0 5px 0; font-size: 1.6rem; }}
+    .subtitle {{ color: #718096; margin: 0; font-size: 0.95rem; }}
+    section {{ margin: 28px 0; }}
+    h2 {{ color: #1a202c; font-size: 1.15rem; margin: 0 0 12px 0; }}
+    footer {{ margin-top: 40px; border-top: 1px solid #edf2f7; padding-top: 15px; font-size: 0.8rem; color: #a0aec0; text-align: center; }}
+    {analyst_guidance_css()}
+    {chart_css()}
+</style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Hot Spot Analysis (Getis-Ord Gi*)</h1>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
+    </header>
+
+    {kpi_row_html}
+
+    <section>
+        <h2>Hot/Cold Spot Class Breakdown</h2>
+        {donut_html}
+        <p class="chart-caption">{html.escape(class_summary["message"])}</p>
+    </section>
+
+    {guidance_html}
+
+    <footer>
+        Generated by PlanX GeoStats Lab spatial statistics engine.
+    </footer>
+</div>
+</body>
+</html>
+"""
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html_content)
 
     def postProcessAlgorithm(self, context, feedback):
         # Applies gorgeous hot/cold styling automatically in the QGIS GUI thread
@@ -296,38 +403,6 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.displayName(),
         )
 
-        categories = []
-        # -3: 99% Cold, -2: 95% Cold, -1: 90% Cold, 0: Not Sig, 1: 90% Hot, 2: 95% Hot, 3: 99% Hot
-        style_definitions = [
-            (-3, '#2166ac', 'Cold Spot - 99% Confidence'),
-            (-2, '#67a9cf', 'Cold Spot - 95% Confidence'),
-            (-1, '#d1e5f0', 'Cold Spot - 90% Confidence'),
-            (0, '#f7f7f7', 'Not Significant'),
-            (1, '#fddbc7', 'Hot Spot - 90% Confidence'),
-            (2, '#f4a582', 'Hot Spot - 95% Confidence'),
-            (3, '#b2182b', 'Hot Spot - 99% Confidence')
-        ]
-
-        for val, color_hex, label in style_definitions:
-            symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-            symbol.setColor(QColor(color_hex))
-            symbol.setOpacity(0.85)
-
-            # Fine tune borders/stroke colors safely for polygons and lines
-            if symbol.symbolLayerCount() > 0:
-                sl = symbol.symbolLayer(0)
-                if hasattr(sl, 'setStrokeColor'):
-                    sl.setStrokeColor(QColor('#a0a0a0'))
-                if hasattr(sl, 'setStrokeWidth'):
-                    sl.setStrokeWidth(0.1)
-                if hasattr(sl, 'setOutlineColor'):
-                    sl.setOutlineColor(QColor('#a0a0a0'))
-
-            category = QgsRendererCategory(val, symbol, label, True)
-            categories.append(category)
-
-        renderer = QgsCategorizedSymbolRenderer('gi_conf', categories)
-        layer.setRenderer(renderer)
-        layer.triggerRepaint()
+        apply_renderer(layer, gi_confidence_renderer(layer.geometryType(), "gi_conf"))
 
         return {}

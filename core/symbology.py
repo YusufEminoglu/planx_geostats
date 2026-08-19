@@ -43,6 +43,16 @@ LISA_QUADRANT_STYLE = [
     ("Not Significant", "#f7f7f7", "Not Significant"),
 ]
 
+GI_CONFIDENCE_STYLE = [
+    (-3, "#2166ac", "Cold Spot - 99% Confidence"),
+    (-2, "#67a9cf", "Cold Spot - 95% Confidence"),
+    (-1, "#d1e5f0", "Cold Spot - 90% Confidence"),
+    (0, "#f7f7f7", "Not Significant"),
+    (1, "#fddbc7", "Hot Spot - 90% Confidence"),
+    (2, "#f4a582", "Hot Spot - 95% Confidence"),
+    (3, "#b2182b", "Hot Spot - 99% Confidence"),
+]
+
 _SIGMA_BREAKS = [-9999.0, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 9999.0]
 _SIGMA_LABELS = [
     "< -2.5 Std Dev (Underprediction)",
@@ -102,6 +112,12 @@ def lisa_quadrant_renderer(geometry_type, field_name: str = "quadrant"):
     tool (Local Moran's I, Getis-Ord Gi*, Local Geary's C, Bivariate LISA,
     Bivariate Lee's L) already applies."""
     return categorized_renderer(geometry_type, field_name, LISA_QUADRANT_STYLE)
+
+
+def gi_confidence_renderer(geometry_type, field_name: str = "gi_conf"):
+    """The -3..+3 cold/hot confidence-class categorized renderer Getis-Ord
+    Gi* applies to its gi_conf field."""
+    return categorized_renderer(geometry_type, field_name, GI_CONFIDENCE_STYLE)
 
 
 def diverging_std_dev_renderer(geometry_type, field_name: str):

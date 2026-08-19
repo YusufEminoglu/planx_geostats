@@ -660,6 +660,79 @@ def waterfall_svg(
     return _wrap_chart(title, "".join(parts))
 
 
+def _polar(cx: float, cy: float, r: float, deg: float) -> tuple[float, float]:
+    rad = math.radians(deg - 90)
+    return cx + r * math.cos(rad), cy + r * math.sin(rad)
+
+
+def _donut_wedge_path(cx: float, cy: float, r_outer: float, r_inner: float, start_deg: float, end_deg: float) -> str:
+    large_arc = 1 if (end_deg - start_deg) > 180 else 0
+    x0, y0 = _polar(cx, cy, r_outer, start_deg)
+    x1, y1 = _polar(cx, cy, r_outer, end_deg)
+    xi1, yi1 = _polar(cx, cy, r_inner, end_deg)
+    xi0, yi0 = _polar(cx, cy, r_inner, start_deg)
+    return (
+        f"M {x0:.2f} {y0:.2f} "
+        f"A {r_outer:.2f} {r_outer:.2f} 0 {large_arc} 1 {x1:.2f} {y1:.2f} "
+        f"L {xi1:.2f} {yi1:.2f} "
+        f"A {r_inner:.2f} {r_inner:.2f} 0 {large_arc} 0 {xi0:.2f} {yi0:.2f} Z"
+    )
+
+
+def donut_chart_svg(
+    labels: list[str],
+    values: list[float],
+    *,
+    colors: dict[str, str] | None = None,
+    title: str = "",
+    width: int = 480,
+    height: int = 260,
+) -> str:
+    """Categorical share donut with a side legend (count + percentage) --
+    used for cluster/hotspot-type breakdowns (LISA quadrants, Gi* confidence
+    classes). colors, if given, maps label -> hex so segment colors can be
+    made to match an output layer's own map symbology 1:1, keeping the
+    report and the map in visual agreement. Zero/missing-count labels are
+    skipped so the legend only lists classes that actually occurred."""
+    pairs = [(str(label), float(value)) for label, value in zip(labels, values) if value]
+    pairs = [(label, value) for label, value in pairs if value > 0]
+    if not pairs:
+        return _wrap_chart(title, no_data_svg(width, height))
+    total = sum(value for _, value in pairs)
+
+    cx, cy = height / 2, height / 2
+    r_outer = height / 2 - 14
+    r_inner = r_outer * 0.55
+    legend_x = height + 10
+
+    parts = [_svg_open(width, height, title)]
+    start_deg = 0.0
+    legend_rows = []
+    for i, (label, value) in enumerate(pairs):
+        frac = value / total
+        sweep = min(frac * 360.0, 359.99)
+        end_deg = start_deg + sweep
+        color = (colors or {}).get(label) or SERIES_COLORS[i % len(SERIES_COLORS)]
+        parts.append(
+            f'<path d="{_donut_wedge_path(cx, cy, r_outer, r_inner, start_deg, end_deg)}" '
+            f'fill="{color}" stroke="#ffffff" stroke-width="1.5"/>'
+        )
+        legend_y = 22 + i * 20
+        legend_rows.append(
+            f'<rect x="{legend_x}" y="{legend_y - 10}" width="11" height="11" fill="{color}" rx="2"/>'
+            f'<text x="{legend_x + 16}" y="{legend_y}" font-size="11" fill="{COLOR_AXIS_TEXT}">'
+            f"{_esc(label)[:26]}: {_fmt(value)} ({frac * 100:.1f}%)</text>"
+        )
+        start_deg = end_deg
+    parts.append(
+        f'<text x="{cx:.1f}" y="{cy + 4:.1f}" text-anchor="middle" font-size="13" '
+        f'fill="{COLOR_AXIS_TEXT}" font-weight="600">{_fmt(total)}</text>'
+    )
+    parts.extend(legend_rows)
+    parts.append("</svg>")
+    return _wrap_chart(title, "".join(parts))
+
+
 def kpi_card_row_html(cards: list[dict]) -> str:
     """cards: [{"label", "value", "sublabel"="", "tone"="neutral"|"good"|"warn"|"bad"}]"""
     tiles = []

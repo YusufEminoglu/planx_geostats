@@ -667,6 +667,14 @@ def test_lisa_quadrant_renderer_has_five_categories() -> None:
     assert labels == {"HH", "LL", "HL", "LH", "Not Significant"}
 
 
+def test_gi_confidence_renderer_has_seven_confidence_classes() -> None:
+    renderer = symbology.gi_confidence_renderer("point")
+    assert len(renderer.categories) == 7
+    values = {cat.value for cat in renderer.categories}
+    assert values == {-3, -2, -1, 0, 1, 2, 3}
+    assert renderer.field_name == "gi_conf"
+
+
 def test_diverging_std_dev_renderer_has_seven_sigma_classes() -> None:
     renderer = symbology.diverging_std_dev_renderer("polygon", "std_res")
     assert len(renderer.ranges) == 7
@@ -766,6 +774,7 @@ def run_all() -> None:
     test_layer_metadata_survives_alias_unavailable_and_keeps_properties()
     test_optional_dependency_error_guides_qgis_toolbox_installation()
     test_lisa_quadrant_renderer_has_five_categories()
+    test_gi_confidence_renderer_has_seven_confidence_classes()
     test_diverging_std_dev_renderer_has_seven_sigma_classes()
     test_diverging_residual_renderer_uses_layer_aggregates()
     test_diverging_residual_renderer_handles_missing_field_and_zero_std()
