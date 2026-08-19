@@ -44,6 +44,7 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.layer_metadata import apply_output_metadata
 from ..core.weights import build_weights_matrix, geometry_centroid_point
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -441,6 +442,14 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             f"min={int(np.nanmin(support))}, median={np.nanmedian(support):.1f}, max={int(np.nanmax(support))}"
             if len(support) else "n/a"
         )
+        residual_chart = scatter_plot_svg(
+            np.asarray(res["y_pred"], dtype=float).tolist(),
+            np.asarray(res["residuals"], dtype=float).tolist(),
+            x_label="Predicted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         if residual_spatial.get("available") and residual_spatial.get("p_value") is not None and residual_spatial["p_value"] < 0.05:
             next_action = "Residuals retain a spatial pattern. Compare bandwidth choices, inspect missing variables, and consider MGWR or spatial regression."
         elif low_support:
@@ -560,6 +569,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         padding: 16px 18px;
         border-radius: 4px;
     }}
+    {chart_css()}
 </style>
 </head>
 <body>
@@ -595,6 +605,9 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     {regression_quality_html(model_quality)}
     {residual_spatial_autocorrelation_html(residual_spatial)}
+
+    <h2>Residual vs. Predicted</h2>
+    {residual_chart}
 
     <h2>Kernel Parameter Configurations</h2>
     <table>

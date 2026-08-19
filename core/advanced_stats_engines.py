@@ -1005,6 +1005,7 @@ def calculate_spatial_durbin(
         "n": n,
         "k": k,
         "df_err": df_err,
+        "fitted": y_pred,
         "residuals": residuals,
         "rho": float(delta[-1]),
         "rho_p": float(p_vals[-1]),

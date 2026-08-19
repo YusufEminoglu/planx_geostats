@@ -37,6 +37,7 @@ from ..core.advanced_stats_engines import calculate_spatial_durbin
 from ..core.analysis_diagnostics import regression_quality_html, regression_quality_summary
 from ..core.layer_metadata import apply_output_metadata
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -327,6 +328,15 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                "A non-significant rho suggests the WX terms may already capture most of the spatial structure; consider comparing against a plain OLS-with-WX (Spatial Durbin without the endogenous lag) specification.")
         )
 
+        residual_chart = scatter_plot_svg(
+            res["fitted"].tolist(),
+            res["residuals"].tolist(),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
+
         guidance_html = analyst_guidance_html(
             "Spatial Durbin Model",
             "SDM lags both the dependent variable and every explanatory variable, nesting Spatial Lag and a restricted Spatial Error form as special cases, estimated here by Spatial 2SLS.",
@@ -371,6 +381,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     .non-significant {{ color: #718096; }}
     .note {{ background: #fff8e6; border-left: 5px solid #b7791f; padding: 14px 18px; margin: 20px 0; }}
     {analyst_guidance_css()}
+    {chart_css()}
     footer {{ margin-top: 40px; border-top: 1px solid #edf2f7; padding-top: 15px; font-size: 0.8rem; color: #a0aec0; text-align: center; }}
 </style>
 </head>
@@ -395,6 +406,9 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     </table>
 
     <div class="note">{rho_note}</div>
+
+    <h2>Residual vs. Fitted</h2>
+    {residual_chart}
 
     {regression_quality_html(model_quality)}
 

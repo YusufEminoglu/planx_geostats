@@ -41,6 +41,7 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.layer_metadata import apply_output_metadata
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -375,6 +376,7 @@ class ESFRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.write_html_report(
             html_path, dep_var, weight_type, indep_fields, coefs, se, t_stats, p_vals,
             n_x_coefs, r2, n, df_err, esf_result, before_summary, after_summary, model_quality,
+            fitted, residuals,
         )
 
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
@@ -382,6 +384,7 @@ class ESFRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     def write_html_report(
         self, path, dep_var, weight_type, indep_fields, coefs, se, t_stats, p_vals,
         n_x_coefs, r2, n, df_err, esf_result, before_summary, after_summary, model_quality,
+        fitted, residuals,
     ):
         variable_names = ["Intercept"] + list(indep_fields)
         coef_rows = ""
@@ -401,6 +404,14 @@ class ESFRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if not eig_rows:
             eig_rows = '<tr><td colspan="2">No eigenvectors selected.</td></tr>'
 
+        residual_chart = scatter_plot_svg(
+            fitted.tolist(),
+            residuals.tolist(),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         guidance_html = analyst_guidance_html(
             "Eigenvector Spatial Filtering",
             "ESF adds a small, data-driven set of spatial-pattern eigenvectors as extra OLS predictors, filtering residual spatial autocorrelation without estimating an autoregressive spatial parameter.",
@@ -444,6 +455,7 @@ class ESFRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     .significant {{ background-color: #f0fff4; }}
     .non-significant {{ color: #718096; }}
     {analyst_guidance_css()}
+    {chart_css()}
     footer {{ margin-top: 40px; border-top: 1px solid #edf2f7; padding-top: 15px; font-size: 0.8rem; color: #a0aec0; text-align: center; }}
 </style>
 </head>
@@ -478,6 +490,9 @@ class ESFRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     <h2>Residual Spatial Autocorrelation: After Filtering</h2>
     {residual_spatial_autocorrelation_html(after_summary)}
+
+    <h2>Residual vs. Fitted</h2>
+    {residual_chart}
 
     {regression_quality_html(model_quality)}
 

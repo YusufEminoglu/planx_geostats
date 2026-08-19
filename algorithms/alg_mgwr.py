@@ -48,6 +48,7 @@ from ..core.analysis_diagnostics import (
 from ..dependencies import optional_dependency_error
 from ..core.layer_metadata import apply_output_metadata
 from ..core.weights import build_weights_matrix, geometry_centroid_point
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -753,6 +754,15 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "</tr>"
             )
 
+        residual_chart = scatter_plot_svg(
+            np.asarray(results["predicted"], dtype=float).tolist(),
+            np.asarray(results["residuals"], dtype=float).tolist(),
+            x_label="Predicted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
+
         crs_block = ""
         if crs_warning and not spherical:
             crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>"
@@ -795,6 +805,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 10px; text-align: left; ver
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .metric-name {{ font-weight: 700; color: #314155; }}
 footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; color: #7a899c; font-size: .82rem; }}
+{chart_css()}
 </style>
 </head>
 <body>
@@ -816,6 +827,9 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 
 {regression_quality_html(model_quality)}
 {residual_spatial_autocorrelation_html(residual_spatial)}
+
+<h2>Residual vs. Predicted</h2>
+{residual_chart}
 
 <h2>Bandwidth Selection</h2>
 <table>

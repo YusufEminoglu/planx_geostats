@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.10.0] - 2026-08-19
+
+- Four more regression reports gain a residual-vs-fitted (or residual-vs-predicted) scatterplot: Spatial Durbin Model, Eigenvector Spatial Filtering (ESF) Regression, GWR, and MGWR. core/advanced_stats_engines.py::calculate_spatial_durbin now also returns its fitted-value array. Manual entries pending; remaining regression tools and the Tier-3 SHAP waterfall chart follow.
+
 ## [2.9.0] - 2026-08-19
 
 - The four core linear/spatial-econometric regression reports gain a residual-vs-fitted (or residual-vs-predicted) scatterplot: OLS Regression, Generalized Linear Regression, Spatial Autoregression (Lag/SAR), and Spatial Error Regression (SEM). core/stats_engines.py::calculate_ols now also returns its fitted-value array alongside the existing residuals (GLR/SAR/SEM already exposed fitted/predicted internally). This starts the regression-tools sweep from VISUALIZATION_PATHWAY.md's Tier 2 list; more regression tools follow in upcoming releases. Manual entries updated.
