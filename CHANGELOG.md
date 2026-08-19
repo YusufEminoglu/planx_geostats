@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.6.0] - 2026-08-19
+
+- Five more reports gain charts: Random Forest, Extra Trees, and Support Vector classification reports each gain a shaded heatmap of their confusion matrix (sequential single-hue, colorblind-safe) alongside the existing table; Partial Dependence Report gains a line chart of its sweep curve; Conformal Prediction Interval gains a sorted-prediction interval plot (shaded lower/upper ribbon with point predictions), deterministically subsampled to ~1,500 records on very large layers. core/charts.py::line_chart_svg() gained an optional band parameter for the ribbon plot, covered by its own smoke-test case. Manual entries updated.
+
 ## [2.5.0] - 2026-08-19
 
 - Five more reports gain charts: Ripley's K-Function gets a line chart of observed vs. CSR-expected K(d) across distance bands with the peak L(d)-d departure marked; Spatial Gini gains a Lorenz curve with the classic Gini labeled; ML Model Comparison and Model Comparison Matrix both gain a ranked leaderboard bar chart (best model highlighted); Spatial k-Fold Cross-Validation Evaluator gains a per-fold metric bar chart. All five charts are computed directly from data these tools already extract or compute - no new statistics. Manual entries updated.

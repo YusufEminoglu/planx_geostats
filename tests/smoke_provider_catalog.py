@@ -666,6 +666,7 @@ def _charts_representative_calls(charts):
         ("line_chart_svg", charts.line_chart_svg([1, 2, 3], {"observed": [1.0, 2.0, 3.0], "expected": [3.0, 2.0, 1.0]}, title="t")),
         ("line_chart_svg:empty", charts.line_chart_svg([], {})),
         ("line_chart_svg:single", charts.line_chart_svg([1], {"a": [5.0]})),
+        ("line_chart_svg:band", charts.line_chart_svg([1, 2, 3], {"pred": [1.0, 2.0, 3.0]}, band=([0.5, 1.5, 2.5], [1.5, 2.5, 3.5]))),
         ("histogram_svg", charts.histogram_svg([1.0, 2.0, 3.0, 4.0, 5.0], observed=3.2, title="t")),
         ("histogram_svg:empty", charts.histogram_svg([])),
         ("histogram_svg:single", charts.histogram_svg([5.0])),

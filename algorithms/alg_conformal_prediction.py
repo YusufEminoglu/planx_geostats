@@ -30,6 +30,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_regression_matrix, fit_conformal_interval
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, line_chart_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -232,6 +233,17 @@ class ConformalPredictionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def _write_html(self, path, target_field, model_key, alpha, n_folds, results, skipped):
         mean_width = float(np.mean(results["upper"] - results["lower"]))
+        order = np.argsort(results["pred"])
+        if len(order) > 1500:
+            order = order[np.linspace(0, len(order) - 1, 1500).astype(int)]
+        sorted_index = list(range(1, len(order) + 1))
+        interval_chart = line_chart_svg(
+            sorted_index,
+            {"Prediction": results["pred"][order].tolist()},
+            x_label="Records, sorted by predicted value" + (" (subsampled)" if len(order) < len(results["pred"]) else ""),
+            y_label=target_field,
+            band=(results["lower"][order].tolist(), results["upper"][order].tolist()),
+        )
         guidance = analyst_guidance_html(
             "Conformal Prediction Interval",
             "Model-agnostic prediction intervals with a distribution-free "
@@ -261,6 +273,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
 h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Conformal Prediction Interval</h1>
@@ -269,6 +282,8 @@ h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 Target coverage = {results['target_coverage']:.4f} | Empirical in-sample coverage = {results['empirical_coverage']:.4f} | Mean interval width = {mean_width:.6f}<br>
 Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
+<h2>Prediction Intervals (sorted by predicted value)</h2>
+{interval_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

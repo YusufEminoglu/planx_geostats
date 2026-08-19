@@ -319,6 +319,7 @@ def line_chart_svg(
     y_label: str = "",
     title: str = "",
     markers: list[tuple[float, float, str]] | None = None,
+    band: tuple[list[float], list[float]] | None = None,
     width: int = CHART_WIDTH,
     height: int = CHART_HEIGHT,
 ) -> str:
@@ -331,6 +332,8 @@ def line_chart_svg(
     plot_bottom = height - MARGIN["bottom"]
 
     all_y = [v for vals in series.values() for v in vals]
+    if band is not None:
+        all_y = all_y + list(band[0]) + list(band[1])
     x_min, x_max = min(x), max(x)
     y_min, y_max = min(all_y), max(all_y)
     y_pad = (y_max - y_min) * 0.08 or 1.0
@@ -345,6 +348,14 @@ def line_chart_svg(
         ty_px = sy(ty)
         parts.append(f'<line x1="{plot_left}" y1="{ty_px:.1f}" x2="{plot_right}" y2="{ty_px:.1f}" stroke="{COLOR_GRID}" stroke-dasharray="2,3"/>')
         parts.append(f'<text x="{plot_left - 6:.1f}" y="{ty_px + 3:.1f}" text-anchor="end" font-size="9" fill="{COLOR_AXIS_TEXT}">{_fmt(ty)}</text>')
+
+    if band is not None:
+        lower, upper = band
+        n_pts = min(len(x), len(lower), len(upper))
+        forward = [f"{sx(x[k]):.1f},{sy(lower[k]):.1f}" for k in range(n_pts)]
+        backward = [f"{sx(x[k]):.1f},{sy(upper[k]):.1f}" for k in range(n_pts - 1, -1, -1)]
+        band_points = " ".join(forward + backward)
+        parts.append(f'<polygon points="{band_points}" fill="{COLOR_PRIMARY}" opacity="0.18"/>')
 
     parts.append(
         f'<line x1="{plot_left}" y1="{plot_bottom}" x2="{plot_right}" y2="{plot_bottom}" stroke="{COLOR_AXIS_TEXT}"/>'

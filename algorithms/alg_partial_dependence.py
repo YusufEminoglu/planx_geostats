@@ -28,6 +28,7 @@ from ..core.ml_engines import (
     partial_dependence_report,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, line_chart_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -190,6 +191,12 @@ class PartialDependenceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             f"<tr><td>{value:.6f}</td><td>{pred:.6f}</td></tr>"
             for value, pred in zip(results["grid_values"], results["average"])
         )
+        pd_chart = line_chart_svg(
+            results["grid_values"],
+            {"Average prediction": results["average"]},
+            x_label=pd_field,
+            y_label=f"Average prediction{class_note}",
+        )
         guidance = analyst_guidance_html(
             "Partial Dependence",
             "Average model prediction as one field is swept across its "
@@ -223,12 +230,14 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Partial Dependence</h1>
 <p>Target: <strong>{html.escape(target_field)}</strong>{html.escape(class_note)} | Field: <strong>{html.escape(pd_field)}</strong> | Model: <strong>{html.escape(CV_MODEL_LABELS[model_key])}</strong></p>
 <div class="summary">Skipped {skipped} record(s) with missing values.</div>
 <h2>Partial Dependence Curve</h2>
+{pd_chart}
 <table><thead><tr><th>{html.escape(pd_field)} value</th><th>Average prediction{html.escape(class_note)}</th></tr></thead><tbody>{rows}</tbody></table>
 {guidance}
 </div></body></html>"""

@@ -6937,6 +6937,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">rf_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table, sequential single-hue so cell intensity reads consistently regardless of class count.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7106,6 +7107,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">et_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -7283,6 +7285,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">svc_used</td><td class="param-type">Integer</td><td>1 if used to fit and predict, 0 otherwise</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> the confusion matrix rendered as a shaded heatmap (inline SVG) alongside the existing table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8315,7 +8318,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </table>
 
   <h5>4. Output Description</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report only — a table of PD_FIELD value versus average predicted outcome.</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report — a line chart of PD_FIELD value versus average predicted outcome, followed by the same values as a table.</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> the partial dependence curve as a line chart (inline SVG), drawn directly from the grid_values/average arrays shown in the table below it.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">
@@ -9099,6 +9103,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">conf_width</td><td class="param-type">Double</td><td>Interval width (conf_high − conf_low)</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a sorted-prediction interval plot (inline SVG) — records ordered by predicted value on the x-axis, a shaded lower/upper ribbon, and the point predictions — a direct visualization of conf_pred/conf_low/conf_high. Deterministically subsampled to ~1,500 records on very large layers to keep the report file size reasonable; the reported coverage/width statistics still reflect every record.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>

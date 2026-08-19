@@ -27,6 +27,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import extract_classification_matrix, fit_random_forest_classifier, top_feature_importance_rows
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, heatmap_table_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -242,6 +243,7 @@ class RandomForestClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             for i, row in enumerate(results["confusion_matrix"])
         )
         oob_text = f"{results['oob_score']:.6f}" if results["oob_score"] is not None else "Not available"
+        cm_chart = heatmap_table_svg(class_labels, class_labels, results["confusion_matrix"], cell_format="{:.0f}")
         guidance = analyst_guidance_html(
             "Random Forest Classification",
             "An ensemble of decision trees voting by averaged class probability; "
@@ -276,6 +278,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Random Forest Classification</h1>
@@ -285,6 +288,7 @@ Accuracy = {results['accuracy']:.6f} | OOB score = {oob_text}<br>
 Skipped {skipped} record(s) with missing values.
 </div>
 <h2>Confusion Matrix (rows = actual, columns = predicted)</h2>
+{cm_chart}
 <table><thead><tr><th></th>{cm_header}</tr></thead><tbody>{cm_rows}</tbody></table>
 <h2>Per-Class Metrics</h2>
 <table><thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead><tbody>{per_class_rows}</tbody></table>
