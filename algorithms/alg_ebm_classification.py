@@ -27,6 +27,7 @@ from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import extract_classification_matrix, fit_ebm_classifier
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, heatmap_table_svg
+from ..core.symbology import apply_renderer, categorical_field_renderer
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -214,6 +215,7 @@ class EBMClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             field_descriptions,
             "ebm_classification",
         )
+        apply_renderer(layer, categorical_field_renderer(layer, layer.geometryType(), "ebm_class"))
         return {}
 
     def _write_html(self, path, target_field, feature_fields, class_labels, results, skipped):

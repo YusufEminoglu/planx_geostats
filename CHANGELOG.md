@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.3.0] - 2026-08-19
+
+- Every classifier in the plugin now colors its output layer by predicted class: Random Forest, Extra Trees, SVC, all 4 Gradient Boosting engines (via the shared _gbm_base.py), Neural Network (MLP), Explainable Boosting Machine (EBM), and TabPFN Classification - 10 tools total. Adds core/symbology.py::categorical_field_renderer(), a new data-driven qualitative renderer that cycles the same 10-color palette alg_skater.py's region_id already used, by POSITION in the sorted unique-value list rather than by integer modulo - so it works for string class labels, not just integer IDs. This completes automatic symbology for every classification tool in the plugin.
+
 ## [3.2.0] - 2026-08-19
 
 - Seven more regression tools gain diverging residual coloring: all 4 Gradient Boosting engines (scikit-learn/XGBoost/LightGBM/CatBoost, via the shared _gbm_base.py - one edit covers all four), Neural Network (MLP), Explainable Boosting Machine (EBM), and TabPFN Regression. Same core/symbology.py::diverging_residual_renderer() pattern as the previous release. This completes automatic symbology for every regression tool in the plugin's Group 06 (Machine Learning).

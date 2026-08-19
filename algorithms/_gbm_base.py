@@ -43,7 +43,7 @@ from ..core.ml_engines import (
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, heatmap_table_svg, scatter_plot_svg
-from ..core.symbology import apply_renderer, diverging_residual_renderer
+from ..core.symbology import apply_renderer, categorical_field_renderer, diverging_residual_renderer
 from ..dependencies import optional_dependency_error
 
 
@@ -414,6 +414,7 @@ class GBMClassificationBase(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             f"gbm_classification_{self.ENGINE}",
         )
+        apply_renderer(layer, categorical_field_renderer(layer, layer.geometryType(), "gbm_class"))
         return {}
 
     def _write_html(self, path, target_field, feature_fields, class_labels, results, skipped):

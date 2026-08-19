@@ -181,6 +181,33 @@ def sequential_quantile_renderer(
     return QgsGraduatedSymbolRenderer(field_name, ranges)
 
 
+def categorical_field_renderer(layer, geometry_type, field_name: str, palette=None):
+    """Data-driven qualitative renderer for a string- or numeric-valued
+    categorical field (predicted class labels, land-use categories, ...),
+    cycling through the qualitative palette by POSITION in the sorted
+    unique-value list. Unlike categorical_id_renderer, this does not assume
+    integer values or index colors by value % len(palette), so it works for
+    any hashable, orderable field value - including the string class labels
+    every classifier's <engine>_class output field holds."""
+    if layer is None:
+        return None
+    palette = palette or QUALITATIVE_PALETTE
+    field_idx = layer.fields().lookupField(field_name)
+    if field_idx < 0:
+        return None
+    unique_vals = sorted(
+        (v for v in layer.uniqueValues(field_idx) if v is not None and v != NULL),
+        key=str,
+    )
+    if not unique_vals:
+        return None
+    categories = [
+        QgsRendererCategory(val, styled_symbol(geometry_type, palette[i % len(palette)]), str(val), True)
+        for i, val in enumerate(unique_vals)
+    ]
+    return QgsCategorizedSymbolRenderer(field_name, categories)
+
+
 def categorical_id_renderer(
     layer,
     geometry_type,
