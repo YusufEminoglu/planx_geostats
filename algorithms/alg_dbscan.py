@@ -23,6 +23,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, categorical_id_renderer
 from ..core.ml_engines import fit_dbscan
 from ..dependencies import optional_dependency_error
 
@@ -188,4 +189,5 @@ class DBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             {"cluster_id": "DBSCAN cluster index, or -1 for noise/outlier points not assigned to any cluster"},
             "dbscan_clustering",
         )
+        apply_renderer(layer, categorical_id_renderer(layer, layer.geometryType(), "cluster_id", noise_value=-1))
         return {}

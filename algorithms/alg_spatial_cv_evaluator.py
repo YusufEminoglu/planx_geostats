@@ -28,6 +28,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, categorical_id_renderer
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_matrix_with_centroids, spatial_kfold_evaluate
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, bar_chart_svg
@@ -239,6 +240,7 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             {"cv_fold": "Spatial block (fold) index this record was assigned to (NULL if it had missing values)"},
             "spatial_kfold_cv_evaluator",
         )
+        apply_renderer(layer, categorical_id_renderer(layer, layer.geometryType(), "cv_fold"))
         return {}
 
     def _write_html(self, path, target_field, feature_fields, task_type, model_key, n_folds, method_label, fold_metrics, skipped):

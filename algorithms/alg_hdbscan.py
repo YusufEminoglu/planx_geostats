@@ -23,6 +23,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, categorical_id_renderer
 from ..core.ml_engines import fit_hdbscan
 from ..dependencies import optional_dependency_error
 
@@ -197,4 +198,5 @@ class HDBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             "hdbscan_clustering",
         )
+        apply_renderer(layer, categorical_id_renderer(layer, layer.geometryType(), "cluster_id", noise_value=-1))
         return {}

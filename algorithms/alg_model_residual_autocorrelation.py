@@ -32,6 +32,7 @@ from ..core.analysis_diagnostics import (
     residual_spatial_autocorrelation_summary,
 )
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, diverging_residual_renderer
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, build_cv_estimator, extract_regression_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, scatter_plot_svg
@@ -218,6 +219,7 @@ class ModelResidualAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm
             },
             "model_residual_autocorrelation",
         )
+        apply_renderer(layer, diverging_residual_renderer(layer, layer.geometryType(), "model_resid"))
         return {}
 
     def _write_html(self, path, target_field, model_key, summary, skipped):

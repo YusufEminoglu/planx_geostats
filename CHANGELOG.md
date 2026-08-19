@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.4.0] - 2026-08-19
+
+- Seven more output layers gain automatic symbology: DBSCAN and HDBSCAN clustering now color by cluster_id with noise points (-1) in a fixed neutral gray; Gaussian Mixture clustering and Spatial k-Fold CV Evaluator color by cluster_id/cv_fold; Model Residual Spatial Autocorrelation Check gains diverging residual coloring; Prediction Uncertainty Map and Conformal Prediction Interval gain a new sequential single-hue coloring (core/symbology.py::sequential_quantile_renderer(), colorblind-safe) on their uncertainty/interval-width field.
+
 ## [3.3.0] - 2026-08-19
 
 - Every classifier in the plugin now colors its output layer by predicted class: Random Forest, Extra Trees, SVC, all 4 Gradient Boosting engines (via the shared _gbm_base.py), Neural Network (MLP), Explainable Boosting Machine (EBM), and TabPFN Classification - 10 tools total. Adds core/symbology.py::categorical_field_renderer(), a new data-driven qualitative renderer that cycles the same 10-color palette alg_skater.py's region_id already used, by POSITION in the sorted unique-value list rather than by integer modulo - so it works for string class labels, not just integer IDs. This completes automatic symbology for every classification tool in the plugin.

@@ -24,6 +24,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, categorical_id_renderer
 from ..core.ml_engines import fit_gmm
 from ..dependencies import optional_dependency_error
 
@@ -211,4 +212,5 @@ class GMMClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             {"cluster_id": "Highest-probability mixture component index for this record"},
             "gmm_clustering",
         )
+        apply_renderer(layer, categorical_id_renderer(layer, layer.geometryType(), "cluster_id"))
         return {}
