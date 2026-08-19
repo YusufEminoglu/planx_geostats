@@ -38,6 +38,18 @@ class RuntimeCase:
     layer_outputs: dict[str, int] = field(default_factory=dict)
     expected_exception: str | None = None
     optional_dependency_ok: bool = False
+    # Regression guard for postProcessAlgorithm's layer-styling/metadata step:
+    # layer_outputs only checks feature count, which stays green even when
+    # postProcessAlgorithm silently no-ops (e.g. the QgsProject.instance()
+    # .mapLayer() vs context.getMapLayer() bug fixed in v3.7.0, where the
+    # layer lookup returned None and every apply_renderer()/
+    # apply_output_metadata() call after it was skipped). renderer_class, if
+    # set, asserts the OUTPUT layer's renderer is exactly that QGIS class
+    # (e.g. "QgsCategorizedSymbolRenderer"); alias_check_field, if set,
+    # asserts that field has a non-empty alias (proof apply_output_metadata
+    # actually ran) - used for tools with metadata but no custom renderer.
+    renderer_class: str | None = None
+    alias_check_field: str | None = None
 
 
 def _add_root_to_path(root: Path) -> None:
@@ -367,6 +379,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "local_moran_lisa",
@@ -382,6 +395,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "bivariate_lisa",
@@ -399,6 +413,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "bivariate_spatial_association_lees_l",
@@ -413,6 +428,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "multivariate_clustering",
@@ -424,6 +440,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "similarity_search",
@@ -436,6 +453,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
         ),
         RuntimeCase(
             "local_geary_c",
@@ -453,6 +471,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "colocation_quotient",
@@ -482,6 +501,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsCategorizedSymbolRenderer",
         ),
         RuntimeCase(
             "mean_center",
@@ -493,6 +513,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            alias_check_field="mean_x",
         ),
         RuntimeCase(
             "central_feature",
@@ -503,6 +524,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            alias_check_field="is_central",
         ),
         RuntimeCase(
             "median_center",
@@ -513,6 +535,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            alias_check_field="median_x",
         ),
         RuntimeCase(
             "standard_distance",
@@ -524,6 +547,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            alias_check_field="mean_x",
         ),
         RuntimeCase(
             "directional_distribution",
@@ -535,6 +559,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            alias_check_field="mean_x",
         ),
         RuntimeCase(
             "linear_directional_mean",
@@ -544,6 +569,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "OUTPUT": "memory:",
             },
             layer_outputs={"OUTPUT": 1},
+            alias_check_field="mean_angle",
         ),
         RuntimeCase(
             "ols_regression",
@@ -557,6 +583,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
         ),
         RuntimeCase(
             "lm_diagnostics",
@@ -585,6 +612,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
         ),
         RuntimeCase(
             "spatial_autoregression",
@@ -601,6 +629,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
             optional_dependency_ok=True,
         ),
         RuntimeCase(
@@ -618,6 +647,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
             optional_dependency_ok=True,
         ),
         RuntimeCase(
@@ -635,6 +665,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
         ),
         RuntimeCase(
             "exploratory_regression",
@@ -667,6 +698,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
         ),
         RuntimeCase(
             "multiscale_geographically_weighted_regression",
@@ -694,6 +726,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
             optional_dependency_ok=True,
         ),
         RuntimeCase(
@@ -712,6 +745,7 @@ def _all_cases() -> list[RuntimeCase]:
             },
             html_outputs=("HTML_REPORT",),
             layer_outputs={"OUTPUT": 1},
+            renderer_class="QgsGraduatedSymbolRenderer",
         ),
         RuntimeCase(
             "quantile_regression",
@@ -1384,6 +1418,24 @@ def _verify_outputs(case: RuntimeCase, result: dict, context) -> None:
                 f"{case.algorithm} output {key} has too few features: "
                 f"{layer.featureCount()} < {min_features}"
             )
+        if case.renderer_class is not None:
+            actual = type(layer.renderer()).__name__
+            if actual != case.renderer_class:
+                raise AssertionError(
+                    f"{case.algorithm} output {key} has renderer {actual}, "
+                    f"expected {case.renderer_class} - postProcessAlgorithm's "
+                    f"styling step likely silently no-op'd (layer lookup failed)"
+                )
+        if case.alias_check_field is not None:
+            idx = layer.fields().lookupField(case.alias_check_field)
+            if idx < 0:
+                raise AssertionError(f"{case.algorithm} output {key} is missing field {case.alias_check_field}")
+            if not layer.fields().at(idx).alias():
+                raise AssertionError(
+                    f"{case.algorithm} output {key} field {case.alias_check_field} has no alias - "
+                    f"postProcessAlgorithm's apply_output_metadata() likely silently no-op'd "
+                    f"(layer lookup failed)"
+                )
 
 
 def _run_case(case: RuntimeCase, env: dict, context) -> dict:

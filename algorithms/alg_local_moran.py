@@ -12,7 +12,6 @@ from qgis.PyQt.QtCore import QVariant
 from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
-    QgsProject,
     QgsFeature,
     QgsField,
     QgsProcessing,
@@ -379,7 +378,7 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if self.out_layer_id is None:
             return {}
 
-        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        layer = context.getMapLayer(self.out_layer_id)
         if not layer:
             return {}
 

@@ -10,7 +10,6 @@ from qgis.PyQt.QtGui import QColor
 from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
-    QgsProject,
     QgsFeature,
     QgsField,
     QgsSymbol,
@@ -258,7 +257,7 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if self.out_layer_id is None:
             return {}
 
-        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        layer = context.getMapLayer(self.out_layer_id)
         if not layer:
             return {}
 

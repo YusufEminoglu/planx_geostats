@@ -29,7 +29,6 @@ from qgis.core import (
     QgsProcessingParameterField,
     QgsProcessingParameterFileDestination,
     QgsProcessingParameterNumber,
-    QgsProject,
     QgsRendererRange,
     QgsSymbol,
 )
@@ -660,7 +659,7 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}
-        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        layer = context.getMapLayer(self.out_layer_id)
         if not layer:
             return {}
 

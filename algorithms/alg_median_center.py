@@ -14,7 +14,6 @@ from qgis.core import (
     QgsFields,
     QgsPointXY,
     QgsGeometry,
-    QgsProject,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -200,7 +199,7 @@ class MedianCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}
-        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        layer = context.getMapLayer(self.out_layer_id)
         if not layer:
             return {}
         apply_output_metadata(

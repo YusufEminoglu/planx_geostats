@@ -23,7 +23,6 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterNumber,
-    QgsProject,
     QgsRendererCategory,
     QgsSymbol,
 )
@@ -254,7 +253,7 @@ class BivariateLeeLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}
-        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        layer = context.getMapLayer(self.out_layer_id)
         if not layer:
             return {}
         feedback.pushInfo("Applying Lee's L bivariate association styling...")
