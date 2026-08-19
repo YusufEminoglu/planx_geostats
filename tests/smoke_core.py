@@ -708,6 +708,12 @@ def test_categorical_id_renderer_labels_noise_and_clusters() -> None:
     assert symbology.categorical_id_renderer(empty_layer, "point", "cluster_id") is None
 
 
+def test_symbology_layer_dependent_renderers_handle_none_layer() -> None:
+    assert symbology.diverging_residual_renderer(None, "point", "resid") is None
+    assert symbology.sequential_quantile_renderer(None, "point", "unc_std") is None
+    assert symbology.categorical_id_renderer(None, "point", "cluster_id") is None
+
+
 def test_apply_renderer_sets_and_repaints_or_no_ops_on_none() -> None:
     layer = FakeSymbologyLayer(["cluster_id"], {"cluster_id": [0, 1]})
     renderer = symbology.categorical_id_renderer(layer, "point", "cluster_id")
@@ -754,6 +760,7 @@ def run_all() -> None:
     test_diverging_residual_renderer_handles_missing_field_and_zero_std()
     test_sequential_quantile_renderer_bins_values()
     test_categorical_id_renderer_labels_noise_and_clusters()
+    test_symbology_layer_dependent_renderers_handle_none_layer()
     test_apply_renderer_sets_and_repaints_or_no_ops_on_none()
     print("CORE SMOKE TESTS OK")
 

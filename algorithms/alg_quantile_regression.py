@@ -28,6 +28,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, diverging_residual_renderer
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, scatter_plot_svg
 from ..core.stats_engines import calculate_quantile_regression
@@ -226,6 +227,7 @@ class QuantileRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             "quantile_regression",
         )
+        apply_renderer(layer, diverging_residual_renderer(layer, layer.geometryType(), "qr_resid"))
         return {}
 
     def _to_float(self, value):

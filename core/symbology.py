@@ -122,8 +122,10 @@ def diverging_residual_renderer(layer, geometry_type, field_name: str):
     a plain '<engine>_resid' column (most of the ML regressors) get the same
     residual-diagnostic map every spatial-econometric tool already has,
     without needing a separate standardized-residual output field. Returns
-    None if the field is missing, has fewer than 2 values, or has zero
-    variance (nothing meaningful to diverge around)."""
+    None if the layer is unavailable, the field is missing, has fewer than 2
+    values, or has zero variance (nothing meaningful to diverge around)."""
+    if layer is None:
+        return None
     field_idx = layer.fields().lookupField(field_name)
     if field_idx < 0:
         return None
@@ -153,6 +155,8 @@ def sequential_quantile_renderer(
     to dark sequential single-hue, colorblind-safe, matching the same
     sequential ramp core/charts.py::heatmap_table_svg() uses for confusion
     matrices. Reads values directly off the built layer."""
+    if layer is None:
+        return None
     field_idx = layer.fields().lookupField(field_name)
     if field_idx < 0:
         return None
@@ -192,6 +196,8 @@ def categorical_id_renderer(
     established for region_id. noise_value (e.g. -1 for DBSCAN/HDBSCAN noise
     points) always renders in a fixed neutral gray regardless of palette
     cycling, so noise reads consistently across every clustering tool."""
+    if layer is None:
+        return None
     palette = palette or QUALITATIVE_PALETTE
     field_idx = layer.fields().lookupField(field_name)
     if field_idx < 0:

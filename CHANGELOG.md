@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.1.0] - 2026-08-19
+
+- Six regression tools that previously shipped their output layer with QGIS's default symbology now get the same diverging residual coloring the spatial-econometric tools already had: Generalized Linear Regression (which had no postProcessAlgorithm at all until now - it also gained the layer-metadata aliasing every other tool already has), Quantile Regression, Spatial Regime Regression, and Random Forest/Extra Trees/SVR Regression. Uses the new data-driven diverging_residual_renderer() from core/symbology.py (v3.0.0), which computes mean and std dev straight off the built layer via QGIS's own aggregate functions - no new output field needed.
+
 ## [3.0.0] - 2026-08-19
 
 - Starts a new major initiative: automatic QGIS symbology (classification + coloring) for output layers, mirroring the inline-chart work's approach. Adds core/symbology.py: shared, tested helpers for the categorized LISA renderer, diverging std-dev renderer, a new data-driven diverging-residual renderer, a new sequential quantile renderer for confidence/uncertainty fields, and a new qualitative cluster-id renderer with noise-point coloring - extracted from code Local Moran's I, OLS Regression, and SKATER each hand-rolled independently, which now call the shared helpers instead. About 30 output layers still ship default symbology; wiring them up is the major-version body of work ahead.

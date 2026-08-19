@@ -25,6 +25,7 @@ from qgis.core import (
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
     QgsProcessingParameterFileDestination,
+    QgsProject,
     QgsWkbTypes,
 )
 
@@ -40,6 +41,8 @@ from ..core.stats_engines import calculate_glr
 from ..core.weights import build_weights_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, scatter_plot_svg
+from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, diverging_residual_renderer
 
 from ._icons import algorithm_icon
 
@@ -259,6 +262,24 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
 
         self._write_html(html_path, dep_var, indep_fields, family, results, quality, skipped, residual_spatial)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
+
+    def postProcessAlgorithm(self, context, feedback):
+        if self.out_layer_id is None:
+            return {}
+        layer = QgsProject.instance().mapLayer(self.out_layer_id)
+        if not layer:
+            return {}
+        apply_output_metadata(
+            layer,
+            "PlanX GeoStats GLR output",
+            {
+                "glr_fit": "GLR fitted (predicted) dependent value",
+                "glr_resid": "Observed minus fitted dependent value",
+            },
+            self.displayName(),
+        )
+        apply_renderer(layer, diverging_residual_renderer(layer, layer.geometryType(), "glr_resid"))
+        return {}
 
     def _to_float(self, value):
         if value is None or value == NULL or str(value) == "NULL":
