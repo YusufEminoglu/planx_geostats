@@ -43,6 +43,7 @@ from ..core.ml_engines import (
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, heatmap_table_svg, scatter_plot_svg
+from ..core.symbology import apply_renderer, diverging_residual_renderer
 from ..dependencies import optional_dependency_error
 
 
@@ -189,6 +190,7 @@ class GBMRegressionBase(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             f"gbm_regression_{self.ENGINE}",
         )
+        apply_renderer(layer, diverging_residual_renderer(layer, layer.geometryType(), "gbm_resid"))
         return {}
 
     def _write_html(self, path, target_field, feature_fields, results, skipped):

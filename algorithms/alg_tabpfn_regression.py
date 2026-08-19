@@ -24,6 +24,7 @@ from qgis.core import (
 from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, diverging_residual_renderer
 from ..core.ml_engines import extract_regression_matrix, fit_tabpfn_regressor
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, scatter_plot_svg
@@ -227,6 +228,7 @@ class TabPFNRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             "tabpfn_regression",
         )
+        apply_renderer(layer, diverging_residual_renderer(layer, layer.geometryType(), "tabpfn_resid"))
         return {}
 
     def _write_html(self, path, target_field, feature_fields, results, skipped):

@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.2.0] - 2026-08-19
+
+- Seven more regression tools gain diverging residual coloring: all 4 Gradient Boosting engines (scikit-learn/XGBoost/LightGBM/CatBoost, via the shared _gbm_base.py - one edit covers all four), Neural Network (MLP), Explainable Boosting Machine (EBM), and TabPFN Regression. Same core/symbology.py::diverging_residual_renderer() pattern as the previous release. This completes automatic symbology for every regression tool in the plugin's Group 06 (Machine Learning).
+
 ## [3.1.0] - 2026-08-19
 
 - Six regression tools that previously shipped their output layer with QGIS's default symbology now get the same diverging residual coloring the spatial-econometric tools already had: Generalized Linear Regression (which had no postProcessAlgorithm at all until now - it also gained the layer-metadata aliasing every other tool already has), Quantile Regression, Spatial Regime Regression, and Random Forest/Extra Trees/SVR Regression. Uses the new data-driven diverging_residual_renderer() from core/symbology.py (v3.0.0), which computes mean and std dev straight off the built layer via QGIS's own aggregate functions - no new output field needed.
