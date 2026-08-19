@@ -23,6 +23,7 @@ from qgis.core import (
 
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_classification_matrix, extract_regression_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, waterfall_svg
 from ..core.xai_engines import compute_shap_values, shap_local_breakdown
 from ..dependencies import optional_dependency_error
 
@@ -195,6 +196,11 @@ class SHAPLocalExplanationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             f"<tr><td>{html.escape(name)}</td><td>{value:+.6f}</td></tr>"
             for name, value in breakdown["contributions"]
         )
+        waterfall_chart = waterfall_svg(
+            [name for name, _value in breakdown["contributions"]],
+            [value for _name, value in breakdown["contributions"]],
+            breakdown["base_value"],
+        )
         class_note = f" | Class explained: <strong>{html.escape(explained_class)}</strong>" if explained_class else ""
         actual_note = "" if explained_class else f" | Actual target value: <strong>{actual_target:.6f}</strong>"
         guidance = analyst_guidance_html(
@@ -228,6 +234,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>SHAP Local Explanation - Feature ID {feature_id}</h1>
@@ -235,6 +242,8 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 <div class="summary">
 Base value = {breakdown['base_value']:.6f} | Predicted value = {breakdown['prediction']:.6f}
 </div>
+<h2>Waterfall (base value &rarr; contributions &rarr; prediction)</h2>
+{waterfall_chart}
 <h2>Field Contributions (ranked by |SHAP value|)</h2>
 <table><thead><tr><th>Field</th><th>SHAP contribution</th></tr></thead><tbody>{rows}</tbody></table>
 {guidance}

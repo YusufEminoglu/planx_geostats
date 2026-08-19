@@ -26,6 +26,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import extract_regression_matrix, fit_tabpfn_regressor
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -229,6 +230,14 @@ class TabPFNRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         return {}
 
     def _write_html(self, path, target_field, feature_fields, results, skipped):
+        residual_chart = scatter_plot_svg(
+            list(results["fitted"]),
+            list(results["residuals"]),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         guidance = analyst_guidance_html(
             "TabPFN Regression",
             "A pretrained tabular foundation model performing in-context "
@@ -261,6 +270,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
 h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>TabPFN Regression (Tabular Foundation Model)</h1>
@@ -269,6 +279,8 @@ h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 R2 = {results['r2']:.6f} | RMSE = {results['rmse']:.6f} | MAE = {results['mae']:.6f}<br>
 Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
+<h2>Residual vs. Fitted</h2>
+{residual_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

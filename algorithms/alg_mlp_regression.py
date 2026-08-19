@@ -28,6 +28,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import extract_regression_matrix, fit_mlp_regressor
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -223,6 +224,14 @@ class MLPRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "Converged before the iteration cap." if results["converged"]
             else "<strong>Did not converge</strong> - hit the maximum iteration cap; treat results with caution."
         )
+        residual_chart = scatter_plot_svg(
+            list(results["fitted"]),
+            list(results["residuals"]),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         guidance = analyst_guidance_html(
             "Neural Network Regression (MLP)",
             "A small feed-forward network learning smooth non-linear "
@@ -257,6 +266,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
 h1 {{ margin: 0 0 8px; font-size: 1.6rem; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Neural Network Regression (MLP)</h1>
@@ -267,6 +277,8 @@ R2 = {results['r2']:.6f} | RMSE = {results['rmse']:.6f} | MAE = {results['mae']:
 {convergence_note} ({results['n_iter']} iterations used)<br>
 Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
+<h2>Residual vs. Fitted</h2>
+{residual_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

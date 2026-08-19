@@ -586,6 +586,80 @@ def lorenz_curve_svg(
     return _wrap_chart(title, "".join(parts))
 
 
+def waterfall_svg(
+    labels: list[str],
+    deltas: list[float],
+    base_value: float,
+    *,
+    title: str = "",
+    width: int = CHART_WIDTH,
+    height: int | None = None,
+) -> str:
+    """Base value -> sequential signed contributions -> final prediction,
+    the standard SHAP local-explanation waterfall chart."""
+    if not labels or not deltas or len(labels) != len(deltas):
+        return _wrap_chart(title, no_data_svg(width, height or CHART_HEIGHT))
+
+    row_h = 26
+    rows = ["Base value"] + list(labels) + ["Prediction"]
+    n_rows = len(rows)
+    h = height or max(n_rows * row_h + MARGIN["top"] + MARGIN["bottom"], 140)
+
+    cumulative = base_value
+    segments = []
+    for delta in deltas:
+        start = cumulative
+        cumulative += delta
+        segments.append((start, cumulative))
+    final_value = cumulative
+
+    all_values = [base_value, final_value] + [v for seg in segments for v in seg]
+    v_min = min(min(all_values), 0.0)
+    v_max = max(max(all_values), 0.0)
+
+    plot_left = MARGIN["left"] + 120
+    plot_right = width - MARGIN["right"]
+    plot_w = max(plot_right - plot_left, 10)
+    domain = (v_min, v_max if v_max != v_min else v_min + 1.0)
+    scale = _make_scale(domain, (0, plot_w))
+    zero_x = plot_left + scale(0.0)
+
+    parts = [_svg_open(width, h, title)]
+    parts.append(
+        f'<line x1="{zero_x:.1f}" y1="{MARGIN["top"] - 4}" x2="{zero_x:.1f}" '
+        f'y2="{h - MARGIN["bottom"] + 10:.1f}" stroke="{COLOR_GRID}"/>'
+    )
+
+    for i, row_label in enumerate(rows):
+        y = MARGIN["top"] + i * row_h
+        mid_y = y + (row_h - 6) / 2 + 4
+        parts.append(
+            f'<text x="{plot_left - 8:.1f}" y="{mid_y:.1f}" text-anchor="end" '
+            f'font-size="11" fill="{COLOR_AXIS_TEXT}">{_esc(str(row_label)[:28])}</text>'
+        )
+        if i == 0:
+            x0, x1 = plot_left + scale(min(0.0, base_value)), plot_left + scale(max(0.0, base_value))
+            fill = COLOR_AXIS_TEXT
+            value_label = _fmt(base_value)
+        elif i == n_rows - 1:
+            x0, x1 = plot_left + scale(min(0.0, final_value)), plot_left + scale(max(0.0, final_value))
+            fill = COLOR_AXIS_TEXT
+            value_label = _fmt(final_value)
+        else:
+            start, end = segments[i - 1]
+            x0, x1 = plot_left + scale(min(start, end)), plot_left + scale(max(start, end))
+            fill = COLOR_PRIMARY if end >= start else COLOR_SECONDARY
+            value_label = f"{deltas[i - 1]:+.4f}"
+        bar_w = max(x1 - x0, 0.5)
+        parts.append(f'<rect x="{x0:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{row_h - 6}" fill="{fill}" rx="2"/>')
+        parts.append(
+            f'<text x="{x1 + 4:.1f}" y="{mid_y:.1f}" font-size="11" fill="{COLOR_AXIS_TEXT}">{value_label}</text>'
+        )
+
+    parts.append("</svg>")
+    return _wrap_chart(title, "".join(parts))
+
+
 def kpi_card_row_html(cards: list[dict]) -> str:
     """cards: [{"label", "value", "sublabel"="", "tone"="neutral"|"good"|"warn"|"bad"}]"""
     tiles = []

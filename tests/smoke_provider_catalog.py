@@ -678,6 +678,9 @@ def _charts_representative_calls(charts):
         ("lorenz_curve_svg", charts.lorenz_curve_svg([0.0, 0.5, 1.0], [0.0, 0.2, 1.0], gini=0.3, title="t")),
         ("lorenz_curve_svg:empty", charts.lorenz_curve_svg([], [])),
         ("no_data_svg", charts.no_data_svg()),
+        ("waterfall_svg", charts.waterfall_svg(["road_density", "gridiron_index", "transit_accessibility"], [0.8, 0.3, -0.1], 5.0)),
+        ("waterfall_svg:empty", charts.waterfall_svg([], [], 5.0)),
+        ("waterfall_svg:zero_delta", charts.waterfall_svg(["a"], [0.0], 0.0)),
     ]
     return calls
 

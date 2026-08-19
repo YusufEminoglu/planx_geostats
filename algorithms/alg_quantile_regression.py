@@ -29,6 +29,7 @@ from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 from ..core.stats_engines import calculate_quantile_regression
 
 from ._icons import algorithm_icon
@@ -245,6 +246,14 @@ class QuantileRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             for name, coef in zip(names, results["coefficients"])
         )
         pseudo_r2_text = f"{results['pseudo_r2']:.6f}" if results["pseudo_r2"] is not None else "n/a"
+        residual_chart = scatter_plot_svg(
+            results["fitted"].tolist() if hasattr(results["fitted"], "tolist") else list(results["fitted"]),
+            results["residuals"].tolist() if hasattr(results["residuals"], "tolist") else list(results["residuals"]),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         guidance = analyst_guidance_html(
             "Quantile Regression",
             f"A linear model for the Tau={tau:g} conditional quantile, "
@@ -276,6 +285,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Quantile Regression (Tau={tau:g})</h1>
@@ -286,6 +296,8 @@ Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
 <h2>Coefficients</h2>
 <table><thead><tr><th>Field</th><th>Coefficient</th></tr></thead><tbody>{coef_rows}</tbody></table>
+<h2>Residual vs. Fitted</h2>
+{residual_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

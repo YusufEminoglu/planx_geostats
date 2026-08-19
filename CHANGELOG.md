@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.11.0] - 2026-08-19
+
+- Completes the VISUALIZATION_PATHWAY.md sweep. Every remaining regression tool gains a residual-vs-fitted scatterplot: Quantile Regression, Spatial Regime Regression, and all 10 ML regressors (Random Forest, Extra Trees, SVR, Neural Network/MLP, Explainable Boosting Machine, TabPFN, and all 4 Gradient Boosting engines via the shared _gbm_base.py). Tier 3 lands: core/charts.py gains a new waterfall_svg() primitive, wired into SHAP Local Explanation Report - the standard SHAP local-explanation visual. Every algorithm report in the plugin that computes a chartable statistic now visualizes it inline, no external dependency.
+
 ## [2.10.0] - 2026-08-19
 
 - Four more regression reports gain a residual-vs-fitted (or residual-vs-predicted) scatterplot: Spatial Durbin Model, Eigenvector Spatial Filtering (ESF) Regression, GWR, and MGWR. core/advanced_stats_engines.py::calculate_spatial_durbin now also returns its fitted-value array. Manual entries pending; remaining regression tools and the Tier-3 SHAP waterfall chart follow.

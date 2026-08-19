@@ -42,7 +42,7 @@ from ..core.ml_engines import (
     top_feature_importance_rows,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
-from ..core.charts import chart_css, heatmap_table_svg
+from ..core.charts import chart_css, heatmap_table_svg, scatter_plot_svg
 from ..dependencies import optional_dependency_error
 
 
@@ -207,6 +207,14 @@ class GBMRegressionBase(HelpUrlMixin, QgsProcessingAlgorithm):
                 f"<h2>Feature Importance (top 20)</h2>"
                 f"<table><thead><tr><th>Field</th><th>Importance</th></tr></thead><tbody>{rows}</tbody></table>"
             )
+        residual_chart = scatter_plot_svg(
+            list(results["fitted"]),
+            list(results["residuals"]),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         guidance = analyst_guidance_html(
             f"Gradient Boosting Regression ({GBM_ENGINE_LABELS[self.ENGINE]})",
             "Trees added sequentially, each correcting the previous ensemble's "
@@ -240,6 +248,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Gradient Boosting Regression ({html.escape(GBM_ENGINE_LABELS[self.ENGINE])})</h1>
@@ -249,6 +258,8 @@ R2 = {results['r2']:.6f} | RMSE = {results['rmse']:.6f} | MAE = {results['mae']:
 Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
 {importance_block}
+<h2>Residual vs. Fitted</h2>
+{residual_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:

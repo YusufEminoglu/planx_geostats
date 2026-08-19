@@ -28,6 +28,7 @@ from qgis.PyQt.QtCore import QVariant
 
 from ..core.layer_metadata import apply_output_metadata
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -265,7 +266,7 @@ class SpatialRegimeRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
-        self._write_html(html_path, dep_var, indep_fields, regime_field, regime_labels, regime_counts, betas, coefficient_names, r2, chow_stat, chow_pvalue, skipped)
+        self._write_html(html_path, dep_var, indep_fields, regime_field, regime_labels, regime_counts, betas, coefficient_names, r2, chow_stat, chow_pvalue, skipped, predicted, residuals)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     def postProcessAlgorithm(self, context, feedback):
@@ -293,7 +294,16 @@ class SpatialRegimeRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             return None
         return numeric
 
-    def _write_html(self, path, dep_var, indep_fields, regime_field, regime_labels, regime_counts, betas, coefficient_names, r2, chow_stat, chow_pvalue, skipped):
+    def _write_html(self, path, dep_var, indep_fields, regime_field, regime_labels, regime_counts, betas, coefficient_names, r2, chow_stat, chow_pvalue, skipped, predicted, residuals):
+        finite_mask = np.isfinite(predicted) & np.isfinite(residuals)
+        residual_chart = scatter_plot_svg(
+            predicted[finite_mask].tolist(),
+            residuals[finite_mask].tolist(),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         coef_rows = "".join(
             f"<tr><td>{html.escape(str(name))}</td><td>{value:.6f}</td></tr>"
             for name, value in zip(coefficient_names, betas)
@@ -336,6 +346,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Spatial Regime Regression</h1>
@@ -347,6 +358,8 @@ Skipped {skipped} record(s) with missing or non-numeric values.
 </div>
 <h2>Coefficients (per regime, in spreg's regime-column order)</h2>
 <table><thead><tr><th>Coefficient</th><th>Value</th></tr></thead><tbody>{coef_rows}</tbody></table>
+<h2>Residual vs. Fitted</h2>
+{residual_chart}
 {guidance}
 </div></body></html>"""
         with open(path, "w", encoding="utf-8") as handle:
