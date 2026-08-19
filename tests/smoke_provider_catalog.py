@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import importlib.util
 import re
 import struct
 import zlib
@@ -21,6 +22,8 @@ RELEASE_ZIP_VERIFIER_TEST = ROOT.parent / "packaging" / "test_verify_release_zip
 ALGORITHMS = ROOT / "algorithms"
 ALGORITHM_ICONS = ROOT / "icons" / "algorithms"
 GEOSTATS_DOCK = ROOT / "geostats_dock.py"
+CHARTS_MODULE = ROOT / "core" / "charts.py"
+CHARTS_ALLOWED_IMPORTS = {"html", "math", "typing", "__future__"}
 
 EXPECTED_GROUPS = {
     "00 | Setup and Diagnostics",
@@ -638,6 +641,109 @@ def test_professional_report_helpers_are_used_by_key_reports() -> None:
         assert "apply_output_metadata" in source, f"{path.name} should apply output metadata aliases"
 
 
+def _load_charts_module():
+    spec = importlib.util.spec_from_file_location("planx_geostats_charts", CHARTS_MODULE)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def _charts_representative_calls(charts):
+    """(label, output) pairs covering every public chart_*.py primitive with
+    representative inputs, plus empty / single-point / zero-variance edge
+    cases, so the checks below exercise the real rendering path end to end."""
+    calls = [
+        ("bar_chart_svg", charts.bar_chart_svg(["road_density", "gridiron_index"], [0.42, -0.18], title="t")),
+        ("bar_chart_svg:vertical", charts.bar_chart_svg(["a", "b", "c"], [1.0, 2.0, 3.0], horizontal=False)),
+        ("bar_chart_svg:empty", charts.bar_chart_svg([], [])),
+        ("bar_chart_svg:single", charts.bar_chart_svg(["a"], [5.0])),
+        ("bar_chart_svg:zero_variance", charts.bar_chart_svg(["a", "b", "c", "d"], [3.0, 3.0, 3.0, 3.0])),
+        ("scatter_plot_svg", charts.scatter_plot_svg([1.0, 2.0, 3.0], [1.0, -2.0, 3.0], quadrant_shading=True, title="t")),
+        ("scatter_plot_svg:empty", charts.scatter_plot_svg([], [])),
+        ("scatter_plot_svg:single", charts.scatter_plot_svg([5.0], [5.0])),
+        ("scatter_plot_svg:zero_variance", charts.scatter_plot_svg([3.0, 3.0, 3.0, 3.0], [3.0, 3.0, 3.0, 3.0], quadrant_shading=True)),
+        ("line_chart_svg", charts.line_chart_svg([1, 2, 3], {"observed": [1.0, 2.0, 3.0], "expected": [3.0, 2.0, 1.0]}, title="t")),
+        ("line_chart_svg:empty", charts.line_chart_svg([], {})),
+        ("line_chart_svg:single", charts.line_chart_svg([1], {"a": [5.0]})),
+        ("histogram_svg", charts.histogram_svg([1.0, 2.0, 3.0, 4.0, 5.0], observed=3.2, title="t")),
+        ("histogram_svg:empty", charts.histogram_svg([])),
+        ("histogram_svg:single", charts.histogram_svg([5.0])),
+        ("histogram_svg:zero_variance", charts.histogram_svg([3.0, 3.0, 3.0, 3.0])),
+        ("heatmap_table_svg", charts.heatmap_table_svg(["actual A", "actual B"], ["pred A", "pred B"], [[8, 2], [1, 9]], title="t")),
+        ("heatmap_table_svg:empty", charts.heatmap_table_svg([], [], [])),
+        ("heatmap_table_svg:zero_matrix", charts.heatmap_table_svg(["r"], ["c"], [[0]])),
+        ("rose_diagram_svg", charts.rose_diagram_svg(45.0, magnitude=0.8, title="t")),
+        ("lorenz_curve_svg", charts.lorenz_curve_svg([0.0, 0.5, 1.0], [0.0, 0.2, 1.0], gini=0.3, title="t")),
+        ("lorenz_curve_svg:empty", charts.lorenz_curve_svg([], [])),
+        ("no_data_svg", charts.no_data_svg()),
+    ]
+    return calls
+
+
+def test_chart_svg_functions_return_balanced_svg_tags() -> None:
+    charts = _load_charts_module()
+    for label, output in _charts_representative_calls(charts):
+        assert output.count("<svg") == 1, f"{label}: expected exactly one <svg tag"
+        assert output.count("</svg>") == 1, f"{label}: expected exactly one </svg> tag"
+        assert 'viewBox="0 0 ' in output, f"{label}: missing viewBox"
+
+
+def test_chart_svg_viewbox_is_well_formed() -> None:
+    charts = _load_charts_module()
+    pattern = re.compile(r'viewBox="0 0 (\d+) (\d+)"')
+    for label, output in _charts_representative_calls(charts):
+        match = pattern.search(output)
+        assert match, f"{label}: viewBox not found or malformed"
+        width, height = int(match.group(1)), int(match.group(2))
+        assert width > 0 and height > 0, f"{label}: viewBox dimensions must be positive, got {width}x{height}"
+
+
+def test_chart_svg_no_external_references() -> None:
+    charts = _load_charts_module()
+    forbidden = ("http://", "https://", "<script", "<iframe")
+    for label, output in _charts_representative_calls(charts):
+        for token in forbidden:
+            assert token not in output, f"{label}: forbidden token {token!r} found in chart output"
+
+
+def test_chart_svg_handles_edge_cases_without_raising() -> None:
+    charts = _load_charts_module()
+    # _charts_representative_calls already includes empty/single/zero-variance
+    # cases per function; a successful call above proves this. This test
+    # additionally confirms the degenerate cases fall back to a real chart or
+    # the no_data_svg() placeholder, never an empty/broken fragment.
+    for label, output in _charts_representative_calls(charts):
+        assert len(output) > 40, f"{label}: suspiciously short output for a chart fragment"
+
+
+def test_kpi_card_row_html_escapes_values() -> None:
+    charts = _load_charts_module()
+    output = charts.kpi_card_row_html([
+        {"label": "<script>alert(1)</script>", "value": "0.63", "sublabel": "z > 27", "tone": "good"},
+    ])
+    assert "<script>alert" not in output, "kpi_card_row_html must escape card text, not emit it raw"
+    assert "&lt;script&gt;" in output, "kpi_card_row_html should html-escape unsafe label text"
+    assert 'class="kpi-row"' in output
+
+
+def test_charts_module_has_no_new_hard_dependencies() -> None:
+    tree = _module_tree(CHARTS_MODULE)
+    offenders = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                top_level = alias.name.split(".")[0]
+                if top_level not in CHARTS_ALLOWED_IMPORTS:
+                    offenders.append(f"import {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0 and node.module:
+                top_level = node.module.split(".")[0]
+                if top_level not in CHARTS_ALLOWED_IMPORTS:
+                    offenders.append(f"from {node.module} import ...")
+    assert not offenders, f"core/charts.py must stay stdlib-only, found: {offenders}"
+
+
 def run_all() -> None:
     test_provider_imports_every_registered_algorithm()
     test_every_algorithm_file_is_registered_once()
@@ -662,6 +768,12 @@ def run_all() -> None:
     test_optional_dependency_failures_use_shared_guidance()
     test_release_zip_verifier_guards_geostats_packaging_contract()
     test_professional_report_helpers_are_used_by_key_reports()
+    test_chart_svg_functions_return_balanced_svg_tags()
+    test_chart_svg_viewbox_is_well_formed()
+    test_chart_svg_no_external_references()
+    test_chart_svg_handles_edge_cases_without_raising()
+    test_kpi_card_row_html_escapes_values()
+    test_charts_module_has_no_new_hard_dependencies()
     print("PROVIDER CATALOG SMOKE TESTS OK")
 
 

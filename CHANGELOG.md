@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.2.0] - 2026-08-19
+
+- Add core/charts.py, a new dependency-free inline-SVG chart toolkit (bar/scatter/line/histogram/heatmap/rose/Lorenz charts plus KPI dashboard cards) that HTML reports will draw on starting next release. Stdlib-only (html, math), no matplotlib/PIL/network calls, enforced by a new AST-based smoke test alongside structural SVG-validity and edge-case coverage in tests/smoke_provider_catalog.py. No algorithm report output changed yet - this release ships the shared toolkit only, per VISUALIZATION_PATHWAY.md (now committed) increment 1.
+
 ## [2.1.2] - 2026-08-15
 
 - **Bug fix**: Conformal Prediction Interval called `mapie.regression.MapieRegressor`, an API removed in `mapie` 1.0's rewrite (the package installs as `mapie` 1.x by default today). Every run failed with an import error once `mapie` was actually installed. Rewrote the wrapper (`core/ml_engines.py::fit_conformal_interval`) against the current `CrossConformalRegressor`/`fit_conformalize`/`predict_interval` API, preserving the same jackknife+ cross-conformal method and coverage semantics; pinned `mapie>=1.0` in `requirements_geostats.txt`.
