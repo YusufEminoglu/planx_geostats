@@ -473,6 +473,7 @@ def calculate_ols(
         "n": n,
         "p": p,
         "df_err": df_err,
+        "fitted": y_pred,
         "residuals": residuals,
         "std_residuals": std_residuals,
         "jarque_bera": (jb_stat, jb_p),

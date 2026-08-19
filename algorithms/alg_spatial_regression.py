@@ -36,6 +36,7 @@ from ..core.stats_engines import calculate_ols
 from ..core.analysis_diagnostics import regression_quality_html, regression_quality_summary
 from ..core.layer_metadata import apply_output_metadata
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -330,6 +331,16 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             moran_class = "badge-danger"
         moran_badge = f'<span class="badge {moran_class}">{moran_status}</span>'
 
+        residual_chart = scatter_plot_svg(
+            res["fitted"].tolist(),
+            res["residuals"].tolist(),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            quadrant_shading=False,
+            split_y=0.0,
+        )
+
         # Build coefficient rows
         coef_rows = ""
         for i, name in enumerate(res["variable_names"]):
@@ -483,6 +494,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         margin: 20px 0;
     }}
     {analyst_guidance_css()}
+    {chart_css()}
     footer {{
         margin-top: 40px;
         border-top: 1px solid #edf2f7;
@@ -534,6 +546,10 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             {coef_rows}
         </tbody>
     </table>
+
+    <h2>Residual vs. Fitted</h2>
+    {residual_chart}
+    <p class="chart-caption">A well-specified model shows no pattern here (residuals scattered evenly around zero across the fitted range); a funnel shape signals heteroskedasticity, a curve signals a missing non-linear term.</p>
 
     <h2>Model Diagnostics</h2>
     <table>

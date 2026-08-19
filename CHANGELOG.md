@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.9.0] - 2026-08-19
+
+- The four core linear/spatial-econometric regression reports gain a residual-vs-fitted (or residual-vs-predicted) scatterplot: OLS Regression, Generalized Linear Regression, Spatial Autoregression (Lag/SAR), and Spatial Error Regression (SEM). core/stats_engines.py::calculate_ols now also returns its fitted-value array alongside the existing residuals (GLR/SAR/SEM already exposed fitted/predicted internally). This starts the regression-tools sweep from VISUALIZATION_PATHWAY.md's Tier 2 list; more regression tools follow in upcoming releases. Manual entries updated.
+
 ## [2.8.0] - 2026-08-19
 
 - Begins Tier 2 of the visualization pathway. Getis-Ord Gi*, Local Moran's I, Local Geary's C, Bivariate LISA, and Linear Directional Mean turned out to be map-output-only tools with no HTML report to chart, so this release covers the Tier-2 candidates that do produce a report: Colocation Quotient gains a permutation-histogram (observed CLQ marked); Join Count Statistics gains a bar chart of observed BB/WW/BW counts; Geodetector Q-Statistic gains a bar chart of per-stratum means; Prediction Uncertainty Map gains a histogram of unc_std; DiCE Counterfactual Explanation gains a diverging before-after bar chart per counterfactual (reusing bar_chart_svg, already zero-anchored and diverging for mixed-sign values). core/advanced_stats_engines.py::calculate_colocation_quotient now also returns its permuted-value array. Manual entries updated.

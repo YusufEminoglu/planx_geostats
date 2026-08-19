@@ -5088,7 +5088,7 @@ Spatial econometric and regression models that estimate relationships between a 
       <tr><td class="param-name">DEP_VAR</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Dependent variable (continuous, unbounded)</td></tr>
       <tr><td class="param-name">INDEPENDENTS</td><td class="param-type">Field (multi-select)</td><td class="param-default">—</td><td>Explanatory variable fields (one or more numeric)</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output layer with residual and std. residual fields + graduated renderer</td></tr>
-      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output regression diagnostics report (optional)</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output regression diagnostics report (optional) — includes a residual-vs-fitted scatterplot (inline SVG) alongside the coefficient and diagnostic tables</td></tr>
     </tbody>
   </table>
   <h5>Output Fields (per feature, appended to source)</h5>
@@ -5311,7 +5311,7 @@ Spatial econometric and regression models that estimate relationships between a 
       <tr><td class="param-name">INDEPENDENTS</td><td class="param-type">Field (multi-select)</td><td class="param-default">—</td><td>Explanatory variable fields</td></tr>
       <tr><td class="param-name">FAMILY</td><td class="param-type">Enum</td><td class="param-default">Gaussian</td><td>Gaussian (continuous OLS-equivalent) / Logistic (binary 0/1) / Poisson (count)</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output predictions layer with fitted values and residuals</td></tr>
-      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output GLR diagnostics report (optional)</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output GLR diagnostics report (optional) — includes a residual-vs-fitted scatterplot (inline SVG)</td></tr>
     </tbody>
   </table>
   <h5>Output Fields</h5>
@@ -5409,7 +5409,7 @@ Spatial econometric and regression models that estimate relationships between a 
       <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>Number of neighbours (KNN only)</td></tr>
       <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>Distance threshold in map units (distance band only)</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output layer with predictions, residuals, spatial lag, and audit fields</td></tr>
-      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output SAR diagnostic report (optional)</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output SAR diagnostic report (optional) — includes a residual-vs-predicted scatterplot (inline SVG)</td></tr>
     </tbody>
   </table>
   <h5>Output Fields (per feature, appended to source)</h5>
@@ -5511,7 +5511,7 @@ Spatial econometric and regression models that estimate relationships between a 
       <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>Number of neighbours (KNN only)</td></tr>
       <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>Distance threshold in map units (distance band only)</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output layer with predictions, residuals, and audit fields</td></tr>
-      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output SEM diagnostic report (optional)</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File (HTML)</td><td class="param-default">—</td><td>Output SEM diagnostic report (optional) — includes a residual-vs-predicted scatterplot (inline SVG)</td></tr>
     </tbody>
   </table>
   <h5>Output Fields (per feature, appended to source)</h5>

@@ -51,6 +51,7 @@ from ..core.analysis_diagnostics import (
 from ..dependencies import optional_dependency_error
 from ..core.layer_metadata import apply_output_metadata
 from ..core.weights import build_weights_matrix
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -561,6 +562,15 @@ class SpatialAutoregressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Review the spatial relationship before treating rho as a stable planning signal.</div>"
             )
 
+        residual_chart = scatter_plot_svg(
+            results["predicted"].tolist(),
+            results["residuals"].tolist(),
+            x_label="Predicted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
+
         content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -584,6 +594,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 10px; text-align: left; ver
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .metric-name {{ font-weight: 700; color: #314155; }}
 footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; color: #7a899c; font-size: .82rem; }}
+{chart_css()}
 </style>
 </head>
 <body>
@@ -610,6 +621,9 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 {regression_quality_html(quality)}
 {residual_spatial_autocorrelation_html(residual_spatial)}
 {island_note}
+
+<h2>Residual vs. Predicted</h2>
+{residual_chart}
 
 <h2>Coefficient Estimates</h2>
 <table>

@@ -39,6 +39,7 @@ from ..core.analysis_diagnostics import (
 from ..core.stats_engines import calculate_glr
 from ..core.weights import build_weights_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 
@@ -314,6 +315,14 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
                 "</tr>"
             )
         r2_block = f"<p><strong>Gaussian R2:</strong> {results['r2']:.6f}</p>" if results["r2"] is not None else ""
+        residual_chart = scatter_plot_svg(
+            results["fitted"].tolist(),
+            results["residuals"].tolist(),
+            x_label="Fitted value",
+            y_label="Residual",
+            trend_line=True,
+            split_y=0.0,
+        )
         family_label = {
             "gaussian": "Gaussian continuous model",
             "logistic": "Logistic binary model",
@@ -365,6 +374,7 @@ table {{ width: 100%; border-collapse: collapse; margin-top: 18px; }}
 th, td {{ border-bottom: 1px solid #edf2f7; padding: 10px; text-align: left; vertical-align: top; font-size: .86rem; }}
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style>
 </head>
 <body>
@@ -380,6 +390,8 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 {r2_block}
 {regression_quality_html(quality)}
 {residual_spatial_autocorrelation_html(residual_spatial)}
+<h2>Residual vs. Fitted</h2>
+{residual_chart}
 <h2>Coefficient Estimates</h2>
 <table>
 <thead><tr><th>Variable</th><th>Coefficient</th><th>Std Error</th><th>z-statistic</th><th>p-value</th></tr></thead>
