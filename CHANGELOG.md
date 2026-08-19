@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.5.0] - 2026-08-19
+
+- Five more reports gain charts: Ripley's K-Function gets a line chart of observed vs. CSR-expected K(d) across distance bands with the peak L(d)-d departure marked; Spatial Gini gains a Lorenz curve with the classic Gini labeled; ML Model Comparison and Model Comparison Matrix both gain a ranked leaderboard bar chart (best model highlighted); Spatial k-Fold Cross-Validation Evaluator gains a per-fold metric bar chart. All five charts are computed directly from data these tools already extract or compute - no new statistics. Manual entries updated.
+
 ## [2.4.0] - 2026-08-19
 
 - Four more spatial-autocorrelation reports gain charts: Geary's C gets a permutation-histogram (observed C marked), reusing the same permuted values the statistic already computes; Model Residual Spatial Autocorrelation Check gains a residual Moran scatterplot; Global Bivariate Lee's L gains a bivariate Moran-style scatterplot (standardized Field X vs. spatial lag of standardized Field Y); Incremental Spatial Autocorrelation's existing hand-rolled correlogram was refactored onto the shared line_chart_svg() helper (same visual output). core/analysis_diagnostics.py and core/advanced_stats_engines.py now expose the per-point/permutation arrays these charts need alongside their existing summary statistics. Manual entries updated.

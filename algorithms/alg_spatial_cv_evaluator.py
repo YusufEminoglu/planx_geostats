@@ -30,6 +30,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_matrix_with_centroids, spatial_kfold_evaluate
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, bar_chart_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -253,6 +254,11 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 cells += [f"{row['accuracy']:.4f}", f"{row['macro_f1']:.4f}"]
             rows.append("<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
         values = np.array([row[metric_key] for row in fold_metrics])
+        fold_chart = bar_chart_svg(
+            [f"Fold {row['fold']}" for row in fold_metrics],
+            values.tolist(),
+            horizontal=False,
+        )
         guidance = analyst_guidance_html(
             "Spatial k-Fold Cross-Validation",
             "Held-out estimate of model accuracy using geographically "
@@ -284,6 +290,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>Spatial k-Fold Cross-Validation</h1>
@@ -293,6 +300,7 @@ Mean {metric_key} = {float(np.mean(values)):.6f} | Std across folds = {float(np.
 Skipped {skipped} record(s) with missing values or empty geometry.
 </div>
 <h2>Per-Fold Metrics</h2>
+{fold_chart}
 <table><thead><tr>{''.join(f'<th>{h}</th>' for h in headers)}</tr></thead><tbody>{''.join(rows)}</tbody></table>
 {guidance}
 </div></body></html>"""

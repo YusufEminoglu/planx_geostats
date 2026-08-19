@@ -23,6 +23,7 @@ from qgis.core import (
 from ..core.analysis_diagnostics import crs_unit_warning
 from ..core.stats_engines import calculate_ripleys_k
 from ..core.weights import geometry_centroid_point
+from ..core.charts import chart_css, line_chart_svg
 
 from ._icons import algorithm_icon
 
@@ -226,6 +227,16 @@ class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "then compare the result with planning context and boundary effects."
         )
         crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>" if crs_warning else ""
+        k_chart = line_chart_svg(
+            [row["distance"] for row in results],
+            {
+                "Observed K": [row["observed_k"] for row in results],
+                "Expected K (CSR)": [row["expected_k"] for row in results],
+            },
+            x_label="Distance (map units)",
+            y_label="K(d)",
+            markers=[(peak["distance"], peak["observed_k"], "Peak")],
+        )
         html_doc = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -244,6 +255,7 @@ table {{ width: 100%; border-collapse: collapse; margin-top: 18px; }}
 th, td {{ border-bottom: 1px solid #edf2f7; padding: 10px; text-align: left; vertical-align: top; font-size: .86rem; }}
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .metric-val {{ font-family: Consolas, monospace; font-weight: 600; }}
+{chart_css()}
 </style>
 </head>
 <body>
@@ -254,6 +266,8 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 <h2>Executive Summary</h2>
 <p>Ripley's K-Function scans point-pattern behavior across distances. Positive L(d)-d values indicate more neighboring features than expected under complete spatial randomness; negative values indicate fewer. This report is a diagnostic scale scan and does not include edge correction.</p>
 {crs_block}
+<h2>Observed vs. Expected K(d)</h2>
+{k_chart}
 <table>
 <thead><tr><th>Distance</th><th>Observed K</th><th>Expected K</th><th>L(d)-d</th><th>Min / Median / Max Neighbors</th><th>Isolated</th></tr></thead>
 <tbody>{''.join(rows)}</tbody>

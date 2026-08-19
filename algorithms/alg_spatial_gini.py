@@ -37,6 +37,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, lorenz_curve_svg
 from ..core.stats_engines import calculate_spatial_gini
 from ..core.weights import build_weights_matrix
 
@@ -296,7 +297,7 @@ class SpatialGiniAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
 
         feedback.pushInfo("Writing spatial Gini report...")
-        self._write_html(html_path, result, numeric_summary, neighborhood_summary, crs_warning)
+        self._write_html(html_path, result, numeric_summary, neighborhood_summary, crs_warning, y)
         if csv_path:
             self._write_csv(csv_path, result)
             feedback.pushInfo(f"Spatial Gini summary CSV written: {csv_path}")
@@ -344,8 +345,22 @@ class SpatialGiniAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         numeric_summary: dict,
         neighborhood_summary: dict,
         crs_warning: str,
+        values,
     ) -> None:
         interpretation = self._interpretation(result, neighborhood_summary)
+        sorted_values = sorted(float(v) for v in values)
+        total_value = sum(sorted_values)
+        n_values = len(sorted_values)
+        if n_values > 0 and total_value > 0:
+            cum_pop_share = [0.0] + [(i + 1) / n_values for i in range(n_values)]
+            running = 0.0
+            cum_value_share = [0.0]
+            for v in sorted_values:
+                running += v
+                cum_value_share.append(running / total_value)
+            lorenz_chart = lorenz_curve_svg(cum_pop_share, cum_value_share, gini=result["gini"])
+        else:
+            lorenz_chart = "<p>Lorenz curve unavailable: total value is zero.</p>"
         p_text = self._fmt(result.get("p_sim"))
         p_detail = (
             f"Permutation p_sim for high non-neighbor inequality is <strong>{p_text}</strong> "
@@ -417,6 +432,7 @@ th {{ background: #ccfbf1; color: #115e59; text-transform: uppercase; font-size:
 .metric-val {{ font-family: monospace; font-weight: 650; }}
 footer {{ margin-top: 34px; padding-top: 14px; border-top: 1px solid #edf2f7; color: #7a899c; font-size: .82rem; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style>
 </head>
 <body>
@@ -434,6 +450,10 @@ footer {{ margin-top: 34px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 <thead><tr><th>Metric</th><th>Value</th></tr></thead>
 <tbody>{metric_rows}</tbody>
 </table>
+
+<h2>Lorenz Curve</h2>
+{lorenz_chart}
+<p class="chart-caption">Cumulative share of the total field value (y) held by the poorest x share of features, sorted ascending. The dashed diagonal is perfect equality; the farther the curve bows below it, the higher the classic Gini coefficient shown above.</p>
 
 {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
 

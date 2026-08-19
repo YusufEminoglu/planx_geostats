@@ -30,6 +30,7 @@ from ..core.analysis_diagnostics import (
 )
 from ..core.model_audit import assign_model_scores, model_recommendation
 from ..core.weights import build_weights_matrix
+from ..core.charts import chart_css, bar_chart_svg
 
 from ._icons import algorithm_icon
 
@@ -347,6 +348,14 @@ class ModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "</tr>"
             )
 
+        ranked_usable = sorted(usable, key=lambda row: row.get("rank", 10**9))
+        leaderboard_chart = bar_chart_svg(
+            [f"{item['layer_name']} ({item['model_name']})" for item in ranked_usable],
+            [item["fit"]["r2"] for item in ranked_usable],
+            value_suffix=" R2",
+            highlight_index=0 if ranked_usable else None,
+        ) if ranked_usable else "<p>No usable model output layers to chart.</p>"
+
         content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -366,6 +375,7 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 .warning {{ background: #fff8e6; }}
 .unusable {{ color: #7a4a1f; background: #fffaf0; }}
 footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; color: #7a899c; font-size: .82rem; }}
+{chart_css()}
 </style>
 </head>
 <body>
@@ -373,6 +383,9 @@ footer {{ margin-top: 36px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 <h1>Model Comparison Matrix</h1>
 <p class="subtitle">Observed dependent field: <strong>{html.escape(dep_var)}</strong> | Compared layers: <strong>{len(comparisons)}</strong></p>
 <section class="summary"><strong>Executive summary.</strong> {html.escape(recommendation)}</section>
+
+<h2>R2 Leaderboard</h2>
+{leaderboard_chart}
 
 <h2>Comparison Table</h2>
 <table>

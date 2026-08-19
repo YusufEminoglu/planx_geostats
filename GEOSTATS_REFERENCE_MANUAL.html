@@ -1745,6 +1745,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <tr><td class="param-name">polarization_p_sim</td><td class="param-type">Double</td><td>Pseudo-p-value for spatial polarization against permutation null</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a Lorenz curve (inline SVG) — cumulative share of the field value held by the poorest x share of features, sorted ascending, against the 45° equality line — with the classic Gini value labeled on the chart.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -2168,6 +2169,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <tr><td class="param-name">study_area</td><td class="param-type">Double</td><td>Study area used in computation (user-supplied or bounding-box)</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a line chart (inline SVG) of observed K(d) against CSR-expected K(d) across every tested distance band, with the peak L(d)−d departure marked.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -6411,6 +6413,7 @@ Spatial econometric and regression models that estimate relationships between a 
   <div class="output-fields">
     <strong>Header</strong> — observed dependent field name, number of compared layers ·
     <strong>Executive summary</strong> — recommendation narrative: identifies the top-scoring model with clean residuals (if any exist), or flags that all models retain spatial structure ·
+    <strong>R2 leaderboard</strong> — a ranked bar chart (inline SVG) of each usable model's $R^2$, best model highlighted, sorted the same as the comparison table below it ·
     <strong>Comparison table</strong> — one row per model, sorted by rank (best first): layer name, detected model type, rank, composite score, $n$ (valid records), coverage, $R^2$, RMSE, MAE, bias, residual Moran's $I$, residual p-value, residual status ("Clean" / "Spatial pattern" / "Not available") ·
     <strong>Row highlighting</strong> — rows with significant residual autocorrelation are highlighted with a warning background ·
     <strong>Unusable-layer rows</strong> — layers that lack recognized diagnostic fields are listed with a diagnostic message ·
@@ -8162,6 +8165,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
     <tr><td class="param-name">cv_fold</td><td class="param-type">Integer</td><td>Spatial block (fold) index this record was assigned to</td></tr>
   </tbody>
   </table>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a per-fold bar chart (inline SVG) of the held-out metric, so an unusually low-scoring fold is visible at a glance before reading the table.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8377,7 +8381,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   </table>
 
   <h5>4. Output Description</h5>
-  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report only — a ranked leaderboard table (mean score, standard deviation, folds used per model).</p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report — a ranked bar chart of mean score by model, followed by the leaderboard table (mean score, standard deviation, folds used per model).</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> a ranked bar chart (inline SVG) with the leading model highlighted, drawn from the same sorted leaderboard shown in the table below it.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">

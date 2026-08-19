@@ -24,6 +24,7 @@ from qgis.core import (
 
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_matrix_with_centroids, spatial_kfold_evaluate
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.charts import chart_css, bar_chart_svg
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -216,6 +217,12 @@ class MLModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "deviation over the runner-up - a reasonably clear result for this "
             "dataset and field selection."
         )
+        leaderboard_chart = bar_chart_svg(
+            [row["label"] for row in leaderboard],
+            [row["mean"] for row in leaderboard],
+            value_suffix=f" {metric_label}",
+            highlight_index=0,
+        )
         guidance = analyst_guidance_html(
             "ML Model Comparison",
             "Ranks candidate model families by mean spatially cross-validated "
@@ -245,6 +252,7 @@ th, td {{ border-bottom: 1px solid #edf2f7; padding: 8px 10px; text-align: left;
 th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; }}
 .summary {{ background: #eef7f3; border-left: 5px solid #2f855a; padding: 14px 18px; margin: 18px 0; }}
 {analyst_guidance_css()}
+{chart_css()}
 </style></head>
 <body><div class="container">
 <h1>ML Model Comparison Leaderboard</h1>
@@ -254,6 +262,7 @@ Best model: <strong>{html.escape(top['label'])}</strong> ({metric_label} = {top[
 Skipped {skipped} record(s) with missing values or empty geometry.
 </div>
 <h2>Leaderboard</h2>
+{leaderboard_chart}
 <table><thead><tr><th>Rank</th><th>Model</th><th>{metric_label}</th><th>Std</th><th>Folds used</th></tr></thead><tbody>{rows}</tbody></table>
 {guidance}
 </div></body></html>"""
