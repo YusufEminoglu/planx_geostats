@@ -37,7 +37,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
-from ..core.charts import chart_css, lorenz_curve_svg
+from ..core.charts import chart_css, kpi_card_row_html, lorenz_curve_svg
 from ..core.stats_engines import calculate_spatial_gini
 from ..core.weights import build_weights_matrix
 
@@ -361,6 +361,14 @@ class SpatialGiniAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             lorenz_chart = lorenz_curve_svg(cum_pop_share, cum_value_share, gini=result["gini"])
         else:
             lorenz_chart = "<p>Lorenz curve unavailable: total value is zero.</p>"
+
+        p_sim = result.get("p_sim")
+        p_sim_tone = "warn" if p_sim is not None and p_sim < 0.05 else "neutral"
+        kpi_row = kpi_card_row_html([
+            {"label": "Classic Gini", "value": self._fmt(result["gini"]), "sublabel": "0 = equality, 1 = max inequality"},
+            {"label": "Spatial Gini share", "value": self._fmt(result["spatial_gini"]), "sublabel": "Share of inequality from non-neighbor pairs"},
+            {"label": "Permutation p_sim", "value": self._fmt(p_sim), "sublabel": "Non-neighbor component vs. permutation null", "tone": p_sim_tone},
+        ])
         p_text = self._fmt(result.get("p_sim"))
         p_detail = (
             f"Permutation p_sim for high non-neighbor inequality is <strong>{p_text}</strong> "
@@ -441,6 +449,8 @@ footer {{ margin-top: 34px; padding-top: 14px; border-top: 1px solid #edf2f7; co
 <h1>Spatial Inequality (Gini and Spatial Gini)</h1>
 <p class="subtitle">Field: <strong>{html.escape(result['field'])}</strong> | Features: <strong>{result['n']}</strong> | Weights: <strong>{html.escape(result['weight_type'])}</strong></p>
 </header>
+
+{kpi_row}
 
 <section class="summary"><strong>Executive summary:</strong> {html.escape(interpretation)}</section>
 {crs_block}

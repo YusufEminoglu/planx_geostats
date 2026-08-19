@@ -1593,7 +1593,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
       <li><strong>Neighborhood summary</strong> — min/median/max neighbors per feature, isolated features count, fully-connected flag</li>
       <li><strong>CRS warning</strong> — alerts if a geographic CRS is used with distance-based weights</li>
       <li><strong>Analyst guidance</strong> — assumptions checklist, common pitfalls, recommended companion tools</li>
-      <li><strong>Report includes:</strong> a Moran scatterplot (standardized value vs. row-standardized spatial lag, OLS trend line, HH/HL/LH/LL quadrant shading) — the standard visual companion to the I statistic above</li>
+      <li><strong>Report includes:</strong> a KPI summary row (Moran's I, z-score, p-value) right under the title, followed by a Moran scatterplot (standardized value vs. row-standardized spatial lag, OLS trend line, HH/HL/LH/LL quadrant shading) — the standard visual companion to the I statistic above</li>
     </ul>
   </div>
 
@@ -1745,7 +1745,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
     <tr><td class="param-name">polarization_p_sim</td><td class="param-type">Double</td><td>Pseudo-p-value for spatial polarization against permutation null</td></tr>
   </tbody>
   </table>
-  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a Lorenz curve (inline SVG) — cumulative share of the field value held by the poorest x share of features, sorted ascending, against the 45° equality line — with the classic Gini value labeled on the chart.</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> a KPI summary row (classic Gini, spatial Gini share, permutation p_sim) right under the title, followed by a Lorenz curve (inline SVG) — cumulative share of the field value held by the poorest x share of features, sorted ascending, against the 45° equality line — with the classic Gini value labeled on the chart.</p>
   </div>
 
   <h5>5. Interpretation Guide</h5>
@@ -8386,7 +8386,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 
   <h5>4. Output Description</h5>
   <p style="font-size:.84rem;color:var(--gs-slate-700);">HTML report — a ranked bar chart of mean score by model, followed by the leaderboard table (mean score, standard deviation, folds used per model).</p>
-  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> a ranked bar chart (inline SVG) with the leading model highlighted, drawn from the same sorted leaderboard shown in the table below it.</p>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);"><strong>Report includes:</strong> a KPI summary row (best model, its score, near-tie vs. clear-leader verdict) right under the title, followed by a ranked bar chart (inline SVG) with the leading model highlighted, drawn from the same sorted leaderboard shown in the table below it.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">

@@ -24,7 +24,7 @@ from qgis.core import (
 
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_matrix_with_centroids, spatial_kfold_evaluate
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
-from ..core.charts import chart_css, bar_chart_svg
+from ..core.charts import chart_css, bar_chart_svg, kpi_card_row_html
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
@@ -223,6 +223,11 @@ class MLModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             value_suffix=f" {metric_label}",
             highlight_index=0,
         )
+        kpi_row = kpi_card_row_html([
+            {"label": "Best model", "value": top["label"], "sublabel": f"{len(leaderboard)} model(s) compared", "tone": "good"},
+            {"label": metric_label, "value": f"{top['mean']:.4f}", "sublabel": f"std = {top['std']:.4f}"},
+            {"label": "Result", "value": "Near-tie" if close_finish else "Clear leader", "tone": "warn" if close_finish else "good"},
+        ])
         guidance = analyst_guidance_html(
             "ML Model Comparison",
             "Ranks candidate model families by mean spatially cross-validated "
@@ -257,6 +262,7 @@ th {{ background: #ebf4ff; color: #24527a; text-transform: uppercase; font-size:
 <body><div class="container">
 <h1>ML Model Comparison Leaderboard</h1>
 <p>Target: <strong>{html.escape(target_field)}</strong> | Folds: <strong>{n_folds}</strong></p>
+{kpi_row}
 <div class="summary">
 Best model: <strong>{html.escape(top['label'])}</strong> ({metric_label} = {top['mean']:.6f} &plusmn; {top['std']:.6f})<br>
 Skipped {skipped} record(s) with missing values or empty geometry.

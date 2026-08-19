@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.7.0] - 2026-08-19
+
+- The remaining 7 classifier reports (Neural Network/MLP, Explainable Boosting Machine, TabPFN, and all 4 Gradient Boosting engines via the shared _gbm_base.py) gain the same confusion-matrix heatmap the first 3 classifiers got last release - every classifier in the plugin now charts its confusion matrix. Added the default dashboard KPI summary row (3 key numbers right under the title, before the existing tables) to the 3 tools that validated the chart pattern first: Global Moran's I, Spatial Gini, and ML Model Comparison. Manual entries updated.
+
 ## [2.6.0] - 2026-08-19
 
 - Five more reports gain charts: Random Forest, Extra Trees, and Support Vector classification reports each gain a shaded heatmap of their confusion matrix (sequential single-hue, colorblind-safe) alongside the existing table; Partial Dependence Report gains a line chart of its sweep curve; Conformal Prediction Interval gains a sorted-prediction interval plot (shaded lower/upper ribbon with point predictions), deterministically subsampled to ~1,500 records on very large layers. core/charts.py::line_chart_svg() gained an optional band parameter for the ribbon plot, covered by its own smoke-test case. Manual entries updated.

@@ -33,7 +33,7 @@ from ..core.analysis_diagnostics import (
     push_diagnostics,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
-from ..core.charts import chart_css, scatter_plot_svg
+from ..core.charts import chart_css, kpi_card_row_html, scatter_plot_svg
 from ..core.spatial_autocorrelation_audit import global_moran_interpretation
 
 from ._icons import algorithm_icon
@@ -306,6 +306,13 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         confidence = interpretation["confidence"]
         next_action = interpretation["next_action"]
 
+        confidence_tone = {"Strong": "good", "Moderate": "warn", "Weak": "neutral"}.get(confidence, "neutral")
+        kpi_row = kpi_card_row_html([
+            {"label": "Moran's I", "value": f"{mi:.4f}", "sublabel": pattern, "tone": confidence_tone},
+            {"label": "z-score", "value": f"{z:.3f}", "sublabel": "|z| >= 1.96 is significant at alpha=0.05"},
+            {"label": "p-value", "value": f"{p:.4f}", "sublabel": f"Confidence: {confidence}", "tone": confidence_tone},
+        ])
+
         guidance_html = analyst_guidance_html(
             "Global Moran's I",
             "Global Moran's I evaluates whether similar values are spatially clustered, dispersed, or not detectably patterned across the full study area.",
@@ -444,6 +451,8 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         <h1>Spatial Autocorrelation (Global Moran's I)</h1>
         <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
     </header>
+
+    {kpi_row}
 
     <div class="interpretation-box">
         <h2 class="status-title">Spatial Pattern: {pattern}</h2>
