@@ -6,16 +6,12 @@ import logging
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtGui import QColor
 from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProject,
     QgsFeature,
     QgsField,
-    QgsSymbol,
-    QgsRendererCategory,
-    QgsCategorizedSymbolRenderer,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -30,6 +26,7 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.advanced_stats_engines import calculate_skater
 from ..core.layer_metadata import apply_output_metadata
+from ..core.symbology import apply_renderer, categorical_id_renderer
 
 from ._icons import algorithm_icon
 
@@ -318,32 +315,6 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.displayName(),
         )
 
-        palette = [
-            "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-            "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
-        ]
-
-        categories = []
-        for region_val in unique_regions:
-            r_val = int(region_val)
-            color_hex = palette[r_val % len(palette)]
-
-            symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-            symbol.setColor(QColor(color_hex))
-            symbol.setOpacity(0.85)
-
-            if symbol.symbolLayerCount() > 0:
-                sl = symbol.symbolLayer(0)
-                if hasattr(sl, "setStrokeColor"):
-                    sl.setStrokeColor(QColor("#ffffff"))
-                if hasattr(sl, "setStrokeWidth"):
-                    sl.setStrokeWidth(0.15)
-
-            category = QgsRendererCategory(r_val, symbol, f"Region {r_val}")
-            categories.append(category)
-
-        renderer = QgsCategorizedSymbolRenderer("region_id", categories)
-        layer.setRenderer(renderer)
-        layer.triggerRepaint()
+        apply_renderer(layer, categorical_id_renderer(layer, layer.geometryType(), "region_id"))
 
         return {}

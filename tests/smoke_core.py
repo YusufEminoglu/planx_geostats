@@ -31,6 +31,119 @@ for _name in ["QgsFeature", "QgsVectorLayer", "QgsSpatialIndex", "QgsRectangle",
     if not hasattr(qgis_core, _name):
         setattr(qgis_core, _name, type(_name, (), {}))
 weights_core = load_module("weights_core", "core/weights.py")
+
+
+class _FakeQColor:
+    def __init__(self, *args):
+        self.args = args
+
+
+class _FakeSymbolLayer:
+    def setStrokeColor(self, color):
+        self.stroke_color = color
+
+    def setStrokeWidth(self, width):
+        self.stroke_width = width
+
+    def setOutlineColor(self, color):
+        self.outline_color = color
+
+
+class _FakeQgsSymbol:
+    def __init__(self):
+        self.color = None
+        self.opacity = None
+        self._layers = [_FakeSymbolLayer()]
+
+    @staticmethod
+    def defaultSymbol(geometry_type):
+        return _FakeQgsSymbol()
+
+    def setColor(self, color):
+        self.color = color
+
+    def setOpacity(self, opacity):
+        self.opacity = opacity
+
+    def symbolLayerCount(self):
+        return len(self._layers)
+
+    def symbolLayer(self, index):
+        return self._layers[index]
+
+
+class _FakeQgsRendererCategory:
+    def __init__(self, value, symbol, label, render=True):
+        self.value, self.symbol, self.label, self.render = value, symbol, label, render
+
+
+class _FakeQgsRendererRange:
+    def __init__(self, lower, upper, symbol, label):
+        self.lower, self.upper, self.symbol, self.label = lower, upper, symbol, label
+
+
+class _FakeQgsCategorizedSymbolRenderer:
+    def __init__(self, field_name, categories):
+        self.field_name, self.categories = field_name, categories
+
+
+class _FakeQgsGraduatedSymbolRenderer:
+    def __init__(self, field_name, ranges):
+        self.field_name, self.ranges = field_name, ranges
+
+
+class _FakeQgsAggregateCalculator:
+    Mean = "mean"
+    StDev = "stdev"
+
+
+class FakeSymbologyLayer:
+    """Minimal stand-in for a QgsVectorLayer, covering only the methods
+    core/symbology.py's data-driven renderers call: fields().lookupField(),
+    uniqueValues(), and aggregate()."""
+
+    def __init__(self, field_names, values_by_field=None, aggregates=None):
+        self._field_names = list(field_names)
+        self._values = values_by_field or {}
+        self._aggregates = aggregates or {}
+        self.renderer = None
+        self.repainted = False
+
+    def fields(self):
+        names = self._field_names
+
+        class _Fields:
+            def lookupField(self, name):
+                return names.index(name) if name in names else -1
+
+        return _Fields()
+
+    def uniqueValues(self, field_idx):
+        name = self._field_names[field_idx]
+        return self._values.get(name, [])
+
+    def aggregate(self, kind, field_name):
+        return self._aggregates.get((kind, field_name), (None, False))
+
+    def setRenderer(self, renderer):
+        self.renderer = renderer
+
+    def triggerRepaint(self):
+        self.repainted = True
+
+
+qgis_core.QColor = _FakeQColor
+qgis_core.NULL = None
+qgis_core.QgsSymbol = _FakeQgsSymbol
+qgis_core.QgsRendererCategory = _FakeQgsRendererCategory
+qgis_core.QgsRendererRange = _FakeQgsRendererRange
+qgis_core.QgsCategorizedSymbolRenderer = _FakeQgsCategorizedSymbolRenderer
+qgis_core.QgsGraduatedSymbolRenderer = _FakeQgsGraduatedSymbolRenderer
+qgis_core.QgsAggregateCalculator = _FakeQgsAggregateCalculator
+sys.modules.setdefault("qgis.PyQt", types.ModuleType("qgis.PyQt"))
+sys.modules.setdefault("qgis.PyQt.QtGui", types.ModuleType("qgis.PyQt.QtGui"))
+sys.modules["qgis.PyQt.QtGui"].QColor = _FakeQColor
+symbology = load_module("symbology_core", "core/symbology.py")
 workflow_advisor = load_module("workflow_advisor_core", "core/workflow_advisor.py")
 model_audit = load_module("model_audit_core", "core/model_audit.py")
 sensitivity_audit = load_module("sensitivity_audit_core", "core/sensitivity_audit.py")
@@ -547,6 +660,63 @@ def test_optional_dependency_error_guides_qgis_toolbox_installation() -> None:
     assert not missing, f"Optional dependency guidance is missing: {missing}"
 
 
+def test_lisa_quadrant_renderer_has_five_categories() -> None:
+    renderer = symbology.lisa_quadrant_renderer("point")
+    assert len(renderer.categories) == 5
+    labels = {cat.value for cat in renderer.categories}
+    assert labels == {"HH", "LL", "HL", "LH", "Not Significant"}
+
+
+def test_diverging_std_dev_renderer_has_seven_sigma_classes() -> None:
+    renderer = symbology.diverging_std_dev_renderer("polygon", "std_res")
+    assert len(renderer.ranges) == 7
+    assert renderer.field_name == "std_res"
+
+
+def test_diverging_residual_renderer_uses_layer_aggregates() -> None:
+    layer = FakeSymbologyLayer(
+        ["rf_resid"],
+        aggregates={("mean", "rf_resid"): (0.5, True), ("stdev", "rf_resid"): (2.0, True)},
+    )
+    renderer = symbology.diverging_residual_renderer(layer, "point", "rf_resid")
+    assert len(renderer.ranges) == 7
+    assert renderer.ranges[3].lower < 0.5 < renderer.ranges[3].upper
+
+
+def test_diverging_residual_renderer_handles_missing_field_and_zero_std() -> None:
+    layer = FakeSymbologyLayer(["rf_resid"], aggregates={("mean", "rf_resid"): (0.5, True), ("stdev", "rf_resid"): (2.0, True)})
+    assert symbology.diverging_residual_renderer(layer, "point", "missing_field") is None
+    zero_std_layer = FakeSymbologyLayer(["x"], aggregates={("mean", "x"): (1.0, True), ("stdev", "x"): (0.0, True)})
+    assert symbology.diverging_residual_renderer(zero_std_layer, "point", "x") is None
+
+
+def test_sequential_quantile_renderer_bins_values() -> None:
+    layer = FakeSymbologyLayer(["unc_std"], {"unc_std": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]})
+    renderer = symbology.sequential_quantile_renderer(layer, "point", "unc_std", n_classes=5)
+    assert len(renderer.ranges) == 5
+    single_value_layer = FakeSymbologyLayer(["unc_std"], {"unc_std": [0.5]})
+    assert symbology.sequential_quantile_renderer(single_value_layer, "point", "unc_std") is None
+
+
+def test_categorical_id_renderer_labels_noise_and_clusters() -> None:
+    layer = FakeSymbologyLayer(["cluster_id"], {"cluster_id": [-1, 0, 1, 2]})
+    renderer = symbology.categorical_id_renderer(layer, "point", "cluster_id", noise_value=-1)
+    assert len(renderer.categories) == 4
+    labels = {cat.label for cat in renderer.categories}
+    assert "Noise / unassigned" in labels
+    empty_layer = FakeSymbologyLayer(["cluster_id"], {"cluster_id": []})
+    assert symbology.categorical_id_renderer(empty_layer, "point", "cluster_id") is None
+
+
+def test_apply_renderer_sets_and_repaints_or_no_ops_on_none() -> None:
+    layer = FakeSymbologyLayer(["cluster_id"], {"cluster_id": [0, 1]})
+    renderer = symbology.categorical_id_renderer(layer, "point", "cluster_id")
+    assert symbology.apply_renderer(layer, renderer) is True
+    assert layer.renderer is renderer
+    assert layer.repainted is True
+    assert symbology.apply_renderer(layer, None) is False
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -578,6 +748,13 @@ def run_all() -> None:
     test_local_pattern_audit_summarizes_hotspot_and_lisa_classes()
     test_layer_metadata_survives_alias_unavailable_and_keeps_properties()
     test_optional_dependency_error_guides_qgis_toolbox_installation()
+    test_lisa_quadrant_renderer_has_five_categories()
+    test_diverging_std_dev_renderer_has_seven_sigma_classes()
+    test_diverging_residual_renderer_uses_layer_aggregates()
+    test_diverging_residual_renderer_handles_missing_field_and_zero_std()
+    test_sequential_quantile_renderer_bins_values()
+    test_categorical_id_renderer_labels_noise_and_clusters()
+    test_apply_renderer_sets_and_repaints_or_no_ops_on_none()
     print("CORE SMOKE TESTS OK")
 
 

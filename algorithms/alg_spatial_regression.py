@@ -9,16 +9,12 @@ import tempfile
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtGui import QColor
 from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProject,
     QgsFeature,
     QgsField,
-    QgsSymbol,
-    QgsRendererRange,
-    QgsGraduatedSymbolRenderer,
     QgsWkbTypes,
     QgsProcessing,
     QgsProcessingAlgorithm,
@@ -37,6 +33,7 @@ from ..core.analysis_diagnostics import regression_quality_html, regression_qual
 from ..core.layer_metadata import apply_output_metadata
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, scatter_plot_svg
+from ..core.symbology import apply_renderer, diverging_std_dev_renderer
 
 from ._icons import algorithm_icon
 
@@ -623,37 +620,6 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.displayName(),
         )
 
-        # 7-class diverging standard deviation classes
-        ranges = []
-        range_definitions = [
-            (-9999.0, -2.5, '#2166ac', '< -2.5 Std Dev (Underprediction)'),
-            (-2.5, -1.5, '#67a9cf', '-2.5 to -1.5 Std Dev'),
-            (-1.5, -0.5, '#d1e5f0', '-1.5 to -0.5 Std Dev'),
-            (-0.5, 0.5, '#f7f7f7', '-0.5 to 0.5 Std Dev (Near Zero)'),
-            (0.5, 1.5, '#fddbc7', '0.5 to 1.5 Std Dev'),
-            (1.5, 2.5, '#f4a582', '1.5 to 2.5 Std Dev'),
-            (2.5, 9999.0, '#b2182b', '> 2.5 Std Dev (Overprediction)')
-        ]
-
-        for min_v, max_v, color_hex, label in range_definitions:
-            symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-            symbol.setColor(QColor(color_hex))
-            symbol.setOpacity(0.85)
-
-            if symbol.symbolLayerCount() > 0:
-                sl = symbol.symbolLayer(0)
-                if hasattr(sl, 'setStrokeColor'):
-                    sl.setStrokeColor(QColor('#b0b0b0'))
-                if hasattr(sl, 'setStrokeWidth'):
-                    sl.setStrokeWidth(0.1)
-                if hasattr(sl, 'setOutlineColor'):
-                    sl.setOutlineColor(QColor('#b0b0b0'))
-
-            r_range = QgsRendererRange(min_v, max_v, symbol, label)
-            ranges.append(r_range)
-
-        renderer = QgsGraduatedSymbolRenderer('std_res', ranges)
-        layer.setRenderer(renderer)
-        layer.triggerRepaint()
+        apply_renderer(layer, diverging_std_dev_renderer(layer.geometryType(), "std_res"))
 
         return {}

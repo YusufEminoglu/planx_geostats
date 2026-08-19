@@ -6,16 +6,12 @@ import logging
 import numpy as np
 
 from qgis.PyQt.QtCore import QVariant
-from qgis.PyQt.QtGui import QColor
 from ._mixins import HelpUrlMixin
 from qgis.core import (
     NULL,
     QgsProject,
     QgsFeature,
     QgsField,
-    QgsSymbol,
-    QgsRendererCategory,
-    QgsCategorizedSymbolRenderer,
     QgsProcessing,
     QgsProcessingAlgorithm,
     QgsProcessingException,
@@ -31,6 +27,7 @@ from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_local_moran
 from ..core.layer_metadata import apply_output_metadata
 from ..core.local_pattern_audit import local_moran_class_summary
+from ..core.symbology import apply_renderer, lisa_quadrant_renderer
 
 from ._icons import algorithm_icon
 
@@ -290,35 +287,6 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             },
             self.displayName(),
         )
-        categories = []
-        # HH: Red, LL: Blue, HL: Pink, LH: Light Blue, Not Significant: Gray
-        style_definitions = [
-            ('HH', '#e31a1c', 'High-High (HH)'),
-            ('LL', '#1f78b4', 'Low-Low (LL)'),
-            ('HL', '#fb9a99', 'High-Low (HL) outlier'),
-            ('LH', '#a6cee3', 'Low-High (LH) outlier'),
-            ('Not Significant', '#f7f7f7', 'Not Significant')
-        ]
-
-        for val, color_hex, label in style_definitions:
-            symbol = QgsSymbol.defaultSymbol(layer.geometryType())
-            symbol.setColor(QColor(color_hex))
-            symbol.setOpacity(0.85)
-
-            if symbol.symbolLayerCount() > 0:
-                sl = symbol.symbolLayer(0)
-                if hasattr(sl, 'setStrokeColor'):
-                    sl.setStrokeColor(QColor('#b0b0b0'))
-                if hasattr(sl, 'setStrokeWidth'):
-                    sl.setStrokeWidth(0.1)
-                if hasattr(sl, 'setOutlineColor'):
-                    sl.setOutlineColor(QColor('#b0b0b0'))
-
-            category = QgsRendererCategory(val, symbol, label, True)
-            categories.append(category)
-
-        renderer = QgsCategorizedSymbolRenderer('quadrant', categories)
-        layer.setRenderer(renderer)
-        layer.triggerRepaint()
+        apply_renderer(layer, lisa_quadrant_renderer(layer.geometryType(), "quadrant"))
 
         return {}

@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.0] - 2026-08-19
+
+- Starts a new major initiative: automatic QGIS symbology (classification + coloring) for output layers, mirroring the inline-chart work's approach. Adds core/symbology.py: shared, tested helpers for the categorized LISA renderer, diverging std-dev renderer, a new data-driven diverging-residual renderer, a new sequential quantile renderer for confidence/uncertainty fields, and a new qualitative cluster-id renderer with noise-point coloring - extracted from code Local Moran's I, OLS Regression, and SKATER each hand-rolled independently, which now call the shared helpers instead. About 30 output layers still ship default symbology; wiring them up is the major-version body of work ahead.
+
 ## [2.11.1] - 2026-08-19
 
 - Documentation-only release: GEOSTATS_REFERENCE_MANUAL.html gains the Report includes note for every tool that gained a chart across the last several releases (Spatial Durbin, GWR, MGWR, ESF, Spatial Regime, Quantile Regression, all 10 ML regressors residual-vs-fitted scatterplot, and the SHAP Local Explanation waterfall chart), plus fills in a small pre-existing gap from the v2.7.0 classifier sweep (GBM x4, MLP, EBM, and TabPFN classification confusion-matrix notes). No code changes.
