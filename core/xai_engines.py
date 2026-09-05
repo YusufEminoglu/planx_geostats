@@ -48,7 +48,7 @@ def _normalize_shap_output(raw, task_type: str, class_index: int) -> np.ndarray:
 def compute_shap_values(
     x: np.ndarray, y: np.ndarray, task_type: str, model_key: str, class_index: int = 0,
     max_rows: int = 200, background_size: int = 50, random_state: int = 42,
-    explicit_rows: Optional[Sequence[int]] = None,
+    explicit_rows: Optional[Sequence[int]] = None, estimator=None,
 ) -> dict:
     """Fit the chosen model and compute SHAP values for up to max_rows records
     (a random subsample when the input is larger, to keep KernelExplainer/
@@ -62,8 +62,9 @@ def compute_shap_values(
     """
     import shap
 
-    estimator = build_cv_estimator(task_type, model_key, random_state)
-    estimator.fit(x, y)
+    if estimator is None:
+        estimator = build_cv_estimator(task_type, model_key, random_state)
+        estimator.fit(x, y)
 
     n = x.shape[0]
     rng = np.random.default_rng(random_state)

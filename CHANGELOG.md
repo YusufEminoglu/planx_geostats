@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.8.0] - 2026-09-05
+
+- Fix the bundled Izmir FUR sample appearing near North Africa in affected QGIS profiles by explicitly assigning EPSG:5253 before project insertion and validating the transformed center against Izmir. Document the intended 11-central-district study area and add GeoPackage CRS/extent regression checks.
+- Add Benjamini-Hochberg FDR and Bonferroni multiple-testing control to Local Moran, Getis-Ord Gi*, and Local Geary; Gi* also gains seven-definition neighborhood stability consensus fields.
+- Expand Calculate Distance Band into a spatial-weights workbench with node/edge inspection layers, connectivity and island diagnostics, optional island repair, higher-order neighbors, inverse-distance decay, and portable CSV import/export.
+- Add automatic GWR bandwidth search by AICc or leave-one-out CV, and direct/indirect/total marginal-impact decomposition to the Spatial Durbin Model report.
+- Upgrade the dock with persistent Favorites and Recent tools, recommended presets, and four guided analysis chains.
+- Add safe fitted-model reuse: Random Forest training emits a session model ID and non-executable JSON audit manifest; matching Permutation Importance, SHAP Global Importance, and Prediction Uncertainty runs can reuse that exact estimator after fingerprint validation.
+
 ## [3.7.0] - 2026-08-19
 
 - CRITICAL FIX: 22 output-layer tools (Getis-Ord Gi*, Local Moran, Local Geary C, Bivariate LISA/Lee's L, OLS/GLR/SAR/SEM/SDM/GWR/MGWR/ESF Regression, SKATER, Multivariate Clustering, Similarity Search, and 6 center/dispersion tools) were silently shipping with zero symbology and zero field metadata - postProcessAlgorithm's QgsProject.instance().mapLayer() lookup returned None before the layer was added to the project. Switched to the documented-correct context.getMapLayer(). Hardened the real-QGIS runtime matrix test with renderer/alias assertions so this can never silently regress again.

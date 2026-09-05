@@ -31,7 +31,7 @@ from qgis.core import (
     QgsFeatureSink
 )
 
-from ..core.stats_engines import calculate_gwr
+from ..core.stats_engines import calculate_gwr, select_gwr_bandwidth
 from ..core.analysis_diagnostics import (
     crs_unit_warning,
     filter_weights_to_valid_ids,
@@ -57,6 +57,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     INDEPENDENTS = "INDEPENDENTS"
     KERNEL_TYPE = "KERNEL_TYPE"
     BANDWIDTH = "BANDWIDTH"
+    BANDWIDTH_SELECTION = "BANDWIDTH_SELECTION"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
 
@@ -91,6 +92,9 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "observations more heavily than distant ones. This directly "
             "models spatially varying relationships that a single global "
             "OLS coefficient would average away and hide.\n\n"
+            "Bandwidth can be entered manually or selected automatically by minimum "
+            "AICc or leave-one-out cross-validation RMSE. The report audits every "
+            "candidate and the selected optimum.\n\n"
             "BANDWIDTH is a required, user-supplied parameter, not "
             "auto-optimized - for fixed kernels it is a distance in map "
             "units; for adaptive bisquare it is a neighbor count. Choosing "
@@ -148,6 +152,14 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
         )
         self.addParameter(
+            QgsProcessingParameterEnum(
+                self.BANDWIDTH_SELECTION,
+                "Bandwidth selection",
+                options=["Manual", "Automatic minimum AICc", "Automatic leave-one-out CV RMSE"],
+                defaultValue=1,
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterNumber(
                 self.BANDWIDTH,
                 "Bandwidth value (distance in map units for Fixed; number of neighbors for Adaptive)",
@@ -193,6 +205,13 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         kernel_type = kernel_types[kernel_idx]
 
         bandwidth = self.parameterAsDouble(parameters, self.BANDWIDTH, context)
+        bandwidth_selection = self.parameterAsEnum(parameters, self.BANDWIDTH_SELECTION, context)
+        if self.BANDWIDTH_SELECTION in parameters:
+            bandwidth_selection = int(parameters[self.BANDWIDTH_SELECTION])
+        # Direct Processing calls may omit provider defaults from the decoded
+        # map; preserve the advertised automatic-AICc default in that case.
+        if self.BANDWIDTH_SELECTION not in parameters:
+            bandwidth_selection = 1
 
         # Resolve output HTML file path
         html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
@@ -289,8 +308,22 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if crs_warning:
             feedback.pushWarning(crs_warning)
 
+        selection = None
+        if bandwidth_selection:
+            criterion = "aicc" if bandwidth_selection == 1 else "cv"
+            feedback.pushInfo(f"Selecting GWR bandwidth automatically by {criterion.upper()}...")
+            try:
+                selection = select_gwr_bandwidth(y, X_data, coords, kernel_type, criterion)
+            except ValueError as exc:
+                raise QgsProcessingException(str(exc)) from exc
+            bandwidth = selection["bandwidth"]
+            feedback.pushInfo(
+                f"Selected bandwidth {bandwidth:.6g}; {criterion} score={selection['score']:.6g}."
+            )
+
         feedback.pushInfo("Solving Geographically Weighted Regression...")
         results = calculate_gwr(y, X_data, coords, bandwidth, kernel_type)
+        results["bandwidth_selection"] = selection
         residual_k = min(max(8, p + 2), n - 1)
         residual_spatial = self._residual_spatial_diagnostic(
             source,
@@ -310,6 +343,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         out_fields.append(QgsField("residual", QVariant.Double, len=12, prec=6))
         out_fields.append(QgsField("local_r2", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("gwr_nbrs", QVariant.Int))
+        out_fields.append(QgsField("gwr_bw", QVariant.Double, len=12, prec=4))
 
         # Intercept and beta fields
         out_fields.append(QgsField("coef_int", QVariant.Double, len=12, prec=6))
@@ -363,6 +397,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("residual", float(residuals[idx]))
                 out_feat.setAttribute("local_r2", float(local_r2[idx]))
                 out_feat.setAttribute("gwr_nbrs", int(local_support[idx]))
+                out_feat.setAttribute("gwr_bw", float(bandwidth))
 
                 # Intercept
                 out_feat.setAttribute("coef_int", float(local_beta[idx, 0]))
@@ -381,6 +416,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("residual", None)
                 out_feat.setAttribute("local_r2", None)
                 out_feat.setAttribute("gwr_nbrs", None)
+                out_feat.setAttribute("gwr_bw", None)
                 out_feat.setAttribute("coef_int", None)
                 out_feat.setAttribute("se_int", None)
                 out_feat.setAttribute("t_int", None)
@@ -458,6 +494,21 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         else:
             next_action = "Map local coefficients and local R2 together, then compare spatial patterns against planning theory and residual diagnostics."
         crs_block = f"<div class=\"note\"><strong>CRS warning:</strong> {html.escape(crs_warning)}</div>" if crs_warning else ""
+        selection = res.get("bandwidth_selection")
+        if selection:
+            trial_rows = "".join(
+                f"<tr><td>{trial['bandwidth']:.6g}</td><td>{trial['score']:.6g}</td></tr>"
+                for trial in selection["trials"]
+            )
+            selection_html = (
+                f"<h2>Automatic Bandwidth Search</h2><p>Criterion: "
+                f"<strong>{html.escape(selection['criterion'].upper())}</strong>; selected "
+                f"<strong>{selection['bandwidth']:.6g}</strong>.</p>"
+                f"<table><thead><tr><th>Candidate bandwidth</th><th>Score</th></tr></thead>"
+                f"<tbody>{trial_rows}</tbody></table>"
+            )
+        else:
+            selection_html = "<p>Bandwidth selection: <strong>manual</strong>.</p>"
         html_content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -609,6 +660,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     {residual_chart}
 
     <h2>Kernel Parameter Configurations</h2>
+    {selection_html}
     <table>
         <thead>
             <tr>
@@ -678,6 +730,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "residual": "Observed minus predicted GWR residual",
                 "local_r2": "Local coefficient of determination for the GWR kernel",
                 "gwr_nbrs": "Local kernel support count used for this feature",
+                "gwr_bw": "Selected or manually supplied GWR bandwidth",
                 "coef_int": "Local intercept coefficient",
                 "se_int": "Local intercept standard error",
                 "t_int": "Local intercept t statistic",

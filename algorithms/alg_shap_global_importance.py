@@ -23,6 +23,7 @@ from qgis.core import (
 
 from ..core.ml_engines import CV_MODEL_KEYS, CV_MODEL_LABELS, extract_classification_matrix, extract_regression_matrix
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.model_registry import resolve_fitted_model
 from ..core.xai_engines import compute_shap_values, shap_global_importance
 from ..dependencies import optional_dependency_error
 
@@ -39,6 +40,7 @@ class SHAPGlobalImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     MODEL = "MODEL"
     CLASS_LABEL = "CLASS_LABEL"
     MAX_ROWS = "MAX_ROWS"
+    SAVED_MODEL_ID = "SAVED_MODEL_ID"
     HTML_REPORT = "HTML_REPORT"
 
     TASK_TYPES = ["Regression (numeric target)", "Classification (categorical target)"]
@@ -110,6 +112,11 @@ class SHAPGlobalImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
             QgsProcessingParameterString(
+                self.SAVED_MODEL_ID, "Reusable model ID (optional; current QGIS session)", optional=True,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterString(
                 self.CLASS_LABEL, "Class to explain (classification only; blank = first class alphabetically)",
                 optional=True,
             )
@@ -141,6 +148,7 @@ class SHAPGlobalImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         model_key = CV_MODEL_KEYS[self.parameterAsEnum(parameters, self.MODEL, context)]
         class_label = self.parameterAsString(parameters, self.CLASS_LABEL, context)
         max_rows = self.parameterAsInt(parameters, self.MAX_ROWS, context)
+        saved_model_id = self.parameterAsString(parameters, self.SAVED_MODEL_ID, context).strip()
 
         html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
         if not html_path:
@@ -172,9 +180,20 @@ class SHAPGlobalImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if skipped:
             feedback.pushInfo(f"Skipped {skipped} feature(s) with missing values.")
 
-        feedback.pushInfo(f"Fitting {CV_MODEL_LABELS[model_key]} and computing SHAP values...")
+        estimator = None
+        if saved_model_id:
+            try:
+                estimator, manifest = resolve_fitted_model(saved_model_id, task_type, feature_fields, x, y)
+            except ValueError as exc:
+                raise QgsProcessingException(str(exc))
+            model_key = manifest["model_key"]
+            feedback.pushInfo(f"Reusing audited model {saved_model_id}; no refit performed.")
+        else:
+            feedback.pushInfo(f"Fitting {CV_MODEL_LABELS[model_key]} and computing SHAP values...")
         try:
-            shap_result = compute_shap_values(x, y, task_type, model_key, class_index=class_index, max_rows=max_rows)
+            shap_result = compute_shap_values(
+                x, y, task_type, model_key, class_index=class_index, max_rows=max_rows, estimator=estimator,
+            )
         except ImportError as exc:
             raise QgsProcessingException(optional_dependency_error("SHAP Global Feature Importance", ["shap"], exc))
 

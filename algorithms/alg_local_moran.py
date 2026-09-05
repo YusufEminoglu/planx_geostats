@@ -30,7 +30,12 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_local_moran
 from ..core.layer_metadata import apply_output_metadata
-from ..core.local_pattern_audit import local_moran_class_summary
+from ..core.local_pattern_audit import (
+    MULTIPLE_TESTING_OPTIONS,
+    adjust_p_values,
+    corrected_lisa_classes,
+    local_moran_class_summary,
+)
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
 from ..core.symbology import LISA_QUADRANT_STYLE, apply_renderer, lisa_quadrant_renderer
@@ -47,6 +52,7 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     WEIGHT_TYPE = "WEIGHT_TYPE"
     KNN = "KNN"
     DISTANCE_BAND = "DISTANCE_BAND"
+    MULTIPLE_TESTING = "MULTIPLE_TESTING"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
 
@@ -84,10 +90,9 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "- HL (High-Low): a high value surrounded by low neighbors (spatial outlier)\n"
             "- LH (Low-High): a low value surrounded by high neighbors (spatial outlier)\n"
             "- Not Significant: p >= 0.05, or the feature had no valid neighbors\n\n"
-            "Each feature is tested independently at p < 0.05 with no "
-            "multiple-testing correction applied - across hundreds of features, "
-            "roughly 5% will cross that threshold by chance alone even under "
-            "complete spatial randomness. Treat an isolated significant cell with "
+            "Local p-values can be protected with the recommended Benjamini-Hochberg "
+            "false-discovery-rate correction, conservative Bonferroni correction, or "
+            "left unadjusted for comparison. Treat an isolated significant cell with "
             "suspicion unless it forms a spatially coherent group with its "
             "neighbors; a single significant cell surrounded by 'Not Significant' "
             "cells is a common false-positive pattern. Run Global Moran's I first "
@@ -138,6 +143,14 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
         )
         self.addParameter(
+            QgsProcessingParameterEnum(
+                self.MULTIPLE_TESTING,
+                "Multiple-testing correction",
+                options=[label for label, _ in MULTIPLE_TESTING_OPTIONS],
+                defaultValue=1,
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
                 "Cluster Analysis Output Layer"
@@ -174,6 +187,9 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         k_neighbors = self.parameterAsInt(parameters, self.KNN, context)
         distance_band = self.parameterAsDouble(parameters, self.DISTANCE_BAND, context)
+        correction = MULTIPLE_TESTING_OPTIONS[
+            self.parameterAsEnum(parameters, self.MULTIPLE_TESTING, context)
+        ][1]
 
         # Validate target field
         field_idx = source.fields().lookupField(field_name)
@@ -223,6 +239,8 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             weights,
             valid_id_order
         )
+        adjusted_p = adjust_p_values(p_values, correction)
+        quadrants = corrected_lisa_classes(quadrants, adjusted_p)
         class_summary = local_moran_class_summary(quadrants)
         feedback.pushInfo(class_summary["message"])
 
@@ -234,6 +252,8 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         out_fields.append(QgsField("lisa_i", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("lisa_z", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("lisa_p", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("lisa_padj", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("lisa_mt", QVariant.String, len=12))
         out_fields.append(QgsField("quadrant", QVariant.String, len=20))
         out_fields.append(QgsField("lisa_nbrs", QVariant.Int))
 
@@ -256,7 +276,10 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
             if neighbor_count == 0:
                 isolated_count += 1
-            results_map[fid] = (i_vals[idx], z_scores[idx], p_values[idx], quadrants[idx], neighbor_count)
+            results_map[fid] = (
+                i_vals[idx], z_scores[idx], p_values[idx], adjusted_p[idx],
+                quadrants[idx], neighbor_count,
+            )
         if isolated_count:
             feedback.pushWarning(
                 f"{isolated_count} feature(s) had no valid neighbors. Review lisa_nbrs and consider a larger distance band or K value."
@@ -273,16 +296,20 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
             fid = f.id()
             if fid in results_map:
-                i_val, z, p, quad, neighbor_count = results_map[fid]
+                i_val, z, p, p_adjusted, quad, neighbor_count = results_map[fid]
                 out_feat.setAttribute("lisa_i", float(i_val))
                 out_feat.setAttribute("lisa_z", float(z))
                 out_feat.setAttribute("lisa_p", float(p))
+                out_feat.setAttribute("lisa_padj", float(p_adjusted))
+                out_feat.setAttribute("lisa_mt", correction)
                 out_feat.setAttribute("quadrant", str(quad))
                 out_feat.setAttribute("lisa_nbrs", int(neighbor_count))
             else:
                 out_feat.setAttribute("lisa_i", None)
                 out_feat.setAttribute("lisa_z", None)
                 out_feat.setAttribute("lisa_p", None)
+                out_feat.setAttribute("lisa_padj", None)
+                out_feat.setAttribute("lisa_mt", correction)
                 out_feat.setAttribute("quadrant", "Not Significant")
                 out_feat.setAttribute("lisa_nbrs", None)
 
@@ -290,11 +317,11 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.setProgress(int(50 + 50 * (current / total)))
 
         feedback.pushInfo("Generating HTML report...")
-        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count)
+        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count, correction)
 
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
-    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count):
+    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count, correction):
         counts = class_summary["counts"]
         donut_labels = [label for _, _, label in LISA_QUADRANT_STYLE]
         donut_values = [counts.get(code, 0) for code, _, _ in LISA_QUADRANT_STYLE]
@@ -316,7 +343,7 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             ],
             [
                 f"{isolated_count} feature(s) had zero valid neighbors" if isolated_count else "No isolated (zero-neighbor) features were found.",
-                "Each feature tested independently at p < 0.05 with no multiple-testing correction - roughly 5% of features cross that threshold by chance alone under complete spatial randomness.",
+                f"Multiplicity method: {correction}; mapped classes use lisa_padj < 0.05 while lisa_p preserves the raw p-value.",
                 "A single significant cell surrounded by 'Not Significant' cells is a common false-positive pattern.",
             ],
             [
@@ -351,7 +378,7 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 <div class="container">
     <header>
         <h1>Cluster and Outlier Analysis (Local Moran's I)</h1>
-        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong></p>
     </header>
 
     {kpi_row}
@@ -390,6 +417,8 @@ class LocalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "lisa_i": "Anselin Local Moran's I statistic",
                 "lisa_z": "Local Moran z-score",
                 "lisa_p": "Local Moran p-value",
+                "lisa_padj": "Adjusted Local Moran p-value used for classification",
+                "lisa_mt": "Multiple-testing correction method",
                 "quadrant": "LISA class: HH, LL, HL, LH, or Not Significant",
                 "lisa_nbrs": "Valid neighbors used for the local statistic",
             },

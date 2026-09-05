@@ -152,6 +152,7 @@ spatial_autocorrelation_audit = load_module(
     "core/spatial_autocorrelation_audit.py",
 )
 local_pattern_audit = load_module("local_pattern_audit_core", "core/local_pattern_audit.py")
+model_registry = load_module("model_registry_core", "core/model_registry.py")
 layer_metadata = load_module("layer_metadata_core", "core/layer_metadata.py")
 dependencies = load_module("dependencies_core", "dependencies.py")
 
@@ -605,6 +606,61 @@ def test_local_pattern_audit_summarizes_hotspot_and_lisa_classes() -> None:
     assert "Local Moran classified" in lisa_summary["message"]
 
 
+def test_multiple_testing_adjustments_and_classes() -> None:
+    raw = np.array([0.001, 0.01, 0.03, 0.2])
+    bh = local_pattern_audit.adjust_p_values(raw, "fdr_bh")
+    bonferroni = local_pattern_audit.adjust_p_values(raw, "bonferroni")
+    assert np.all(bh >= raw)
+    assert np.all(np.diff(bh) >= 0)
+    assert np.allclose(bonferroni, [0.004, 0.04, 0.12, 0.8])
+    assert local_pattern_audit.corrected_lisa_classes(["HH", "LL"], [0.01, 0.2]) == ["HH", "Not Significant"]
+    assert local_pattern_audit.corrected_gi_bins([2.5, -2.1, 1.0], [0.01, 0.04, 0.5]).tolist() == [2, -2, 0]
+
+
+def test_weights_graph_order_diagnostics_and_csv_round_trip(tmp_path=None) -> None:
+    graph = {1: [2], 2: [1, 3], 3: [2], 4: []}
+    expanded = weights_core.expand_higher_order_neighbors(graph, 2)
+    assert expanded[1] == [2, 3]
+    diagnostics = weights_core.weights_diagnostics(graph)
+    assert diagnostics["island_count"] == 1
+    assert diagnostics["component_count"] == 2
+    import tempfile
+    path = Path(tempfile.gettempdir()) / "planx_geostats_weights_smoke.csv"
+    weights_core.export_weights_csv(str(path), graph, {1: [1.0], 2: [0.5, 0.5], 3: [1.0], 4: []})
+    restored_graph, restored_weights = weights_core.import_weights_csv(str(path), valid_ids=graph)
+    assert restored_graph == graph
+    assert abs(sum(restored_weights[2]) - 1.0) < 1e-12
+    path.unlink(missing_ok=True)
+
+
+def test_automatic_gwr_bandwidth_selection_returns_audited_trials() -> None:
+    coords = np.array([[float(i), float(i % 3)] for i in range(12)])
+    x = np.column_stack((coords[:, 0], coords[:, 1]))
+    y = 2.0 + 0.5 * x[:, 0] - 0.2 * x[:, 1]
+    selected = stats.select_gwr_bandwidth(y, x, coords, "adaptive_bisquare", "aicc", candidate_count=4)
+    assert selected["bandwidth"] >= 8
+    assert selected["criterion"] == "aicc"
+    assert len(selected["trials"]) >= 2
+
+
+def test_model_registry_reuses_only_exact_audited_training_data() -> None:
+    class Estimator:
+        pass
+    x = np.array([[1.0, 2.0], [2.0, 3.0], [3.0, 5.0]])
+    y = np.array([1.0, 2.0, 4.0])
+    estimator = Estimator()
+    manifest = model_registry.register_fitted_model(estimator, x, y, ["a", "b"], "target", "regression", "random_forest")
+    resolved, audit = model_registry.resolve_fitted_model(manifest["model_id"], "regression", ["a", "b"], x, y)
+    assert resolved is estimator
+    assert audit["training_fingerprint"] == manifest["training_fingerprint"]
+    try:
+        model_registry.resolve_fitted_model(manifest["model_id"], "regression", ["b", "a"], x, y)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Field-order mismatch must reject model reuse")
+
+
 def test_layer_metadata_survives_alias_unavailable_and_keeps_properties() -> None:
     class Fields:
         def lookupField(self, name):
@@ -771,6 +827,10 @@ def run_all() -> None:
     test_sensitivity_audit_flags_robust_and_sparse_cases()
     test_global_moran_interpretation_prioritizes_neighbor_graph_risk()
     test_local_pattern_audit_summarizes_hotspot_and_lisa_classes()
+    test_multiple_testing_adjustments_and_classes()
+    test_weights_graph_order_diagnostics_and_csv_round_trip()
+    test_automatic_gwr_bandwidth_selection_returns_audited_trials()
+    test_model_registry_reuses_only_exact_audited_training_data()
     test_layer_metadata_survives_alias_unavailable_and_keeps_properties()
     test_optional_dependency_error_guides_qgis_toolbox_installation()
     test_lisa_quadrant_renderer_has_five_categories()

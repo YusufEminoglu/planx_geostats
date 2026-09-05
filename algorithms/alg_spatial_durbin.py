@@ -100,11 +100,9 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "interpretation trap in SDM: raw beta coefficients are NOT "
             "directly interpretable as marginal effects, because rho "
             "creates feedback loops through neighboring locations - "
-            "LeSage and Pace's direct/indirect/total impact decomposition "
-            "is the theoretically correct way to interpret SDM coefficients "
-            "and is a natural extension for a future version; treat the "
-            "raw beta/theta table here as a specification and significance "
-            "screen, not a final marginal-effects report."
+            "The report now calculates LeSage and Pace's direct, indirect, "
+            "and total impacts from the full spatial multiplier. Use that "
+            "table—not raw beta/theta alone—for marginal-effect interpretation."
         )
 
     def initAlgorithm(self, config=None):
@@ -320,6 +318,13 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
 
         rho = res["rho"]
+        impact_rows = "".join(
+            "<tr>"
+            f"<td><strong>{html.escape(item['variable'])}</strong></td>"
+            f"<td>{item['direct']:.6f}</td><td>{item['indirect']:.6f}</td>"
+            f"<td>{item['total']:.6f}</td></tr>"
+            for item in res["impacts"]
+        )
         rho_note = (
             f"rho = {rho:.4f} ({'significant' if res['rho_p'] < 0.05 else 'not significant'}, p={res['rho_p']:.4f}). "
             + ("A positive, significant rho indicates genuine spatial spillover/feedback beyond what WX alone captures."
@@ -345,7 +350,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Sample size is large enough relative to the doubled parameter count (Intercept + X + WX + rho).",
             ],
             [
-                "Interpreting raw beta/theta coefficients as marginal effects directly - SDM requires the LeSage & Pace direct/indirect/total decomposition for that.",
+                "Interpreting raw beta/theta coefficients as marginal effects directly; use the impact decomposition table below.",
                 "A rho estimate outside a plausible range (|rho| close to or above 1) - suggests instrument weakness or model misspecification.",
                 "Ignoring model quality warnings below - WX terms are, by construction, correlated with X, raising multicollinearity risk.",
             ],
@@ -405,6 +410,13 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     </table>
 
     <div class="note">{rho_note}</div>
+
+    <h2>Direct, Indirect, and Total Impacts</h2>
+    <table>
+      <thead><tr><th>Variable</th><th>Direct</th><th>Indirect spillover</th><th>Total</th></tr></thead>
+      <tbody>{impact_rows}</tbody>
+    </table>
+    <p>The direct effect is the mean diagonal response; the indirect effect is the mean cross-location spillover; total is their sum, computed from (I - rho W)<sup>-1</sup>(beta I + theta W).</p>
 
     <h2>Residual vs. Fitted</h2>
     {residual_chart}

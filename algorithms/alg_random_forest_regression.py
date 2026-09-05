@@ -17,6 +17,7 @@ from qgis.core import (
     QgsProcessingAlgorithm,
     QgsProcessingException,
     QgsProcessingOutputHtml,
+    QgsProcessingOutputString,
     QgsProcessingParameterFeatureSink,
     QgsProcessingParameterFeatureSource,
     QgsProcessingParameterField,
@@ -28,6 +29,7 @@ from qgis.PyQt.QtCore import QVariant
 from ..core.layer_metadata import apply_output_metadata
 from ..core.symbology import apply_renderer, diverging_residual_renderer
 from ..core.ml_engines import extract_regression_matrix, fit_random_forest_regressor, top_feature_importance_rows
+from ..core.model_registry import register_fitted_model
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, scatter_plot_svg
 from ..dependencies import optional_dependency_error
@@ -46,6 +48,8 @@ class RandomForestRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     MIN_SAMPLES_LEAF = "MIN_SAMPLES_LEAF"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
+    MODEL_AUDIT = "MODEL_AUDIT"
+    MODEL_ID = "MODEL_ID"
 
     def __init__(self):
         super().__init__()
@@ -134,7 +138,13 @@ class RandomForestRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.HTML_REPORT, "Output Random Forest HTML report", fileFilter="HTML files (*.html)", optional=True,
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.MODEL_AUDIT, "Output safe model audit manifest", fileFilter="JSON files (*.json)", optional=True,
+            )
+        )
         self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "Random Forest diagnostic report"))
+        self.addOutput(QgsProcessingOutputString(self.MODEL_ID, "Reusable model ID (current QGIS session)"))
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.INPUT, context)
@@ -176,6 +186,16 @@ class RandomForestRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         except ImportError as exc:
             raise QgsProcessingException(optional_dependency_error("Random Forest Regression", ["scikit-learn"], exc))
 
+        audit_path = self.parameterAsFileOutput(parameters, self.MODEL_AUDIT, context)
+        if not audit_path:
+            audit_path = os.path.join(tempfile.gettempdir(), "planx_rf_regression_model_audit.json")
+        manifest = register_fitted_model(
+            results["model"], x, y, feature_fields, target_field, "regression", "random_forest",
+            metrics={"r2": results["r2"], "rmse": results["rmse"], "mae": results["mae"], "oob_score": results["oob_score"]},
+            manifest_path=audit_path,
+        )
+        feedback.pushInfo(f"Reusable model ID: {manifest['model_id']}")
+
         feedback.pushInfo(
             f"R2={results['r2']:.4f}, RMSE={results['rmse']:.4f}, MAE={results['mae']:.4f}, "
             f"OOB score={results['oob_score']}"
@@ -209,7 +229,10 @@ class RandomForestRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, results, skipped)
-        return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
+        return {
+            self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path,
+            self.MODEL_AUDIT: audit_path, self.MODEL_ID: manifest["model_id"],
+        }
 
     def postProcessAlgorithm(self, context, feedback):
         layer = context.getMapLayer(self.out_layer_id) if self.out_layer_id else None

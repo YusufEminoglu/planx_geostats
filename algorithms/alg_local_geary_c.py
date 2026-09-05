@@ -30,7 +30,12 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.advanced_stats_engines import calculate_local_geary_c
 from ..core.layer_metadata import apply_output_metadata
-from ..core.local_pattern_audit import local_moran_class_summary
+from ..core.local_pattern_audit import (
+    MULTIPLE_TESTING_OPTIONS,
+    adjust_p_values,
+    corrected_lisa_classes,
+    local_moran_class_summary,
+)
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
 from ..core.symbology import LISA_QUADRANT_STYLE, apply_renderer, lisa_quadrant_renderer
@@ -49,6 +54,7 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     DISTANCE_BAND = "DISTANCE_BAND"
     PERMUTATIONS = "PERMUTATIONS"
     RANDOM_SEED = "RANDOM_SEED"
+    MULTIPLE_TESTING = "MULTIPLE_TESTING"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
 
@@ -168,6 +174,14 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
         )
         self.addParameter(
+            QgsProcessingParameterEnum(
+                self.MULTIPLE_TESTING,
+                "Multiple-testing correction",
+                options=[label for label, _ in MULTIPLE_TESTING_OPTIONS],
+                defaultValue=1,
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
                 "Cluster Analysis Output Layer",
@@ -206,6 +220,9 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         distance_band = self.parameterAsDouble(parameters, self.DISTANCE_BAND, context)
         permutations = self.parameterAsInt(parameters, self.PERMUTATIONS, context)
         seed = self.parameterAsInt(parameters, self.RANDOM_SEED, context)
+        correction = MULTIPLE_TESTING_OPTIONS[
+            self.parameterAsEnum(parameters, self.MULTIPLE_TESTING, context)
+        ][1]
 
         field_idx = source.fields().lookupField(field_name)
         if field_idx < 0:
@@ -241,6 +258,8 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         local_c, z_scores, p_values, quadrants = calculate_local_geary_c(
             y, neighbors, weights, valid_id_order, permutations=permutations, seed=seed
         )
+        adjusted_p = adjust_p_values(p_values, correction)
+        quadrants = corrected_lisa_classes(quadrants, adjusted_p)
 
         class_summary = local_moran_class_summary(quadrants)
         feedback.pushInfo(class_summary["message"])
@@ -252,6 +271,8 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         out_fields.append(QgsField("lgc_c", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("lgc_z", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("lgc_p", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("lgc_padj", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("lgc_mt", QVariant.String, len=12))
         out_fields.append(QgsField("quadrant", QVariant.String, len=20))
         out_fields.append(QgsField("lgc_nbrs", QVariant.Int))
 
@@ -267,7 +288,10 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
             if neighbor_count == 0:
                 isolated_count += 1
-            results_map[fid] = (local_c[idx], z_scores[idx], p_values[idx], quadrants[idx], neighbor_count)
+            results_map[fid] = (
+                local_c[idx], z_scores[idx], p_values[idx], adjusted_p[idx],
+                quadrants[idx], neighbor_count,
+            )
         if isolated_count:
             feedback.pushWarning(
                 f"{isolated_count} feature(s) had no valid neighbors. Review lgc_nbrs and consider a larger distance band or K value."
@@ -284,16 +308,20 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
             fid = f.id()
             if fid in results_map:
-                c_val, z, p, quad, neighbor_count = results_map[fid]
+                c_val, z, p, p_adjusted, quad, neighbor_count = results_map[fid]
                 out_feat.setAttribute("lgc_c", float(c_val))
                 out_feat.setAttribute("lgc_z", float(z))
                 out_feat.setAttribute("lgc_p", float(p))
+                out_feat.setAttribute("lgc_padj", float(p_adjusted))
+                out_feat.setAttribute("lgc_mt", correction)
                 out_feat.setAttribute("quadrant", str(quad))
                 out_feat.setAttribute("lgc_nbrs", int(neighbor_count))
             else:
                 out_feat.setAttribute("lgc_c", None)
                 out_feat.setAttribute("lgc_z", None)
                 out_feat.setAttribute("lgc_p", None)
+                out_feat.setAttribute("lgc_padj", None)
+                out_feat.setAttribute("lgc_mt", correction)
                 out_feat.setAttribute("quadrant", "Not Significant")
                 out_feat.setAttribute("lgc_nbrs", None)
 
@@ -301,11 +329,11 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.setProgress(int(50 + 50 * (current / total)))
 
         feedback.pushInfo("Generating HTML report...")
-        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count)
+        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count, correction)
 
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
-    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count):
+    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count, correction):
         counts = class_summary["counts"]
         donut_labels = [label for _, _, label in LISA_QUADRANT_STYLE]
         donut_values = [counts.get(code, 0) for code, _, _ in LISA_QUADRANT_STYLE]
@@ -328,7 +356,7 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             [
                 f"{isolated_count} feature(s) had zero valid neighbors" if isolated_count else "No isolated (zero-neighbor) features were found.",
                 "Magnitude significance (Geary's C itself) and sign (HH/LL/HL/LH) are two separate tests that usually but not always agree.",
-                "Each feature tested independently with no multiple-testing correction.",
+                f"Multiplicity method: {correction}; mapped classes use lgc_padj < 0.05 while lgc_p preserves the raw p-value.",
             ],
             [
                 "Local Moran's I as the standard cross-product-based comparison for the same clusters/outliers",
@@ -362,7 +390,7 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 <div class="container">
     <header>
         <h1>Local Geary's C (Cluster and Outlier Analysis)</h1>
-        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong></p>
     </header>
 
     {kpi_row}
@@ -401,6 +429,8 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "lgc_c": "Local Geary's C statistic (sum of neighbor squared differences)",
                 "lgc_z": "Local Geary's C permutation z-score",
                 "lgc_p": "Local Geary's C permutation p-value",
+                "lgc_padj": "Adjusted Local Geary p-value used for classification",
+                "lgc_mt": "Multiple-testing correction method",
                 "quadrant": "Classification: HH, LL, HL, LH, or Not Significant",
                 "lgc_nbrs": "Valid neighbors used for the local statistic",
             },

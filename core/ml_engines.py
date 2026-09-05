@@ -270,7 +270,7 @@ def _tree_ensemble_classifier(model_cls, x: np.ndarray, y: np.ndarray, class_lab
 
 def permutation_feature_importance(
     x: np.ndarray, y: np.ndarray, feature_names: Sequence[str], task_type: str, model_key: str,
-    n_repeats: int = 10, random_state: int = 42,
+    n_repeats: int = 10, random_state: int = 42, estimator=None,
 ) -> dict:
     """Fit the chosen model on the full data, then rank fields by how much a
     metric drops when that field's values are randomly shuffled - a
@@ -278,8 +278,9 @@ def permutation_feature_importance(
     expose no native feature_importances_."""
     from sklearn.inspection import permutation_importance as sk_permutation_importance
 
-    estimator = build_cv_estimator(task_type, model_key, random_state)
-    estimator.fit(x, y)
+    if estimator is None:
+        estimator = build_cv_estimator(task_type, model_key, random_state)
+        estimator.fit(x, y)
     scoring = "r2" if task_type == "regression" else "accuracy"
     result = sk_permutation_importance(estimator, x, y, n_repeats=n_repeats, random_state=random_state, scoring=scoring)
     rows = sorted(
@@ -620,14 +621,16 @@ UNCERTAINTY_MODEL_KEYS = ["random_forest", "extra_trees"]
 
 def prediction_uncertainty(
     x: np.ndarray, y: np.ndarray, model_key: str, n_estimators: int = 200, max_depth: int = 0,
-    min_samples_leaf: int = 1, random_state: int = 42,
+    min_samples_leaf: int = 1, random_state: int = 42, estimator=None,
 ) -> dict:
     """Bagging-ensemble prediction uncertainty: the spread of individual tree
     predictions around their mean, for Random Forest / Extra Trees only -
     boosting and kernel/neural models do not have an equivalent per-member
     prediction spread without extra machinery, so this is intentionally
     scoped to the two bagging ensembles in this group."""
-    if model_key == "random_forest":
+    if estimator is not None:
+        model = estimator
+    elif model_key == "random_forest":
         from sklearn.ensemble import RandomForestRegressor
         model = RandomForestRegressor(
             n_estimators=n_estimators, max_depth=(max_depth or None), min_samples_leaf=min_samples_leaf,
@@ -642,7 +645,8 @@ def prediction_uncertainty(
     else:
         raise ValueError(f"Prediction uncertainty is only available for: {UNCERTAINTY_MODEL_KEYS}")
 
-    model.fit(x, y)
+    if estimator is None:
+        model.fit(x, y)
     per_tree = np.array([tree.predict(x) for tree in model.estimators_])
     return {
         "mean": per_tree.mean(axis=0),

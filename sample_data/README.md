@@ -9,10 +9,12 @@ This folder contains curated sample data for developing, demonstrating, and manu
 - Layer name: `izmir_fur_street_network`
 - Geometry: multipolygon
 - CRS: EPSG:5253 (TUREF / TM27)
-- Feature count: 391 polygons covering the Izmir Functional Urban Region (FUR)
+- Feature count: 391 polygons covering the Izmir Functional Urban Region (FUR) across the 11 central districts: Balçova, Bayraklı, Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, Konak, and Narlıdere
 - Purpose: street-network and space-syntax accessibility sample data for spatial statistics, hot spot analysis, local outlier diagnostics, regression, spatial regression, GWR/MGWR, model comparison, and report QA.
 
 All 34 attribute fields are numeric - there is no name, id, or categorical field in this export. Reference individual polygons by `fid` in example workflows. The source data is provided directly by the plugin author; the original export is not modified beyond renaming the file and layer for the plugin's bundling convention.
+
+The authoritative layer CRS is EPSG:5253 (TUREF / TM27). Its stored bounds are approximately 483,385-532,264 m east and 4,237,622-4,271,134 m north, which transform to the Izmir metropolitan area. The Sample Dataset Guide explicitly assigns and validates this CRS while loading, preventing QGIS profiles from silently treating the metre coordinates as Web Mercator and drawing them near North Africa.
 
 ## Suggested Analysis Fields
 

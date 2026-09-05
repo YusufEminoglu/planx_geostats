@@ -46,7 +46,7 @@ All tools live under **Processing Toolbox → PlanX GeoStats Lab**, organised as
 GeoStats Library Status · Install/Update GeoStats Libraries · Sample Dataset Guide · **GeoStats Workflow Advisor** · **Data Readiness Audit**
 
 ### `01` Data Preparation & Neighborhoods
-Export Attributes · Calculate Distance Band (neighbour-distance selection)
+Export Attributes · Spatial Weights Workbench and Distance Band (visual node/edge graph, connectivity/islands, repair, higher order, distance decay, CSV exchange)
 
 ### `02` Urban Pattern Scan *(global statistics)*
 | Tool | Question it answers |
@@ -65,9 +65,9 @@ Export Attributes · Calculate Distance Band (neighbour-distance selection)
 ### `03` Hot Spots & Spatial Outliers *(local statistics)*
 | Tool | Output |
 |---|---|
-| Hot Spot Analysis (Getis-Ord Gi\*) | Statistically significant hot/cold spots |
-| Cluster & Outlier Analysis (Local Moran's I / LISA) | HH·LL clusters, HL·LH outliers |
-| Local Geary's C | A second local-outlier test, sensitive to sharp neighbor contrast |
+| Hot Spot Analysis (Getis-Ord Gi\*) | FDR/Bonferroni-controlled hot/cold spots plus seven-definition stability consensus |
+| Cluster & Outlier Analysis (Local Moran's I / LISA) | FDR/Bonferroni-controlled HH·LL clusters and HL·LH outliers |
+| Local Geary's C | Multiple-testing-controlled local contrast and outlier detection |
 | Colocation Quotient | Does one point category attract or avoid another (asymmetric)? |
 | Multivariate Clustering | K-means feature groups across several indicators |
 | **SKATER Regionalization** | K spatially *contiguous* regions, not just attribute-similar groups |
@@ -85,8 +85,8 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 | Exploratory Regression | Search candidate variable combinations |
 | Spatial Lag Regression | Spatial dependence in the outcome |
 | Spatial Error Regression | Spatial dependence in the residuals |
-| Spatial Durbin Model | Lags both the outcome *and* the predictors |
-| GWR / **MGWR** | Local — and *multiscale* local — relationships |
+| Spatial Durbin Model | Lags outcome and predictors; reports direct, spillover and total impacts |
+| GWR / **MGWR** | Local and multiscale relationships; GWR supports automatic AICc/CV bandwidth selection |
 | Eigenvector Spatial Filtering | Spatial control without estimating an autoregressive parameter |
 | **Spatial Regime Regression** | Separate coefficients per district/category, with a Chow test |
 | **Quantile Regression** | Model a chosen quantile (e.g. the upper tail), not just the mean |
@@ -107,7 +107,7 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 | Explainable Boosting Machine (Regression & Classification) | A glass-box model whose per-field contributions are exact, not sampled |
 | DiCE Counterfactual Explanation | What minimal change to one record would flip its predicted class |
 | Model Residual Spatial Autocorrelation Check | Has the ML model left real spatial structure unexplained? |
-| Prediction Uncertainty Map | Where is a Random Forest/Extra Trees prediction least trustworthy? |
+| Prediction Uncertainty Map | Where is a Random Forest/Extra Trees prediction least trustworthy? Reuse an audited session model without refitting. |
 | Conformal Prediction Interval | A distribution-free, coverage-guaranteed prediction interval for any regression model |
 | DBSCAN · HDBSCAN · Gaussian Mixture | Density-based and probabilistic clustering alternatives to K-Means |
 
@@ -185,7 +185,7 @@ py -3 planx_geostats\tests\smoke_provider_catalog.py
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.7.0
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.8.0
 ```
 
 </details>

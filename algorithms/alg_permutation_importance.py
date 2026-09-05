@@ -18,6 +18,7 @@ from qgis.core import (
     QgsProcessingParameterField,
     QgsProcessingParameterFileDestination,
     QgsProcessingParameterNumber,
+    QgsProcessingParameterString,
 )
 
 from ..core.ml_engines import (
@@ -28,6 +29,7 @@ from ..core.ml_engines import (
     permutation_feature_importance,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.model_registry import resolve_fitted_model
 from ..core.charts import chart_css, bar_chart_svg
 from ..dependencies import optional_dependency_error
 
@@ -43,6 +45,7 @@ class PermutationImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     TASK_TYPE = "TASK_TYPE"
     MODEL = "MODEL"
     N_REPEATS = "N_REPEATS"
+    SAVED_MODEL_ID = "SAVED_MODEL_ID"
     HTML_REPORT = "HTML_REPORT"
 
     TASK_TYPES = ["Regression (numeric target)", "Classification (categorical target)"]
@@ -112,6 +115,11 @@ class PermutationImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterEnum(self.TASK_TYPE, "Task type", options=self.TASK_TYPES, defaultValue=0))
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
+            QgsProcessingParameterString(
+                self.SAVED_MODEL_ID, "Reusable model ID (optional; current QGIS session)", optional=True,
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterNumber(
                 self.N_REPEATS, "Number of shuffle repeats", type=QgsProcessingParameterNumber.Integer,
                 defaultValue=10, minValue=3, maxValue=100,
@@ -137,6 +145,7 @@ class PermutationImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         task_type = self.TASK_KEYS[self.parameterAsEnum(parameters, self.TASK_TYPE, context)]
         model_key = CV_MODEL_KEYS[self.parameterAsEnum(parameters, self.MODEL, context)]
         n_repeats = self.parameterAsInt(parameters, self.N_REPEATS, context)
+        saved_model_id = self.parameterAsString(parameters, self.SAVED_MODEL_ID, context).strip()
 
         html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
         if not html_path:
@@ -161,9 +170,20 @@ class PermutationImportanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if skipped:
             feedback.pushInfo(f"Skipped {skipped} feature(s) with missing values.")
 
-        feedback.pushInfo(f"Fitting {CV_MODEL_LABELS[model_key]} and computing permutation importance...")
+        estimator = None
+        if saved_model_id:
+            try:
+                estimator, manifest = resolve_fitted_model(saved_model_id, task_type, feature_fields, x, y)
+            except ValueError as exc:
+                raise QgsProcessingException(str(exc))
+            model_key = manifest["model_key"]
+            feedback.pushInfo(f"Reusing audited model {saved_model_id}; no refit performed.")
+        else:
+            feedback.pushInfo(f"Fitting {CV_MODEL_LABELS[model_key]} and computing permutation importance...")
         try:
-            results = permutation_feature_importance(x, y, feature_fields, task_type, model_key, n_repeats=n_repeats)
+            results = permutation_feature_importance(
+                x, y, feature_fields, task_type, model_key, n_repeats=n_repeats, estimator=estimator,
+            )
         except ImportError as exc:
             raise QgsProcessingException(optional_dependency_error("Permutation Feature Importance", ["scikit-learn"], exc))
 

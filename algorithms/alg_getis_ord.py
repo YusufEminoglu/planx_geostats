@@ -19,6 +19,7 @@ from qgis.core import (
     QgsProcessingException,
     QgsProcessingOutputHtml,
     QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterBoolean,
     QgsProcessingParameterField,
     QgsProcessingParameterEnum,
     QgsProcessingParameterNumber,
@@ -30,7 +31,12 @@ from qgis.core import (
 from ..core.weights import build_weights_matrix
 from ..core.stats_engines import calculate_getis_ord
 from ..core.layer_metadata import apply_output_metadata
-from ..core.local_pattern_audit import getis_ord_class_summary
+from ..core.local_pattern_audit import (
+    MULTIPLE_TESTING_OPTIONS,
+    adjust_p_values,
+    corrected_gi_bins,
+    getis_ord_class_summary,
+)
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
 from ..core.symbology import GI_CONFIDENCE_STYLE, apply_renderer, gi_confidence_renderer
@@ -47,12 +53,15 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     WEIGHT_TYPE = "WEIGHT_TYPE"
     KNN = "KNN"
     DISTANCE_BAND = "DISTANCE_BAND"
+    MULTIPLE_TESTING = "MULTIPLE_TESTING"
+    STABILITY_ANALYSIS = "STABILITY_ANALYSIS"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
 
     def __init__(self):
         super().__init__()
         self.out_layer_id = None
+        self.renderer_field = "gi_conf"
 
     def name(self) -> str:
         return "getis_ord_gi"
@@ -142,6 +151,21 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             )
         )
         self.addParameter(
+            QgsProcessingParameterEnum(
+                self.MULTIPLE_TESTING,
+                "Multiple-testing correction",
+                options=[label for label, _ in MULTIPLE_TESTING_OPTIONS],
+                defaultValue=1,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.STABILITY_ANALYSIS,
+                "Run multi-neighborhood stability consensus",
+                defaultValue=False,
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
                 "Hot Spot analysis output layer"
@@ -179,6 +203,10 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         k_neighbors = self.parameterAsInt(parameters, self.KNN, context)
         distance_band = self.parameterAsDouble(parameters, self.DISTANCE_BAND, context)
+        correction = MULTIPLE_TESTING_OPTIONS[
+            self.parameterAsEnum(parameters, self.MULTIPLE_TESTING, context)
+        ][1]
+        run_stability = self.parameterAsBoolean(parameters, self.STABILITY_ANALYSIS, context)
 
         # Validate target field
         field_idx = source.fields().lookupField(field_name)
@@ -231,6 +259,46 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             valid_id_order,
             star=True
         )
+        adjusted_p = adjust_p_values(p_values, correction)
+        conf_bins = corrected_gi_bins(z_scores, adjusted_p)
+        stability_scores = np.sign(conf_bins).astype(float)
+        stability_runs = 1
+        consensus_bins = conf_bins.copy()
+        if run_stability:
+            bin_runs = [conf_bins]
+            variants = [
+                ("queen", k_neighbors, distance_band),
+                ("rook", k_neighbors, distance_band),
+                ("knn", max(1, k_neighbors - 2), distance_band),
+                ("knn", k_neighbors + 2, distance_band),
+                ("distance", k_neighbors, distance_band * 0.75),
+                ("distance", k_neighbors, distance_band * 1.25),
+            ]
+            feedback.pushInfo("Running Gi* stability analysis across seven neighborhood definitions...")
+            for variant_type, variant_k, variant_distance in variants:
+                variant_neighbors, variant_weights, _, _ = build_weights_matrix(
+                    source,
+                    variant_type,
+                    k_neighbors=variant_k,
+                    distance_band=variant_distance,
+                    feedback=feedback,
+                )
+                variant_z, variant_p, _ = calculate_getis_ord(
+                    y, variant_neighbors, variant_weights, valid_id_order, star=True,
+                )
+                bin_runs.append(corrected_gi_bins(
+                    variant_z, adjust_p_values(variant_p, correction),
+                ))
+            stability_runs = len(bin_runs)
+            directions = np.sign(np.vstack(bin_runs))
+            stability_scores = np.mean(directions, axis=0)
+            significant_runs = np.sum(directions != 0, axis=0)
+            consensus_bins = np.where(
+                (np.abs(stability_scores) >= 0.60) & (significant_runs >= 3),
+                np.sign(stability_scores) * 2,
+                0,
+            ).astype(int)
+            self.renderer_field = "gi_cons"
         class_summary = getis_ord_class_summary(conf_bins)
         feedback.pushInfo(class_summary["message"])
 
@@ -241,8 +309,13 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         out_fields = source.fields()
         out_fields.append(QgsField("gi_zscore", QVariant.Double, len=10, prec=6))
         out_fields.append(QgsField("gi_pvalue", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("gi_padj", QVariant.Double, len=10, prec=6))
+        out_fields.append(QgsField("gi_mt", QVariant.String, len=12))
         out_fields.append(QgsField("gi_conf", QVariant.Int))
         out_fields.append(QgsField("gi_nbrs", QVariant.Int))
+        out_fields.append(QgsField("gi_stab", QVariant.Double, len=8, prec=4))
+        out_fields.append(QgsField("gi_runs", QVariant.Int))
+        out_fields.append(QgsField("gi_cons", QVariant.Int))
 
         # Initialize output sink
         (sink, dest_id) = self.parameterAsSink(
@@ -263,7 +336,10 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
             if neighbor_count == 0:
                 isolated_count += 1
-            results_map[fid] = (z_scores[idx], p_values[idx], conf_bins[idx], neighbor_count)
+            results_map[fid] = (
+                z_scores[idx], p_values[idx], adjusted_p[idx], conf_bins[idx],
+                neighbor_count, stability_scores[idx], consensus_bins[idx],
+            )
         if isolated_count:
             feedback.pushWarning(
                 f"{isolated_count} feature(s) had no valid neighbors. Review gi_nbrs and consider a larger distance band or K value."
@@ -280,26 +356,36 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
             fid = f.id()
             if fid in results_map:
-                z, p, c, neighbor_count = results_map[fid]
+                z, p, p_adjusted, c, neighbor_count, stability, consensus = results_map[fid]
                 out_feat.setAttribute("gi_zscore", float(z))
                 out_feat.setAttribute("gi_pvalue", float(p))
+                out_feat.setAttribute("gi_padj", float(p_adjusted))
+                out_feat.setAttribute("gi_mt", correction)
                 out_feat.setAttribute("gi_conf", int(c))
                 out_feat.setAttribute("gi_nbrs", int(neighbor_count))
+                out_feat.setAttribute("gi_stab", float(stability))
+                out_feat.setAttribute("gi_runs", stability_runs)
+                out_feat.setAttribute("gi_cons", int(consensus))
             else:
                 out_feat.setAttribute("gi_zscore", None)
                 out_feat.setAttribute("gi_pvalue", None)
+                out_feat.setAttribute("gi_padj", None)
+                out_feat.setAttribute("gi_mt", correction)
                 out_feat.setAttribute("gi_conf", None)
                 out_feat.setAttribute("gi_nbrs", None)
+                out_feat.setAttribute("gi_stab", None)
+                out_feat.setAttribute("gi_runs", stability_runs)
+                out_feat.setAttribute("gi_cons", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
 
         feedback.pushInfo("Generating HTML report...")
-        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count)
+        self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count, correction)
 
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
-    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count):
+    def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count, correction):
         counts = class_summary["counts"]
         donut_labels = [label for _, _, label in GI_CONFIDENCE_STYLE]
         donut_values = [counts.get(val, 0) for val, _, _ in GI_CONFIDENCE_STYLE]
@@ -322,7 +408,7 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             [
                 f"{isolated_count} feature(s) had zero valid neighbors" if isolated_count else "No isolated (zero-neighbor) features were found.",
                 "A significant class appearing as a single isolated cell rather than a coherent cluster.",
-                "Each feature tested independently at p < 0.05/0.10/0.01 with no multiple-testing correction.",
+                f"Multiplicity method: {correction}; gi_conf uses gi_padj while gi_pvalue preserves the raw p-value.",
             ],
             [
                 "Local Moran's I (LISA) for cluster AND outlier detection (HL/LH), not just hot/cold magnitude",
@@ -357,7 +443,7 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 <div class="container">
     <header>
         <h1>Hot Spot Analysis (Getis-Ord Gi*)</h1>
-        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong></p>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong></p>
     </header>
 
     {kpi_row_html}
@@ -396,12 +482,17 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             {
                 "gi_zscore": "Getis-Ord Gi* z-score",
                 "gi_pvalue": "Getis-Ord Gi* p-value",
+                "gi_padj": "Adjusted Gi* p-value used for confidence classification",
+                "gi_mt": "Multiple-testing correction method",
                 "gi_conf": "Hot/cold confidence class from -3 cold to +3 hot",
                 "gi_nbrs": "Valid neighbors used for the local statistic",
+                "gi_stab": "Signed stability score across neighborhood definitions (-1 cold to +1 hot)",
+                "gi_runs": "Number of neighborhood definitions in the stability analysis",
+                "gi_cons": "Consensus hot/cold class; nonzero requires stable direction and at least three significant runs",
             },
             self.displayName(),
         )
 
-        apply_renderer(layer, gi_confidence_renderer(layer.geometryType(), "gi_conf"))
+        apply_renderer(layer, gi_confidence_renderer(layer.geometryType(), self.renderer_field))
 
         return {}

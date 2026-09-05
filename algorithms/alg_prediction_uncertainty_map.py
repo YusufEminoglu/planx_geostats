@@ -24,6 +24,7 @@ from qgis.core import (
     QgsProcessingParameterField,
     QgsProcessingParameterFileDestination,
     QgsProcessingParameterNumber,
+    QgsProcessingParameterString,
 )
 from qgis.PyQt.QtCore import QVariant
 
@@ -31,6 +32,7 @@ from ..core.layer_metadata import apply_output_metadata
 from ..core.symbology import apply_renderer, sequential_quantile_renderer
 from ..core.ml_engines import UNCERTAINTY_MODEL_KEYS, extract_regression_matrix, prediction_uncertainty
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
+from ..core.model_registry import resolve_fitted_model
 from ..core.charts import chart_css, histogram_svg
 from ..dependencies import optional_dependency_error
 
@@ -45,6 +47,7 @@ class PredictionUncertaintyMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     FEATURES = "FEATURES"
     MODEL = "MODEL"
     N_ESTIMATORS = "N_ESTIMATORS"
+    SAVED_MODEL_ID = "SAVED_MODEL_ID"
     OUTPUT = "OUTPUT"
     HTML_REPORT = "HTML_REPORT"
 
@@ -115,6 +118,11 @@ class PredictionUncertaintyMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         )
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Ensemble", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
+            QgsProcessingParameterString(
+                self.SAVED_MODEL_ID, "Reusable model ID (optional; current QGIS session)", optional=True,
+            )
+        )
+        self.addParameter(
             QgsProcessingParameterNumber(
                 self.N_ESTIMATORS, "Number of trees", type=QgsProcessingParameterNumber.Integer,
                 defaultValue=200, minValue=10, maxValue=2000,
@@ -139,6 +147,7 @@ class PredictionUncertaintyMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             raise QgsProcessingException("At least one explanatory field must be selected.")
         model_key = UNCERTAINTY_MODEL_KEYS[self.parameterAsEnum(parameters, self.MODEL, context)]
         n_estimators = self.parameterAsInt(parameters, self.N_ESTIMATORS, context)
+        saved_model_id = self.parameterAsString(parameters, self.SAVED_MODEL_ID, context).strip()
 
         html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
         if not html_path:
@@ -158,9 +167,20 @@ class PredictionUncertaintyMapAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if skipped:
             feedback.pushInfo(f"Skipped {skipped} feature(s) with missing or non-numeric values.")
 
-        feedback.pushInfo(f"Fitting {self.MODEL_LABELS[UNCERTAINTY_MODEL_KEYS.index(model_key)]} with {n_estimators} trees...")
+        estimator = None
+        if saved_model_id:
+            try:
+                estimator, manifest = resolve_fitted_model(saved_model_id, "regression", feature_fields, x, y)
+            except ValueError as exc:
+                raise QgsProcessingException(str(exc))
+            model_key = manifest["model_key"]
+            if model_key not in UNCERTAINTY_MODEL_KEYS:
+                raise QgsProcessingException("Saved model is not a supported tree ensemble for uncertainty mapping.")
+            feedback.pushInfo(f"Reusing audited model {saved_model_id}; no refit performed.")
+        else:
+            feedback.pushInfo(f"Fitting {self.MODEL_LABELS[UNCERTAINTY_MODEL_KEYS.index(model_key)]} with {n_estimators} trees...")
         try:
-            results = prediction_uncertainty(x, y, model_key, n_estimators=n_estimators)
+            results = prediction_uncertainty(x, y, model_key, n_estimators=n_estimators, estimator=estimator)
         except ImportError as exc:
             raise QgsProcessingException(optional_dependency_error("Prediction Uncertainty Map", ["scikit-learn"], exc))
 

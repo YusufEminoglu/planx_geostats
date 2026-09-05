@@ -8,6 +8,8 @@ import tempfile
 
 from ._mixins import HelpUrlMixin
 from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
     QgsProcessingAlgorithm,
     QgsProcessingException,
     QgsProcessingOutputHtml,
@@ -33,6 +35,11 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     LOADED_LAYERS = "LOADED_LAYERS"
 
     LAYER_NAME = "izmir_fur_street_network"
+    IZMIR_FUR_CRS = "EPSG:5253"
+    IZMIR_FUR_DISTRICTS = (
+        "Balçova", "Bayraklı", "Bornova", "Buca", "Çiğli", "Gaziemir",
+        "Güzelbahçe", "Karabağlar", "Karşıyaka", "Konak", "Narlıdere",
+    )
     LOAD_OPTIONS = [
         "Izmir FUR street network sample",
         "Synthetic QA fixture (points/lines/polygons/model-output)",
@@ -75,7 +82,9 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "GeoStats Lab and can load any combination into the current QGIS "
             "project.\n\n"
             "The Izmir FUR sample (layer izmir_fur_street_network, 391 polygons, "
-            "EPSG:5253) covers the Izmir Functional Urban Region with street-network "
+            "EPSG:5253) covers Izmir's 11 central districts (Balçova, Bayraklı, "
+            "Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, "
+            "Konak, and Narlıdere) with street-network "
             "and space-syntax accessibility indicators - road density, intersection "
             "and dead-end structure, block and lane geometry, reach and transit "
             "accessibility, and network-topology/space-syntax measures (betweenness, "
@@ -203,12 +212,56 @@ class SampleDataGuideAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             uri = f"{gpkg_path}|layername={layer_name}"
             layer = QgsVectorLayer(uri, display_name, "ogr")
             if layer.isValid():
+                if layer_name == self.LAYER_NAME:
+                    self._prepare_izmir_fur_layer(layer, feedback)
                 QgsProject.instance().addMapLayer(layer)
                 loaded.append(layer_name)
                 feedback.pushInfo(f"Loaded sample layer: {layer_name}")
             else:
                 feedback.pushWarning(f"Could not load bundled sample layer through the OGR provider: {layer_name}")
         return loaded
+
+    def _prepare_izmir_fur_layer(self, layer: QgsVectorLayer, feedback) -> None:
+        """Pin and validate the bundled sample CRS before it enters the project.
+
+        The GeoPackage coordinates are TUREF / TM27 metres. If a host/profile
+        loses that layer CRS and treats the numbers as EPSG:3857, QGIS draws the
+        sample in North Africa. Explicitly assigning the authoritative bundled
+        CRS prevents that silent fallback, while a geographic extent check makes
+        a damaged or incorrectly replaced fixture fail visibly.
+        """
+        source_crs = QgsCoordinateReferenceSystem(self.IZMIR_FUR_CRS)
+        if not source_crs.isValid():
+            raise QgsProcessingException(
+                f"QGIS could not resolve the bundled sample CRS ({self.IZMIR_FUR_CRS})."
+            )
+
+        if layer.crs().authid() != self.IZMIR_FUR_CRS:
+            feedback.pushWarning(
+                f"Bundled Izmir sample reported {layer.crs().authid() or 'no CRS'}; "
+                f"assigning its authoritative CRS {self.IZMIR_FUR_CRS}."
+            )
+        layer.setCrs(source_crs)
+
+        wgs84 = QgsCoordinateReferenceSystem("EPSG:4326")
+        transform = QgsCoordinateTransform(
+            source_crs,
+            wgs84,
+            QgsProject.instance().transformContext(),
+        )
+        geographic_extent = transform.transformBoundingBox(layer.extent())
+        center = geographic_extent.center()
+        if not (26.7 <= center.x() <= 27.5 and 38.1 <= center.y() <= 38.8):
+            raise QgsProcessingException(
+                "The bundled Izmir FUR sample failed its location check after CRS "
+                f"assignment (center: {center.x():.5f}, {center.y():.5f}). "
+                "Reinstall the plugin to restore the sample GeoPackage."
+            )
+        layer.setCustomProperty("planx_geostats/sample_crs", self.IZMIR_FUR_CRS)
+        layer.setCustomProperty(
+            "planx_geostats/study_area",
+            "Izmir 11 central districts functional urban region",
+        )
 
     def _write_html(self, path: str, sample_path: str, synthetic_qa_path: str, classification_qa_path: str) -> None:
         recommended = [
@@ -267,7 +320,7 @@ code {{ background: #eef2f7; padding: 2px 5px; border-radius: 4px; }}
 <div class="container">
 <h1>PlanX GeoStats Lab Sample Dataset</h1>
 <p class="subtitle">Layer: <strong>{self.LAYER_NAME}</strong> | Geometry: <strong>Polygon</strong> | CRS: <strong>EPSG:5253</strong> | Features: <strong>391</strong></p>
-<section class="summary">This curated sample dataset covers the Izmir Functional Urban Region (FUR) with street-network and space-syntax accessibility indicators: road density, intersection and dead-end structure, block and lane geometry, reach and transit accessibility, and network-topology and space-syntax measures (betweenness, eigenvector centrality, NACH/NAIN, choice/integration). Use it as the default development and QA dataset for PlanX GeoStats workflows.</section>
+<section class="summary">This curated sample dataset covers the Izmir Functional Urban Region (FUR) across the 11 central districts: {html.escape(", ".join(self.IZMIR_FUR_DISTRICTS))}. It contains street-network and space-syntax accessibility indicators: road density, intersection and dead-end structure, block and lane geometry, reach and transit accessibility, and network-topology and space-syntax measures (betweenness, eigenvector centrality, NACH/NAIN, choice/integration). Use it as the default development and QA dataset for PlanX GeoStats workflows.</section>
 <h2>Sample Path</h2>
 <div class="path">{html.escape(sample_path)}</div>
 <h2>Loading Modes</h2>

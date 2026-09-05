@@ -16,11 +16,13 @@ bug that hid all of 06 | Machine Learning and Explainable AI until fixed).
 from __future__ import annotations
 
 import os
+import json
 
-from qgis.PyQt.QtCore import Qt, QUrl
+from qgis.PyQt.QtCore import Qt, QUrl, QSettings
 from qgis.PyQt.QtGui import QBrush, QColor, QDesktopServices, QIcon, QPixmap
 from qgis.PyQt.QtWidgets import (
     QDockWidget,
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -50,6 +52,40 @@ GEOSTATS_GROUPS = (
     ("06 | Machine Learning and Explainable AI", "planx_ml_xai", "#4F46E5"),
 )
 
+TOOL_PRESETS = {
+    "planx_geostats:getis_ord_gi": {"MULTIPLE_TESTING": 1, "STABILITY_ANALYSIS": True},
+    "planx_geostats:local_moran_lisa": {"MULTIPLE_TESTING": 1},
+    "planx_geostats:local_geary_c": {"MULTIPLE_TESTING": 1},
+    "planx_geostats:gwr_regression": {"BANDWIDTH_SELECTION": 1},
+    "planx_geostats:calculate_distance_band": {"WEIGHT_TYPE": 2, "REPAIR_ISLANDS": True},
+}
+
+GUIDED_WORKFLOWS = {
+    "Pattern → hot spots → outliers": (
+        "planx_geostats:data_readiness_audit",
+        "planx_geostats:global_moran_autocorrelation",
+        "planx_geostats:getis_ord_gi",
+        "planx_geostats:local_moran_lisa",
+    ),
+    "OLS → specification → spatial models": (
+        "planx_geostats:ols_regression",
+        "planx_geostats:lm_diagnostics",
+        "planx_geostats:spatial_autoregression",
+        "planx_geostats:spatial_error_regression",
+    ),
+    "Global → GWR → MGWR": (
+        "planx_geostats:ols_regression",
+        "planx_geostats:gwr_regression",
+        "planx_geostats:multiscale_geographically_weighted_regression",
+    ),
+    "ML → spatial validation → explanation": (
+        "planx_geostats:random_forest_regression",
+        "planx_geostats:spatial_kfold_cv_evaluator",
+        "planx_geostats:permutation_feature_importance",
+        "planx_geostats:shap_global_importance",
+    ),
+}
+
 # Every colour used below is pinned explicitly (never inherited from the
 # host QPalette) - QGIS4/Qt6 hosts a dark palette by default and unpinned
 # widgets render white-on-white, a bug the sibling urban_resilience dock
@@ -76,6 +112,15 @@ QTreeWidget {
 }
 QTreeWidget::item { padding: 3px 2px; }
 QTreeWidget::item:selected { background: #e6f4f2; color: #0f766e; }
+QComboBox {
+    background: #ffffff; color: #111827; border: 1px solid #cbd5e1;
+    border-radius: 4px; padding: 5px 8px;
+}
+QPushButton {
+    background: #e2e8f0; color: #111827; border: 1px solid #94a3b8;
+    border-radius: 4px; padding: 5px 9px;
+}
+QPushButton:hover { background: #cbd5e1; }
 QPushButton#geostatsDocBtn {
     background: #0f766e; color: white; font-weight: bold;
     border: none; border-radius: 4px; padding: 6px 12px;
@@ -132,6 +177,16 @@ class GeoStatsDock(QDockWidget):
         self.search.textChanged.connect(self._filter)
         layout.addWidget(self.search)
 
+        workflow_row = QHBoxLayout()
+        self.workflow_combo = QComboBox()
+        self.workflow_combo.addItems(GUIDED_WORKFLOWS)
+        self.workflow_combo.setToolTip("Open each Processing step in a guided sequence")
+        workflow_row.addWidget(self.workflow_combo, 1)
+        workflow_button = QPushButton("Run workflow")
+        workflow_button.clicked.connect(self._launch_workflow)
+        workflow_row.addWidget(workflow_button)
+        layout.addLayout(workflow_row)
+
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -153,6 +208,8 @@ class GeoStatsDock(QDockWidget):
                 QTreeWidgetItem(["PlanX GeoStats Lab provider not loaded"]))
             return
         fallback = QIcon(os.path.join(PLUGIN_DIR, "icons", "icon.png"))
+        self._add_shortcut_group(provider, "★ Favorites", self._stored_ids("favorites"), fallback)
+        self._add_shortcut_group(provider, "↻ Recent", self._stored_ids("recent"), fallback)
         by_group_id = {}
         for alg in provider.algorithms():
             by_group_id.setdefault(alg.groupId(), []).append(alg)
@@ -179,6 +236,37 @@ class GeoStatsDock(QDockWidget):
                 parent.addChild(item)
             parent.setExpanded(True)
 
+    def _settings(self):
+        return QSettings()
+
+    def _stored_ids(self, key):
+        raw = self._settings().value(f"planx_geostats/{key}", "[]")
+        try:
+            return list(json.loads(str(raw)))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return []
+
+    def _save_ids(self, key, values):
+        self._settings().setValue(f"planx_geostats/{key}", json.dumps(values[:20]))
+
+    def _add_shortcut_group(self, provider, title, algorithm_ids, fallback):
+        algorithms = {algorithm.id(): algorithm for algorithm in provider.algorithms()}
+        available = [algorithms[algorithm_id] for algorithm_id in algorithm_ids if algorithm_id in algorithms]
+        if not available:
+            return
+        parent = QTreeWidgetItem([title])
+        font = parent.font(0)
+        font.setBold(True)
+        parent.setFont(0, font)
+        self.tree.addTopLevelItem(parent)
+        for algorithm in available:
+            item = QTreeWidgetItem([algorithm.displayName()])
+            icon = algorithm.icon()
+            item.setIcon(0, icon if not icon.isNull() else fallback)
+            item.setData(0, Qt.ItemDataRole.UserRole, algorithm.id())
+            parent.addChild(item)
+        parent.setExpanded(True)
+
     # ------------------------------------------------------------------ #
     def _launch(self, item, _column):
         alg_id = item.data(0, Qt.ItemDataRole.UserRole)
@@ -186,7 +274,10 @@ class GeoStatsDock(QDockWidget):
             return
         try:
             import processing
-            processing.execAlgorithmDialog(alg_id, {})
+            recent = [value for value in self._stored_ids("recent") if value != alg_id]
+            self._save_ids("recent", [alg_id] + recent)
+            processing.execAlgorithmDialog(alg_id, dict(TOOL_PRESETS.get(alg_id, {})))
+            self._populate()
         except Exception as exc:
             self.iface.messageBar().pushWarning(
                 "PlanX GeoStats Lab", f"Could not open tool: {exc}")
@@ -202,10 +293,45 @@ class GeoStatsDock(QDockWidget):
         if alg is None:
             return
         menu = QMenu(self)
+        favorites = self._stored_ids("favorites")
+        favorite_action = menu.addAction("Remove from Favorites" if alg_id in favorites else "Add to Favorites")
+        favorite_action.triggered.connect(lambda: self._toggle_favorite(alg_id))
+        if alg_id in TOOL_PRESETS:
+            preset_action = menu.addAction("Launch with Recommended Preset")
+            preset_action.triggered.connect(lambda: self._launch_with_preset(alg_id))
         help_action = menu.addAction("View Documentation")
         help_action.triggered.connect(
             lambda: QDesktopServices.openUrl(QUrl(alg.helpUrl())))
         menu.exec_(self.tree.viewport().mapToGlobal(pos))
+
+    def _toggle_favorite(self, algorithm_id):
+        favorites = self._stored_ids("favorites")
+        if algorithm_id in favorites:
+            favorites.remove(algorithm_id)
+        else:
+            favorites.insert(0, algorithm_id)
+        self._save_ids("favorites", favorites)
+        self._populate()
+
+    def _launch_with_preset(self, algorithm_id):
+        import processing
+        processing.execAlgorithmDialog(algorithm_id, dict(TOOL_PRESETS.get(algorithm_id, {})))
+
+    def _launch_workflow(self):
+        import processing
+        workflow = self.workflow_combo.currentText()
+        active_layer = self.iface.activeLayer()
+        for index, algorithm_id in enumerate(GUIDED_WORKFLOWS.get(workflow, ())):
+            parameters = dict(TOOL_PRESETS.get(algorithm_id, {}))
+            if active_layer is not None:
+                parameters["INPUT"] = active_layer
+            self.iface.messageBar().pushInfo(
+                "PlanX GeoStats Lab",
+                f"Workflow step {index + 1}/{len(GUIDED_WORKFLOWS[workflow])}: {algorithm_id.split(':')[-1]}",
+            )
+            result = processing.execAlgorithmDialog(algorithm_id, parameters)
+            if result is None:
+                break
 
     # ------------------------------------------------------------------ #
     def _filter(self, text: str):

@@ -210,9 +210,16 @@ def _all_cases() -> list[RuntimeCase]:
             lambda env: {
                 "INPUT": env["qa_points"],
                 "NEIGHBOR_COUNT": 5,
+                "WEIGHT_TYPE": 2,
+                "NEIGHBOR_ORDER": 2,
+                "REPAIR_ISLANDS": True,
+                "DISTANCE_DECAY": 1.0,
+                "OUTPUT_NODES": "memory:",
+                "OUTPUT_EDGES": "memory:",
                 "HTML_REPORT": _path(env["out"], "01_distance_band.html"),
             },
             html_outputs=("HTML_REPORT",),
+            layer_outputs={"OUTPUT_NODES": 1, "OUTPUT_EDGES": 1},
         ),
         RuntimeCase(
             "export_attributes_to_ascii",
@@ -374,6 +381,8 @@ def _all_cases() -> list[RuntimeCase]:
                 "WEIGHT_TYPE": 2,
                 "KNN": 8,
                 "DISTANCE_BAND": 1000.0,
+                "MULTIPLE_TESTING": 1,
+                "STABILITY_ANALYSIS": True,
                 "OUTPUT": "memory:",
                 "HTML_REPORT": _path(env["out"], "03_getis_ord.html"),
             },
@@ -390,6 +399,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "WEIGHT_TYPE": 2,
                 "KNN": 8,
                 "DISTANCE_BAND": 1000.0,
+                "MULTIPLE_TESTING": 1,
                 "OUTPUT": "memory:",
                 "HTML_REPORT": _path(env["out"], "03_local_moran.html"),
             },
@@ -465,6 +475,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "KNN": 8,
                 "DISTANCE_BAND": 1000.0,
                 "PERMUTATIONS": 99,
+                "MULTIPLE_TESTING": 1,
                 "RANDOM_SEED": 42,
                 "OUTPUT": "memory:",
                 "HTML_REPORT": _path(env["out"], "03_local_geary_c.html"),
@@ -692,6 +703,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "DEP_VAR": "target_value",
                 "INDEPENDENTS": ["explanatory_a", "explanatory_b"],
                 "KERNEL_TYPE": 2,
+                "BANDWIDTH_SELECTION": 1,
                 "BANDWIDTH": 8.0,
                 "OUTPUT": "memory:",
                 "HTML_REPORT": _path(env["out"], "05_gwr_regression.html"),
@@ -1395,6 +1407,46 @@ def _verify_file(path_text: str, label: str) -> None:
 
 
 def _verify_outputs(case: RuntimeCase, result: dict, context) -> None:
+    if case.algorithm == "sample_dataset_guide":
+        from qgis.core import (
+            QgsCoordinateReferenceSystem,
+            QgsCoordinateTransform,
+            QgsProject,
+        )
+
+        matches = QgsProject.instance().mapLayersByName(
+            "PlanX GeoStats Classification QA - qa_zone_classification"
+        )
+        if not matches:
+            raise AssertionError("Sample Dataset Guide did not load its requested fixture")
+
+        # The matrix loads classification data by default, so directly exercise
+        # the Izmir loader's CRS guard as a focused runtime assertion too.
+        from planx_geostats.algorithms.alg_sample_data_guide import SampleDataGuideAlgorithm
+
+        izmir_path = Path(result["SAMPLE_PATH"])
+        izmir_layer = _load_layer(
+            izmir_path,
+            SampleDataGuideAlgorithm.LAYER_NAME,
+            "PlanX QA Izmir CRS guard",
+        )
+        SampleDataGuideAlgorithm()._prepare_izmir_fur_layer(
+            izmir_layer,
+            CaptureFeedback().feedback,
+        )
+        if izmir_layer.crs().authid() != SampleDataGuideAlgorithm.IZMIR_FUR_CRS:
+            raise AssertionError("Izmir sample loader did not pin EPSG:5253")
+        transform = QgsCoordinateTransform(
+            izmir_layer.crs(),
+            QgsCoordinateReferenceSystem("EPSG:4326"),
+            QgsProject.instance().transformContext(),
+        )
+        center = transform.transformBoundingBox(izmir_layer.extent()).center()
+        if not (26.7 <= center.x() <= 27.5 and 38.1 <= center.y() <= 38.8):
+            raise AssertionError(
+                f"Izmir sample transformed outside Izmir: {center.x()}, {center.y()}"
+            )
+
     for key in case.html_outputs:
         path_text = result.get(key) or result.get(f"{key}_OUT")
         if not path_text:

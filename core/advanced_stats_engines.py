@@ -994,6 +994,21 @@ def calculate_spatial_durbin(
             p_vals[j] = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(t_stats[j]) / math.sqrt(2.0))))
 
     variable_names = ["Intercept"] + x_names + [f"W_{name}" for name in x_names] + ["rho (W_y)"]
+    rho = float(delta[-1])
+    spatial_multiplier = np.linalg.pinv(np.eye(n) - rho * W)
+    impacts = []
+    for index, name in enumerate(x_names):
+        beta = float(delta[1 + index])
+        theta = float(delta[1 + p + index])
+        marginal = spatial_multiplier @ (beta * np.eye(n) + theta * W)
+        direct = float(np.trace(marginal) / n)
+        total = float(np.sum(marginal) / n)
+        impacts.append({
+            "variable": name,
+            "direct": direct,
+            "indirect": total - direct,
+            "total": total,
+        })
 
     return {
         "coefficients": delta,
@@ -1007,8 +1022,9 @@ def calculate_spatial_durbin(
         "df_err": df_err,
         "fitted": y_pred,
         "residuals": residuals,
-        "rho": float(delta[-1]),
+        "rho": rho,
         "rho_p": float(p_vals[-1]),
+        "impacts": impacts,
     }
 
 

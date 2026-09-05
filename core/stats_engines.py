@@ -834,7 +834,8 @@ def calculate_gwr(
     X_data: np.ndarray,
     coords: np.ndarray,
     bandwidth: float,
-    kernel_type: str = "adaptive_bisquare"
+    kernel_type: str = "adaptive_bisquare",
+    leave_one_out: bool = False,
 ) -> dict:
     """Performs Geographically Weighted Regression (GWR) analysis.
 
@@ -887,6 +888,9 @@ def calculate_gwr(
                 w[dists == 0] = 1.0
         else:
             w = np.ones(n)
+
+        if leave_one_out:
+            w[i] = 0.0
 
         sum_w = np.sum(w)
         if sum_w == 0:
@@ -976,7 +980,54 @@ def calculate_gwr(
         "tss": tss,
         "r2": global_r2,
         "aicc": aicc,
-        "effective_df": tr_S
+        "effective_df": tr_S,
+        "cv_rmse": float(np.sqrt(np.mean(residuals ** 2))),
+    }
+
+
+def select_gwr_bandwidth(
+    y: np.ndarray,
+    X_data: np.ndarray,
+    coords: np.ndarray,
+    kernel_type: str,
+    criterion: str = "aicc",
+    candidate_count: int = 8,
+) -> dict:
+    """Select a defensible GWR bandwidth by AICc or leave-one-out CV."""
+    n = len(y)
+    minimum_support = min(n - 1, max(8, X_data.shape[1] + 3))
+    if kernel_type == "adaptive_bisquare":
+        candidates = np.unique(
+            np.linspace(minimum_support, max(minimum_support, n - 1), candidate_count).astype(int)
+        ).astype(float)
+    else:
+        distances = np.sqrt(((coords[:, None, :] - coords[None, :, :]) ** 2).sum(-1))
+        nonzero = distances[distances > 0]
+        if nonzero.size == 0:
+            raise ValueError("Automatic GWR bandwidth selection needs distinct coordinates.")
+        candidates = np.unique(np.quantile(nonzero, np.linspace(0.10, 0.90, candidate_count)))
+
+    trials = []
+    for bandwidth in candidates:
+        result = calculate_gwr(
+            y,
+            X_data,
+            coords,
+            float(bandwidth),
+            kernel_type,
+            leave_one_out=(criterion == "cv"),
+        )
+        score = float(result["cv_rmse"] if criterion == "cv" else result["aicc"])
+        trials.append({"bandwidth": float(bandwidth), "score": score})
+    finite = [trial for trial in trials if np.isfinite(trial["score"])]
+    if not finite:
+        raise ValueError("No finite score was produced during GWR bandwidth selection.")
+    best = min(finite, key=lambda trial: trial["score"])
+    return {
+        "bandwidth": best["bandwidth"],
+        "criterion": criterion,
+        "score": best["score"],
+        "trials": trials,
     }
 
 
@@ -1993,4 +2044,3 @@ def calculate_bivariate_local_moran(
                 quadrants[idx] = "LH"
 
     return I_values, z_scores, p_values, quadrants
-

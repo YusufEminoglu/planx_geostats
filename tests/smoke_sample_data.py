@@ -49,20 +49,40 @@ def test_izmir_fur_sample_data() -> None:
     con.row_factory = sqlite3.Row
     try:
         content = con.execute(
-            "select table_name, data_type, srs_id from gpkg_contents where table_name = ?",
+            "select table_name, data_type, srs_id, min_x, min_y, max_x, max_y "
+            "from gpkg_contents where table_name = ?",
             (LAYER,),
         ).fetchone()
         assert content is not None
         assert content["data_type"] == "features"
         assert int(content["srs_id"]) == 5253
+        # These TUREF / TM27 bounds transform to the Izmir metropolitan core.
+        # Interpreting the same raw metres as EPSG:3857 places the layer near
+        # North Africa, which is the user-visible regression guarded here.
+        assert 450_000.0 <= float(content["min_x"]) <= 550_000.0
+        assert 450_000.0 <= float(content["max_x"]) <= 550_000.0
+        assert 4_200_000.0 <= float(content["min_y"]) <= 4_300_000.0
+        assert 4_200_000.0 <= float(content["max_y"]) <= 4_300_000.0
+
+        srs = con.execute(
+            "select organization, organization_coordsys_id, definition "
+            "from gpkg_spatial_ref_sys where srs_id = ?",
+            (5253,),
+        ).fetchone()
+        assert srs is not None
+        assert srs["organization"] == "EPSG"
+        assert int(srs["organization_coordsys_id"]) == 5253
+        assert "TUREF" in srs["definition"] and "27" in srs["definition"]
 
         geometry = con.execute(
-            "select column_name, geometry_type_name from gpkg_geometry_columns where table_name = ?",
+            "select column_name, geometry_type_name, srs_id "
+            "from gpkg_geometry_columns where table_name = ?",
             (LAYER,),
         ).fetchone()
         assert geometry is not None
         assert geometry["column_name"] == "geom"
         assert geometry["geometry_type_name"].upper() == "MULTIPOLYGON"
+        assert int(geometry["srs_id"]) == 5253
 
         allowed_layers = {LAYER}
         layer_sql = quote_identifier(LAYER, allowed_layers)
@@ -317,6 +337,9 @@ def test_sample_guide_html_mentions_all_loadable_layers() -> None:
         "Izmir FUR street network sample",
         "Synthetic QA fixture",
         "Classification QA fixture",
+        "Izmir's 11 central districts",
+        "Konak",
+        "Karşıyaka",
         LAYER,
     ]
     required_phrases.extend(constants["SYNTHETIC_QA_LAYERS"])
