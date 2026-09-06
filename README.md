@@ -11,14 +11,14 @@
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
 [![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
 [![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://gitlab.com/geospacephilo/EasyFillet)
-[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-81_algorithms-2c6e6a)](https://geophilo.pages.dev/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
+[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-81_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
 **81 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://geophilo.pages.dev/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 81 algorithms, 7 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 81 algorithms, 7 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
