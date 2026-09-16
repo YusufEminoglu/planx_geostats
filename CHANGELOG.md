@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.8.1] - 2026-09-16
+
+- Redesign plugin icon to high-end 3D tactile brand design with circular teal pedestal, zero margin, and refreshed documentation links.
+
 ## [3.8.0] - 2026-09-05
 
 - Fix the bundled Izmir FUR sample appearing near North Africa in affected QGIS profiles by explicitly assigning EPSG:5253 before project insertion and validating the transformed center against Izmir. Document the intended 11-central-district study area and add GeoPackage CRS/extent regression checks.
