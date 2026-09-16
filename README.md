@@ -6,11 +6,11 @@
 
 **Spatial statistics for planners — inside the QGIS Processing Toolbox.**
 
-[![Release](https://img.shields.io/github/v/release/YusufEminoglu/planx_geostats?color=2c6e6a&label=release)](https://gitlab.com/geospacephilo/planx_geostats/releases)
+[![Release](https://img.shields.io/github/v/release/YusufEminoglu/planx_geostats?color=2c6e6a&label=release)](https://gitlab.com/geophilo1/planx_geostats/releases)
 [![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
 [![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
-[![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://gitlab.com/geospacephilo/planx_geostats)
+[![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://gitlab.com/geophilo1/planx_geostats)
 [![Documentation](https://img.shields.io/badge/📖_Reference_Manual-81_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
@@ -157,7 +157,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 > `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 81 tools by category with search and one-click launch.
 
 **From ZIP**
-> Download the latest zip from [Releases](https://gitlab.com/geospacephilo/planx_geostats/releases) → `Plugins → Install from ZIP`.
+> Download the latest zip from [Releases](https://gitlab.com/geophilo1/planx_geostats/releases) → `Plugins → Install from ZIP`.
 
 | Requirement | Value |
 |---|---|
@@ -212,17 +212,17 @@ This plugin is one of 15 open-source QGIS plugins for urban planning by the same
 
 | Planning & analysis | CAD & production | 3D & visualization |
 |---|---|---|
-| [PlanX](https://gitlab.com/geospacephilo/planx_geostats) — spatial-planning suite | [PlanX CAD Toolset](https://gitlab.com/geospacephilo/planx_geostats) — drafting-grade CAD | [PlanX 3D City](https://gitlab.com/geospacephilo/planx_geostats) — Three.js city viewer |
-| [GeoStats Lab](https://gitlab.com/geospacephilo/planx_geostats) — spatial statistics | [EasyFillet](https://gitlab.com/geospacephilo/planx_geostats) — tangent-arc fillet | [3D OSM Model](https://gitlab.com/geospacephilo/planx_geostats) — OSM → 3D city in browser |
-| [Suitability Lab](https://gitlab.com/geospacephilo/planx_geostats) — raster MCDA | [Settlement Toolset](https://gitlab.com/geospacephilo/planx_geostats) — 9-stage settlement plans | [OSM Quick 3D](https://gitlab.com/geospacephilo/planx_geostats) — OSM → native QGIS 3D |
-| [DataCube Lab](https://gitlab.com/geospacephilo/planx_geostats) — spatiotemporal cubes | [UIP Toolset](https://gitlab.com/geospacephilo/planx_geostats) — Turkish master-plan automation | [Urban Procedural 3D](https://gitlab.com/geospacephilo/planx_geostats) — parametric zoning lab |
-| [Urban Resilience](https://gitlab.com/geospacephilo/planx_geostats) — 28 resilience tools | [ParcelFlux](https://gitlab.com/geospacephilo/planx_geostats) — parcel subdivision | [CartoLab](https://gitlab.com/geospacephilo/planx_geostats) — publication cartography |
+| [PlanX](https://gitlab.com/geophilo1/planx_geostats) — spatial-planning suite | [PlanX CAD Toolset](https://gitlab.com/geophilo1/planx_geostats) — drafting-grade CAD | [PlanX 3D City](https://gitlab.com/geophilo1/planx_geostats) — Three.js city viewer |
+| [GeoStats Lab](https://gitlab.com/geophilo1/planx_geostats) — spatial statistics | [EasyFillet](https://gitlab.com/geophilo1/planx_geostats) — tangent-arc fillet | [3D OSM Model](https://gitlab.com/geophilo1/planx_geostats) — OSM → 3D city in browser |
+| [Suitability Lab](https://gitlab.com/geophilo1/planx_geostats) — raster MCDA | [Settlement Toolset](https://gitlab.com/geophilo1/planx_geostats) — 9-stage settlement plans | [OSM Quick 3D](https://gitlab.com/geophilo1/planx_geostats) — OSM → native QGIS 3D |
+| [DataCube Lab](https://gitlab.com/geophilo1/planx_geostats) — spatiotemporal cubes | [UIP Toolset](https://gitlab.com/geophilo1/planx_geostats) — Turkish master-plan automation | [Urban Procedural 3D](https://gitlab.com/geophilo1/planx_geostats) — parametric zoning lab |
+| [Urban Resilience](https://gitlab.com/geophilo1/planx_geostats) — 28 resilience tools | [ParcelFlux](https://gitlab.com/geophilo1/planx_geostats) — parcel subdivision | [CartoLab](https://gitlab.com/geophilo1/planx_geostats) — publication cartography |
 
 ---
 
 ## 🤝 Contributing & Support
 
-- 🐛 **Bugs / requests** → [Issues](https://gitlab.com/geospacephilo/planx_geostats/-/issues)
+- 🐛 **Bugs / requests** → [Issues](https://gitlab.com/geophilo1/planx_geostats/-/issues)
 - 📜 **Changelog** → [CHANGELOG.md](CHANGELOG.md) follows *Keep a Changelog*
 - ✅ Before a PR: `py -3 tests/smoke_core.py && py -3 tests/smoke_sample_data.py && py -3 tests/smoke_provider_catalog.py` (headless, no QGIS required)
 
