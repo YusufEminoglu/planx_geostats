@@ -24,6 +24,9 @@ ALGORITHM_ICONS = ROOT / "icons" / "algorithms"
 GEOSTATS_DOCK = ROOT / "geostats_dock.py"
 CHARTS_MODULE = ROOT / "core" / "charts.py"
 CHARTS_ALLOWED_IMPORTS = {"html", "math", "typing", "__future__"}
+DOC_MIXINS = ROOT / "algorithms" / "_mixins.py"
+MANUAL = ROOT / "docs" / "GEOSTATS_REFERENCE_MANUAL.html"
+ROOT_MANUAL = ROOT / "GEOSTATS_REFERENCE_MANUAL.html"
 
 EXPECTED_GROUPS = {
     "00 | Setup and Diagnostics",
@@ -760,6 +763,183 @@ def test_charts_module_has_no_new_hard_dependencies() -> None:
     assert not offenders, f"core/charts.py must stay stdlib-only, found: {offenders}"
 
 
+def _doc_base_url() -> str:
+    tree = _module_tree(DOC_MIXINS)
+    for node in tree.body:
+        if not (isinstance(node, ast.Assign) and len(node.targets) == 1):
+            continue
+        target = node.targets[0]
+        if isinstance(target, ast.Name) and target.id == "DOC_BASE_URL":
+            assert isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
+            return node.value.value
+    raise AssertionError("DOC_BASE_URL not found in algorithms/_mixins.py")
+
+
+def _help_slugs() -> dict[str, str]:
+    tree = _module_tree(DOC_MIXINS)
+    for node in tree.body:
+        if not (isinstance(node, ast.Assign) and len(node.targets) == 1):
+            continue
+        target = node.targets[0]
+        if isinstance(target, ast.Name) and target.id == "HELP_SLUGS":
+            return ast.literal_eval(node.value)
+    raise AssertionError("HELP_SLUGS not found in algorithms/_mixins.py")
+
+
+def _manual_cards() -> list[tuple[str, str]]:
+    """(anchor id, full card markup) for every <article class="alg-card">."""
+    text = MANUAL.read_text(encoding="utf-8")
+    cards = []
+    position = 0
+    while True:
+        start = text.find('<article class="alg-card"', position)
+        if start < 0:
+            break
+        end = text.find("</article>", start)
+        assert end >= 0, "Manual has an algorithm card with no closing </article>"
+        end += len("</article>")
+        body = text[start:end]
+        match = re.search(r'id="(alg-[^"]+)"', body)
+        assert match, "Manual algorithm card is missing its id attribute"
+        cards.append((match.group(1), body))
+        position = end
+    return cards
+
+
+def _metadata_version() -> str:
+    for line in METADATA.read_text(encoding="utf-8").splitlines():
+        if line.startswith("version="):
+            return line.split("=", 1)[1].strip()
+    raise AssertionError("metadata.txt must define a plugin version")
+
+
+def test_help_url_and_metadata_agree_on_documentation_host() -> None:
+    """Every algorithm's Help button resolves through DOC_BASE_URL, so if that
+    constant names a host other than the one metadata.txt advertises to the
+    QGIS Hub, all 81 deep links are dead while the plugin still looks properly
+    documented. That is exactly what happened when the public manual moved off
+    yusufeminoglu.github.io and only metadata.txt was updated: metadata.txt
+    resolved, every Help button returned a 404."""
+    documented_url = _doc_base_url()
+    metadata_url = re.search(r"https?://\S*GEOSTATS_REFERENCE_MANUAL\.html", METADATA.read_text(encoding="utf-8"))
+    assert metadata_url, "metadata.txt should link to the reference manual"
+    assert documented_url == metadata_url.group(0), (
+        "algorithms/_mixins.py DOC_BASE_URL "
+        f"({documented_url}) and metadata.txt's manual link ({metadata_url.group(0)}) "
+        "must be the same URL - every algorithm's Help button resolves through DOC_BASE_URL."
+    )
+    assert documented_url.startswith("https://"), "Documentation URL must use https"
+
+
+def test_help_slugs_match_manual_anchors_one_to_one() -> None:
+    """The comment on algorithms/_mixins.py has always claimed "anchor-id
+    cross-check verifies 1:1 coverage" - this test is that cross-check. It
+    matters twice over: HelpUrlMixin.helpUrl() indexes HELP_SLUGS by name(), so
+    a missing key raises KeyError at runtime, and a slug with no matching
+    manual id sends the user to a dead fragment with no error at all."""
+    algorithm_ids = {meta["name"] for meta in _algorithm_class_catalog().values()}
+    slugs = _help_slugs()
+
+    missing = sorted(algorithm_ids - set(slugs))
+    assert not missing, f"Algorithms with no HELP_SLUGS entry (helpUrl() would raise KeyError): {missing}"
+
+    stale = sorted(set(slugs) - algorithm_ids)
+    assert not stale, f"HELP_SLUGS entries for algorithms that no longer exist: {stale}"
+
+    manual_ids = {anchor for anchor, _ in _manual_cards()}
+    assert manual_ids == set(slugs.values()), (
+        "Every HELP_SLUGS entry should map to exactly one manual card and vice versa - "
+        f"dangling slugs (no such card): {sorted(set(slugs.values()) - manual_ids)}; "
+        f"orphan cards (no algorithm links to them): {sorted(manual_ids - set(slugs.values()))}"
+    )
+
+
+def test_manual_cards_have_balanced_div_tags() -> None:
+    """A browser silently repairs unbalanced nesting, so a broken card renders
+    "almost right" and hides indefinitely. The Spatial Durbin card shipped with
+    its body never closed, which pulled the blocks after it inside the
+    Interpretation Guide box and let the unclosed element swallow the opening
+    layout of the Methodological Notes that follow."""
+    unbalanced = []
+    for anchor, body in _manual_cards():
+        opened = len(re.findall(r"<div\b", body))
+        closed = body.count("</div>")
+        if opened != closed:
+            unbalanced.append(f"{anchor} ({opened} <div> vs {closed} </div>)")
+    assert not unbalanced, f"Manual cards with unbalanced <div> nesting: {unbalanced}"
+
+
+_MANUAL_VOID_TAGS = {"meta", "input", "br", "img", "link", "hr", "source", "area", "col", "embed", "track", "wbr"}
+
+
+def test_manual_has_no_angle_brackets_the_parser_would_read_as_tags() -> None:
+    """A bare '<' followed by a letter is read by the HTML parser as the start
+    of a tag. Inside LaTeX that silently destroys the formula, because MathJax
+    never receives the source: '\\sigma_{<i}' becomes '\\sigma_{' plus an <i>
+    element. Two CatBoost formulas shipped that way and rendered wrong.
+
+    The predicate is data-driven rather than a fixed list of tag names: a '<'
+    is flagged only when the name after it is not a tag this document actually
+    uses (plus HTML void elements, which are never closed and therefore have no
+    </...> to discover them by). A '<' followed by anything else - a space, a
+    digit, punctuation, as in \\(p < 0.05\\) - is literal text to the parser and
+    is correctly left alone."""
+    text = MANUAL.read_text(encoding="utf-8")
+    vocabulary = {match.group(1).lower() for match in re.finditer(r"</([A-Za-z][A-Za-z0-9]*)>", text)}
+    vocabulary |= _MANUAL_VOID_TAGS
+
+    offenders = []
+    for match in re.finditer(r"<([A-Za-z][A-Za-z0-9]*)", text):
+        if match.group(1).lower() in vocabulary:
+            continue
+        line = text.count("\n", 0, match.start()) + 1
+        context = text[max(0, match.start() - 45):match.start() + 25].replace("\n", " ")
+        offenders.append(f"line {line}: {match.group(0)!r} in ...{context}...")
+    assert not offenders, (
+        "Bare '<' that the HTML parser reads as a tag - write &lt; instead, which decodes "
+        f"back to '<' before MathJax reads the text: {offenders}"
+    )
+
+
+def test_manual_version_matches_plugin_version() -> None:
+    """The manual advertised the previous release in four separate places
+    (title, sidebar, hero chip, footer), so it read as one version behind for
+    the whole life of that release."""
+    version = _metadata_version()
+    found = set(re.findall(r"v\d+\.\d+\.\d+", MANUAL.read_text(encoding="utf-8")))
+    assert found == {f"v{version}"}, (
+        f"Manual should advertise exactly v{version} (from metadata.txt), found: {sorted(found)}"
+    )
+
+
+def test_root_and_docs_manual_copies_are_identical() -> None:
+    """packaging/build_web_portal.py publishes both docs/ and a root-level copy
+    whose name contains "manual", so the same file ships from two paths. They
+    have already drifted once (commit 3b04407). docs/ is the source of truth."""
+    assert ROOT_MANUAL.exists(), "Root-level manual copy should exist for the web portal packaging step"
+    assert ROOT_MANUAL.read_bytes() == MANUAL.read_bytes(), (
+        "The root-level manual copy has drifted from docs/GEOSTATS_REFERENCE_MANUAL.html. "
+        "docs/ is the source of truth - re-copy it after editing."
+    )
+
+
+def test_manual_source_link_matches_metadata_repository() -> None:
+    """The manual's footer tells the reader where the source lives, and it had
+    drifted to a GitHub URL that returns 404 alongside a non-canonical GitLab
+    one, while metadata.txt correctly named the live repository. Same failure
+    shape as DOC_BASE_URL: the link the user is told to visit is not the one
+    that works, and nothing notices until someone clicks it."""
+    repository = ""
+    for line in METADATA.read_text(encoding="utf-8").splitlines():
+        if line.startswith("repository="):
+            repository = line.split("=", 1)[1].strip()
+    assert repository, "metadata.txt must declare a repository URL"
+    assert repository in MANUAL.read_text(encoding="utf-8"), (
+        f"The manual should link to the repository that metadata.txt declares ({repository}); "
+        "a link to any other host may be dead."
+    )
+
+
 def run_all() -> None:
     test_provider_imports_every_registered_algorithm()
     test_every_algorithm_file_is_registered_once()
@@ -790,6 +970,13 @@ def run_all() -> None:
     test_chart_svg_handles_edge_cases_without_raising()
     test_kpi_card_row_html_escapes_values()
     test_charts_module_has_no_new_hard_dependencies()
+    test_help_url_and_metadata_agree_on_documentation_host()
+    test_help_slugs_match_manual_anchors_one_to_one()
+    test_manual_cards_have_balanced_div_tags()
+    test_manual_has_no_angle_brackets_the_parser_would_read_as_tags()
+    test_manual_version_matches_plugin_version()
+    test_root_and_docs_manual_copies_are_identical()
+    test_manual_source_link_matches_metadata_repository()
     print("PROVIDER CATALOG SMOKE TESTS OK")
 
 

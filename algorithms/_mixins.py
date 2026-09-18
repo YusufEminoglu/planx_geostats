@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 """Shared helpUrl mixin for all GeoStats algorithms."""
 
-DOC_BASE_URL = "https://yusufeminoglu.github.io/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html"
+# Canonical public home of the reference manual. Served from the plugin's
+# docs/ directory by packaging/build_web_portal.py; metadata.txt's "about"
+# field links to the same URL and QGIS Hub validates it on upload. Do not
+# point this at a host that is not the one metadata.txt advertises - all 81
+# algorithms' Help buttons resolve through here.
+DOC_BASE_URL = "https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html"
 
 # GEOSTATS_REFERENCE_MANUAL.html uses hand-picked short anchor slugs that are
 # not derivable from name() (e.g. "getis_ord_gi" -> "alg-getis-ord", not

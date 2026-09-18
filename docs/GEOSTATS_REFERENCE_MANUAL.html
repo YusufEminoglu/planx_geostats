@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.8.0</title>
+<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.8.2</title>
 <script>
 MathJax = {
   tex: {
@@ -674,7 +674,7 @@ main {
 <nav id="sidebar">
 <div class="sidebar-header">
   <div class="brand">PlanX GeoStats Lab<span>Spatial Statistics</span></div>
-  <div class="version">Reference Manual — v3.8.0</div>
+  <div class="version">Reference Manual — v3.8.2</div>
   <input type="text" id="sidebar-search" class="sidebar-search" placeholder="Search manual&hellip;" autocomplete="off">
 </div>
 <div class="sidebar-nav">
@@ -802,7 +802,7 @@ main {
 </div>
 
 <div class="meta-row">
-    <span class="meta-chip">v3.8.0</span>
+    <span class="meta-chip">v3.8.2</span>
     <span class="meta-chip">81 algorithms</span>
     <span class="meta-chip">7 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
@@ -5695,6 +5695,7 @@ Spatial econometric and regression models that estimate relationships between a 
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0 0;">
   <strong>SDM as the encompassing model.</strong> Because SAR is SDM with the WX coefficients constrained to zero and SEM is SDM under the "common factor" restriction that its WX coefficients equal \(-\rho\) times the X coefficients (LeSage &amp; Pace, 2009), a likelihood-ratio-style comparison of SDM against the simpler SAR/SEM fits (via Model Comparison Matrix) tests those restrictions directly rather than relying solely on the Lagrange Multiplier pre-test — a useful cross-check when LM-lag and LM-error disagree or are both borderline.
   </p>
+  </div>
 
     <div class="see-also-box">
     <strong>See also:</strong> <a href="#alg-lm-diagnostics">Lagrange Multiplier Diagnostics</a> &middot; <a href="#alg-spatial-lag">Spatial Lag Regression (SAR)</a> &middot; <a href="#alg-spatial-error">Spatial Error Regression (SEM)</a> &middot; <a href="#alg-model-comparison">Model Comparison Matrix</a>
@@ -7854,8 +7855,8 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
   <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
   <p style="margin:8px 0;"><strong>Additive ensemble after M boosting rounds (as in every GBM engine in this group):</strong></p>
   $$F_M(x) = \sum_{m=1}^{M} \nu \cdot h_m(x) \tag{1}$$
-  <p style="margin:8px 0;"><strong>Ordered boosting's gradient for example \(i\) at round \(m\) uses a model \(F_{m-1}^{(\sigma_{<i})}\) fit only on examples preceding \(i\) under a random permutation \(\sigma\) of the training set, rather than the full-data model \(F_{m-1}\) every other engine uses:</strong></p>
-  $$\text{grad}_i^{(m)} = -\left[\frac{\partial L\!\left(y_i,\, F_{m-1}^{(\sigma_{<i})}(x_i)\right)}{\partial F_{m-1}^{(\sigma_{<i})}(x_i)}\right] \tag{2}$$
+  <p style="margin:8px 0;"><strong>Ordered boosting's gradient for example \(i\) at round \(m\) uses a model \(F_{m-1}^{(\sigma_{&lt;i})}\) fit only on examples preceding \(i\) under a random permutation \(\sigma\) of the training set, rather than the full-data model \(F_{m-1}\) every other engine uses:</strong></p>
+  $$\text{grad}_i^{(m)} = -\left[\frac{\partial L\!\left(y_i,\, F_{m-1}^{(\sigma_{&lt;i})}(x_i)\right)}{\partial F_{m-1}^{(\sigma_{&lt;i})}(x_i)}\right] \tag{2}$$
   </div>
 
   <div class="acad-note">
@@ -9728,9 +9729,9 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 <!--  FOOTER                                                        -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <footer class="refman-footer">
-  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.8.0.</strong><br>
+  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.8.2.</strong><br>
   Developed by Yusuf Eminoğlu with feedback from educational workflows at Dokuz Eylül University, Department of City and Regional Planning.<br>
-  Licensed under GPL-3.0. Source repository: <a href="https://github.com/YusufEminoglu/planx_geostats" style="color:var(--gs-teal-600);">github.com/YusufEminoglu/planx_geostats</a> &middot; <a href="https://gitlab.com/yusufeminoglu/planx_geostats" style="color:var(--gs-teal-600);">gitlab.com/yusufeminoglu/planx_geostats</a>.<br>
+  Licensed under GPL-3.0. Source repository: <a href="https://gitlab.com/geophilo1/planx_geostats" style="color:var(--gs-teal-600);">gitlab.com/geophilo1/planx_geostats</a>.<br>
   <em>All methods are documented with their primary academic references. The plugin implements its own engines for core computations; advanced models delegate to community-vetted Python packages with full version transparency.</em>
 </footer>
 

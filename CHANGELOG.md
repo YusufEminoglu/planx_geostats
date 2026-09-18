@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.8.2] - 2026-09-18
+
+- Repair the documentation path end to end. Every one of the 81 algorithms' Help button links pointed at a retired documentation host and returned a 404; `algorithms/_mixins.py` now names the canonical host that `metadata.txt` and the QGIS Hub already advertise, and a new smoke test pins both to the same host so they cannot drift apart again.
+- Fix a missing closing tag in the Spatial Durbin manual card. The card's body was never closed, so the `see-also` and Literature blocks sat inside the Interpretation Guide box instead of beside it, and the unclosed element swallowed the layout of the section that follows. A new smoke test asserts per-card tag balance across all 81 manual entries, so an unbalanced card now fails the build instead of being silently repaired by the browser.
+- Fix two CatBoost formulas that never rendered. An unescaped angle bracket inside a LaTeX subscript (`\sigma_{<i}`) was consumed by the HTML parser as the start of an italic element, so MathJax received broken source. Both occurrences now use the `&lt;` entity.
+- The manual advertised the previous version in four places (title, sidebar, hero chip, footer); all four now match the plugin.
+- Repair the release-verification gate itself. `tests/smoke_provider_catalog.py` had been failing since 3.8.1 because README's release-verification command still named 3.8.0, and because `run_all()` aborts on the first failure, the remaining 20 checks in that suite had not run since that release.
+
 ## [3.8.1] - 2026-09-16
 
 - Redesign plugin icon to high-end 3D tactile brand design with circular teal pedestal, zero margin, and refreshed documentation links.
