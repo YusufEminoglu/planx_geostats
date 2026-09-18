@@ -4,7 +4,7 @@
 # Canonical public home of the reference manual. Served from the plugin's
 # docs/ directory by packaging/build_web_portal.py; metadata.txt's "about"
 # field links to the same URL and QGIS Hub validates it on upload. Do not
-# point this at a host that is not the one metadata.txt advertises - all 81
+# point this at a host that is not the one metadata.txt advertises - all 83
 # algorithms' Help buttons resolve through here.
 DOC_BASE_URL = "https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html"
 
@@ -94,6 +94,8 @@ HELP_SLUGS = {
     "dice_counterfactual_explanation": "alg-dice-counterfactual",
     "ebm_regression": "alg-ebm-regression",
     "ebm_classification": "alg-ebm-classification",
+    "empirical_semivariogram": "alg-semivariogram",
+    "kriging_interpolation": "alg-kriging",
 }
 
 

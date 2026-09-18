@@ -59,6 +59,13 @@ Use this matrix before a public upload when changes affect algorithms, reports, 
 | Model Comparison Matrix | synthetic model-output layers | `observed_y` | Ranking score, RMSE/MAE/bias, coverage, residual Moran, recommendation. | No rank/score, no residual warning, fails on mixed model outputs. |
 | Sensitivity Test | Izmir sample | `road_density` field, multiple simulations | Randomization p-value and neighborhood diagnostics. | Simulation count ignored or report missing caveats. |
 
+## Interpolation and Geostatistics
+
+| Tool | Fixture | Parameters | Expected result | Red flags |
+|---|---|---|---|---|
+| Empirical Semivariogram & Model Fitting | Izmir sample | `road_density`, 12 bins, spherical, 8 directions | HTML report with the binned experimental semivariogram, the fitted model curve, a parameter table (nugget, partial sill, range, alpha, R², RMSE) and the per-direction rose; a one-feature parameter layer at `PARAMS_OUT`. | Fitted range several times the maximum lag without the range-saturation flag, fewer populated bins than the fit requires, a parameter layer whose `sill` is not `nugget + psill`, or a report that omits the bin-count and pair-count context. |
+| Ordinary / Universal Kriging Interpolation | Izmir sample | `road_density`, fitted spherical from the semivariogram tool, ordinary kriging, leave-one-out enabled | Prediction and variance rasters written as real files, leave-one-out summary (ME, RMSE, MSE, RMSSE) in the report, prediction at a datum reproduces the observed value. | A raster destination that is still a tiny stub on disk, a variance raster that reaches the sill with no mean-uncertainty term under ordinary kriging, leave-one-out omitted from the report, or a universal-kriging fit taken on raw trended values so the range is inflated. |
+
 ## Report Decision Engines
 
 | Area | Fixture | Expected result | Red flags |

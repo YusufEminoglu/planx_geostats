@@ -410,7 +410,12 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if feedback.isCanceled():
             return {}
 
-        flags = quality_flags(fitted)
+        # The lag limit has to reach quality_flags: without it the fitted range
+        # is never compared with the largest distance binned, and the one warning
+        # this tool most needs - a variogram that was still rising at the last
+        # bin, so the range describes the data's extent rather than the field -
+        # can never be raised.
+        flags = quality_flags(fitted, max_lag=lag_limit)
 
         feedback.pushInfo("Writing the fitted-parameter layer...")
         out_fields = parameter_output_fields()

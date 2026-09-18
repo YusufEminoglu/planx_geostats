@@ -50,6 +50,7 @@ GEOSTATS_GROUPS = (
     ("04 | Centers, Direction and Dispersion", "planx_center_direction_spread", "#7C3AED"),
     ("05 | Models and Scenarios", "planx_model_scenario", "#059669"),
     ("06 | Machine Learning and Explainable AI", "planx_ml_xai", "#4F46E5"),
+    ("07 | Interpolation and Geostatistics", "planx_interpolation_geostatistics", "#0D9488"),
 )
 
 TOOL_PRESETS = {

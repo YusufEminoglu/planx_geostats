@@ -88,6 +88,8 @@ from .algorithms.alg_tabpfn_classification import TabPFNClassificationAlgorithm
 from .algorithms.alg_dice_counterfactual import DiCECounterfactualAlgorithm
 from .algorithms.alg_ebm_regression import EBMRegressionAlgorithm
 from .algorithms.alg_ebm_classification import EBMClassificationAlgorithm
+from .algorithms.alg_semivariogram import EmpiricalSemivariogramAlgorithm
+from .algorithms.alg_kriging import KrigingAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -202,3 +204,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(DBSCANAlgorithm())
         self.addAlgorithm(HDBSCANAlgorithm())
         self.addAlgorithm(GMMClusteringAlgorithm())
+
+        # 07 | Interpolation and Geostatistics
+        self.addAlgorithm(EmpiricalSemivariogramAlgorithm())
+        self.addAlgorithm(KrigingAlgorithm())

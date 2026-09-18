@@ -5,7 +5,7 @@ is the list + outlook the next phase of work will be scoped from.
 
 ## 1. Goal
 
-Every one of the 81 algorithms already writes an HTML report
+Every one of the 83 algorithms already writes an HTML report
 (`_write_html()` in each `algorithms/alg_*.py`), but every one of those
 reports is currently text and tables only: numbers, `<table>` rows, and the
 shared `analyst_guidance_html()` block. The statistics themselves are often
@@ -84,7 +84,7 @@ important numbers for that tool (e.g., for Global Moran's I: the I value,
 the z-score, the p-value; for Random Forest Regression: R², RMSE, OOB score),
 followed by that tool's single most important chart. Everything below stays
 exactly as it is today (tables, `analyst_guidance_html()`). This gives every
-one of the 81 reports the same skimmable shape without redesigning anything
+one of the 83 reports the same skimmable shape without redesigning anything
 that already works.
 
 ## 5. Visualization catalog, by group and priority

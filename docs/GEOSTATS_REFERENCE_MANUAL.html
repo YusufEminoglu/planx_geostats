@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.8.2</title>
+<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.9.0</title>
 <script>
 MathJax = {
   tex: {
@@ -674,7 +674,7 @@ main {
 <nav id="sidebar">
 <div class="sidebar-header">
   <div class="brand">PlanX GeoStats Lab<span>Spatial Statistics</span></div>
-  <div class="version">Reference Manual — v3.8.2</div>
+  <div class="version">Reference Manual — v3.9.0</div>
   <input type="text" id="sidebar-search" class="sidebar-search" placeholder="Search manual&hellip;" autocomplete="off">
 </div>
 <div class="sidebar-nav">
@@ -777,6 +777,10 @@ main {
   <a href="#alg-hdbscan">HDBSCAN Clustering</a>
   <a href="#alg-gmm">Gaussian Mixture Clustering</a>
 
+  <div class="group-label">07 — Interpolation &amp; Geostatistics</div>
+  <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a>
+  <a href="#alg-kriging">Ordinary / Universal Kriging</a>
+
   <div class="group-label">Appendices</div>
   <a href="#methodological-notes">Methodological Notes</a>
   <a href="#references">Academic References</a>
@@ -802,9 +806,9 @@ main {
 </div>
 
 <div class="meta-row">
-    <span class="meta-chip">v3.8.2</span>
-    <span class="meta-chip">81 algorithms</span>
-    <span class="meta-chip">7 analytical groups</span>
+    <span class="meta-chip">v3.9.0</span>
+    <span class="meta-chip">83 algorithms</span>
+    <span class="meta-chip">8 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
   </div>
@@ -819,8 +823,8 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">81</div><div class="stat-label">Processing Algorithms</div></div>
-  <div class="stat-tile"><div class="stat-value">7</div><div class="stat-label">Analytical Groups</div></div>
+  <div class="stat-tile"><div class="stat-value">83</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">12</div><div class="stat-label">Regression Variants</div></div>
   <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
   <div class="stat-tile"><div class="stat-value">4</div><div class="stat-label">GBM Engines</div></div>
@@ -887,8 +891,14 @@ main {
     <div class="step-name">Machine Learning &amp; XAI</div>
     <div class="step-tools">34 tools</div>
   </div>
+  <div class="workflow-arrow">→</div>
+  <div class="workflow-step">
+    <div class="step-num">07</div>
+    <div class="step-name">Interpolation &amp; Geostatistics</div>
+    <div class="step-tools">2 tools</div>
+  </div>
 </div>
-<p style="font-size:.84rem;color:var(--gs-slate-500);margin-top:8px;">Linear flow recommended for first-time analysis; experienced users may enter at any group. Every model in group 05 benefits from the diagnostics produced by groups 00–04. Group 06 is an independent add-on family needing only complete-case data.</p>
+<p style="font-size:.84rem;color:var(--gs-slate-500);margin-top:8px;">Linear flow recommended for first-time analysis; experienced users may enter at any group. Every model in group 05 benefits from the diagnostics produced by groups 00–04. Group 06 is an independent add-on family needing only complete-case data. Group 07 is the classical geostatistics pathway — fit a semivariogram, then krige from it — and stands on its own once the point layer is in a projected CRS.</p>
 </section>
 
 <!-- ════════════════════════════════════════════════════════════════ -->
@@ -9561,6 +9571,209 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 </div>
 </article>
 
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  GROUP 07 — INTERPOLATION AND GEOSTATISTICS                    -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="group-anchor" id="group-07"></div>
+<div class="group-header">
+  <span class="group-num">07</span>
+  <h3>Interpolation and Geostatistics</h3>
+</div>
+<p style="color:var(--gs-slate-600);font-size:.88rem;margin-bottom:28px;">
+The classical geostatistics workflow, in the order it is meant to be run: estimate how spatial similarity decays with distance and fit a model to that decay, then interpolate a continuous surface from the same observations using the fitted model, and carry kriging's own analytic variance alongside the prediction as its uncertainty. Nothing here is a black box fitted to a score — the variogram is estimated from the data, the model is fitted to it and reported, and every prediction is a linear combination of the observations whose weights come from that model. Both tools work on point data or on any layer whose feature centroids are meaningful, and both expect a projected CRS so that distances are in metres rather than degrees.
+</p>
+
+<div class="callout callout-warn">
+<strong>Fit before you krige.</strong> Kriging is only as good as the variogram it is built from, and its cross-validation statistics are conditional on that model. If the fitted range is weakly identified or the empirical curve has not reached a sill, the interpolated surface inherits that weakness and the reported variance still looks plausible. Run <strong>Empirical Semivariogram &amp; Model Fitting</strong> first, read the fit, and pass its parameter layer to the kriging tool.
+</div>
+
+<!-- Empirical Semivariogram -->
+<article class="alg-card" id="alg-semivariogram">
+<div class="alg-card-header">
+  <div class="alg-icon">📈</div>
+  <div class="alg-info">
+    <h4>Empirical Semivariogram &amp; Model Fitting</h4>
+    <div class="alg-id">empirical_semivariogram</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-semivariogram" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Estimates how spatial similarity decays with distance for a numeric field, fits one of five theoretical semivariogram models to that estimate, and reports the nugget, sill and range that parameterise the field — together with the directional diagnostics needed to see whether a single isotropic model is a fair description of the area.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Matheron (1963) formalised the theory of regionalised variables, giving geostatistics its central tool: instead of asking whether two locations are correlated, the variogram asks how the <em>difference</em> between their values grows as they are moved apart. Its defining assumption is intrinsic stationarity — the expected difference between two locations is zero at every separation \(h\), and the variance of that difference depends only on the separation and not on where on the map the pair happens to sit. Under that assumption the semivariance is estimable directly from the data, with no detrending step and no distributional assumption beyond a finite variance.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why fit a model rather than krige from the binned points.</strong> The empirical estimate is defined only at the discrete bin centres, but kriging needs a semivariance at arbitrary separations. More seriously, an empirical variogram computed from a finite sample is not guaranteed to be conditionally negative definite — the property that makes the kriging system solvable with a non-negative variance. A fitted model is a smooth function that satisfies that property by construction, which is the real reason the fitting step exists at all. Every subsequent number kriging reports inherits the model chosen here, not the raw bins.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Matheron's empirical estimator</strong> over \(N(h)\) point pairs separated by approximately \(h\):</p>
+  $$\hat{\gamma}(h) = \frac{1}{2\,N(h)} \sum_{i=1}^{N(h)} \left[ z(x_i) - z(x_i + h) \right]^2 \tag{1}$$
+  <p style="margin:8px 0;"><strong>The fitted model</strong> is \(\gamma(0) = 0\) and, for \(h > 0\),</p>
+  $$\gamma(h) = c_0 + c \, g(h / a) \tag{2}$$
+  <p style="margin:8px 0;">with nugget \(c_0\), partial sill \(c\), range \(a\), and the shape term \(g(u)\) differing by model:</p>
+  $$g_{\text{sph}}(u) = \begin{cases} \tfrac{3}{2}u - \tfrac{1}{2}u^3 & u \le 1 \\ 1 & u > 1 \end{cases} \qquad g_{\text{exp}}(u) = 1 - e^{-3u} \qquad g_{\text{gau}}(u) = 1 - e^{-3u^2} \tag{3}$$
+  $$g_{\text{lin}}(u) = u \qquad g_{\text{stable}}(u) = 1 - e^{-3u^{\alpha}} \tag{4}$$
+  <p style="margin:8px 0;">The exponential, gaussian and stable terms are written with a factor of 3 so that \(a\) is the <em>practical</em> range — the separation at which \(g\) has reached 95 per cent of its limit — and is therefore directly comparable with the spherical model's true range. The stable model's shape exponent \(\alpha\) is ignored by every other model.</p>
+  <p style="margin:8px 0;"><strong>Weighted least squares</strong> fits \(c_0\), \(c\) and \(a\) by minimising</p>
+  $$\theta^\star = \arg\min_{\theta} \sum_i w_i \left[ \hat{\gamma}(h_i) - \gamma(h_i; \theta) \right]^2, \qquad w_i = \frac{N(h_i)}{\hat{\gamma}(h_i)^2} \tag{5}$$
+  <p style="margin:8px 0;">using the weighting of Cressie (1985). Because the weight divides by the squared semivariance, long-lag bins — which rest on few point pairs and carry the largest and least reliable estimates — are downweighted rather than allowed to dominate the fit. The optimisation runs in log-parameter space, so the fitted nugget, partial sill and range are positive by construction rather than by clamping.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Fitting is a Levenberg–Marquardt least-squares solve on \(\log(c_0, c, a)\) implemented in <code>core/geostat_engines.py::fit_variogram</code> using <code>numpy</code> only — no SciPy or external geostatistics package is required. The defaults for <em>Number of distance bins</em> and <em>Maximum lag distance</em> are starting points, not recommendations: the maximum lag defaults to half the largest pairwise separation, following Journel &amp; Huijbregts (1978), because beyond that separation the surviving pairs are too few and too clustered for the binned value to mean much.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Target field to model</td></tr>
+      <tr><td class="param-name">N_BINS</td><td class="param-type">Integer</td><td class="param-default">15</td><td>4–200</td><td>Number of distance bins</td></tr>
+      <tr><td class="param-name">MAX_LAG</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Maximum lag distance; 0 = half the largest separation</td></tr>
+      <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Spherical</td><td>Spherical / Exponential / Gaussian / Linear / Stable</td><td>Theoretical model to fit</td></tr>
+      <tr><td class="param-name">ALPHA</td><td class="param-type">Double</td><td class="param-default">1.5</td><td>0.1–2.0</td><td>Stable-model shape exponent; ignored by other models</td></tr>
+      <tr><td class="param-name">N_DIRECTIONS</td><td class="param-type">Integer</td><td class="param-default">8</td><td>0–24</td><td>Directional variogram directions; 0 skips the rose</td></tr>
+      <tr><td class="param-name">DIRECTION_TOLERANCE</td><td class="param-type">Double</td><td class="param-default">22.5</td><td>5–90 degrees</td><td>Half-angle of each directional cone</td></tr>
+      <tr><td class="param-name">PARAMS_OUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>—</td><td>Single-feature fitted-parameter layer, read directly by the kriging tool</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the plot, parameters, diagnostics and guidance</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>model</code> — fitted model name &middot; <code>nugget</code> — \(c_0\) &middot; <code>psill</code> — partial sill \(c\) &middot; <code>sill</code> — \(c_0 + c\) &middot; <code>range</code> — practical range \(a\) in map units &middot; <code>alpha</code> — shape exponent (Stable only) &middot; <code>r2</code> — fit of the curve to the binned points &middot; <code>rmse</code> — weighted residual in semivariance units &middot; <code>bins</code> — populated bins used in the fit &middot; <code>npoints</code> — observations with a usable value &middot; <code>dir_ratio</code> — ratio of the largest to the smallest directional range, the anisotropy indicator
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  The report adds the empirical points against the fitted curve, a polar rose of the directional variograms, the quality flags raised on the fitted numbers, and the assumptions the fit rests on. Both outputs are written together: the table is one feature, so it can be passed straight into the kriging tool without retyping parameters between the two dialogs.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  Read the three parameters as a description of scale, not as precise measurements. The <strong>range</strong> is the distance beyond which two locations carry essentially independent information — roughly the radius of influence of an observation, and the number that decides how dense a prediction grid needs to be to add anything. The <strong>nugget</strong> as a share of the sill is the more diagnostic quantity: a high nugget-to-sill ratio means most of the variation happens at a scale finer than the sampling, so kriging will produce a smooth surface that carries little local detail no matter how the grid is refined. The <strong>sill</strong> approximates the field's total variance and should be in the same units as, and broadly comparable to, the variance of the input field.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Two cautions that the fit statistics do not warn you about.</strong> First, the <code>r2</code> value describes how closely the curve follows the binned points, and it can be high while the fitted range is substantially wrong: nugget, sill and range trade off against each other, so a curve can track every bin while the range sits 20–30 per cent away from the field's true one. Treat the range as weakly identified from a finite sample and compare it with the maximum lag before relying on it. Second, the fitted model is <em>isotropic</em>: it describes how quickly similarity decays with distance, not how it differs by direction. The directional rose is a diagnostic that shows anisotropy when it is present; it is not absorbed into the fit, and kriging built from these parameters is isotropic. When the rose shows a clear directional pattern, a single isotropic model is the wrong description of the area, and the interpolated surface will smooth across a structure that is really there.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A raised range flag</strong> means the fitted range has reached the point where it is no longer identified from the data — it sits at or beyond 90 per cent of the maximum lag, so the binned curve was still rising when the pairs ran out. The honest reading is that the area is larger than the sampling can characterise, and a wider maximum lag would be needed to estimate the range properly. This is one of the quality flags the report raises automatically.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-incremental-autocorr">Incremental Spatial Autocorrelation</a> &middot; <a href="#alg-global-moran">Global Moran's I</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Matheron, G.</strong> (1963). "Principles of Geostatistics." <em>Economic Geology</em> 58(8): 1246–1266. DOI: <a href="https://doi.org/10.2113/gsecongeo.58.8.1246">10.2113/gsecongeo.58.8.1246</a> — The founding statement of the theory of regionalised variables and of the variogram as its central tool.</p>
+  <p style="margin:4px 0;"><strong>Journel, A.G. &amp; Huijbregts, C.J.</strong> (1978). <em>Mining Geostatistics.</em> London: Academic Press. — The standard reference for the empirical estimator, the model forms used here, and the half-the-maximum-separation rule for choosing the maximum lag.</p>
+  <p style="margin:4px 0;"><strong>Cressie, N.</strong> (1985). "Fitting Variogram Models by Weighted Least Squares." <em>Journal of the International Association for Mathematical Geology</em> 17(5): 563–586. DOI: <a href="https://doi.org/10.1007/BF01032109">10.1007/BF01032109</a> — Source of the \(N(h)/\hat{\gamma}(h)^2\) weighting the fit uses.</p>
+  <p style="margin:4px 0;"><strong>Webster, R. &amp; Oliver, M.A.</strong> (2007). <em>Geostatistics for Environmental Scientists</em> (2nd ed.). Chichester: Wiley. — Practical treatment of model choice, the nugget-to-sill ratio, and the range's weak identifiability.</p>
+  </div>
+</div>
+</article>
+
+<!-- Ordinary / Universal Kriging -->
+<article class="alg-card" id="alg-kriging">
+<div class="alg-card-header">
+  <div class="alg-icon">🗺️</div>
+  <div class="alg-info">
+    <h4>Ordinary / Universal Kriging Interpolation</h4>
+    <div class="alg-id">kriging_interpolation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-kriging" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Interpolates a continuous surface from scattered point observations using a fitted semivariogram model, and writes kriging's own analytically derived variance as a second raster beside the prediction — so every interpolated cell arrives with the model's stated uncertainty about itself.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Kriging is named for Danie Krige, whose empirical work on Witwatersrand gold grades in the 1950s showed that a weighted average of neighbouring samples outperformed simpler estimators — and, more importantly, that the weights depended on how far apart the samples were rather than on the samples alone. Matheron (1963) generalised the procedure and gave it the form used here. The defining property is that the weights are <em>derived</em> from the fitted variogram rather than chosen by the analyst: kriging is the best linear unbiased predictor under the model, so it is the interpolator that follows from a variogram instead of being an independent choice.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Ordinary and universal kriging are the same estimator under different assumptions about the mean.</strong> Ordinary kriging assumes the field has a constant but unknown mean and estimates the mean implicitly from the local data; it is the safe default and needs no information beyond the observations. Universal kriging assumes instead that the mean varies systematically across the area as a low-order polynomial trend, fits that trend, and kriges the residuals — which is what to use when values drift across the study area, as a groundwater surface, an elevation field or a pollution gradient typically does. Universal kriging is not better in general: where no trend exists it buys nothing and costs a wider confidence in the fitted parameters, so the choice should follow evidence from the data, not preference. In this plugin the trend is fitted by least squares before the variogram is estimated, so the variogram describes the residuals rather than the trend.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The predictor</strong> at an unobserved location \(x_0\) is a weighted sum of the observations, with weights that sum to one:</p>
+  $$\hat{z}(x_0) = \sum_{i=1}^{n} \lambda_i \, z(x_i), \qquad \sum_{i=1}^{n} \lambda_i = 1 \tag{1}$$
+  <p style="margin:8px 0;"><strong>The ordinary kriging system</strong> solves for those weights and the Lagrange multiplier \(\mu\) enforcing the constraint:</p>
+  $$\begin{bmatrix} \Gamma & \mathbf{1} \\ \mathbf{1}^{\top} & 0 \end{bmatrix} \begin{bmatrix} \boldsymbol{\lambda} \\ \mu \end{bmatrix} = \begin{bmatrix} \boldsymbol{\gamma}_0 \\ 1 \end{bmatrix}, \qquad \Gamma_{ij} = \gamma\!\left( \|x_i - x_j\| \right), \quad (\boldsymbol{\gamma}_0)_i = \gamma\!\left( \|x_i - x_0\| \right) \tag{2}$$
+  <p style="margin:8px 0;"><strong>The kriging variance</strong> is then available in closed form, with no resampling or repetition of the fit:</p>
+  $$\sigma^2_{OK}(x_0) = \boldsymbol{\lambda}^{\top} \boldsymbol{\gamma}_0 + \mu \tag{3}$$
+  <p style="margin:8px 0;"><strong>Universal kriging</strong> replaces the single constraint row with the drift basis \(f(x_0)\), whose columns are the polynomial terms retained — \(1, x, y\) for a linear trend and \(1, x, y, x^2, y^2, xy\) for a quadratic one:</p>
+  $$\begin{bmatrix} \Gamma & F \\ F^{\top} & 0 \end{bmatrix} \begin{bmatrix} \boldsymbol{\lambda} \\ \boldsymbol{\mu} \end{bmatrix} = \begin{bmatrix} \boldsymbol{\gamma}_0 \\ f(x_0) \end{bmatrix} \tag{4}$$
+  <p style="margin:8px 0;"><strong>Conventions that matter when reading the output.</strong> The variogram obeys \(\gamma(0) = 0\), so the predictor is exact at an observed location and the variance is zero there; the nugget is a discontinuity at the origin, applying to every separation greater than zero, which is the GSLIB and PyKrige convention rather than a defect. And because ordinary kriging does not know the mean, its variance at a distance from all data converges to the sill <em>plus</em> a non-negative term for that unknown mean rather than to the sill itself. Reaching the sill exactly is the behaviour of simple kriging, a different estimator that requires the mean to be known.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The system is assembled and solved in <code>core/geostat_engines.py::krige_chunked</code> with <code>numpy</code> — no SciPy or external kriging package is required. Cells are predicted in chunks with the right-hand side held under a fixed memory budget, because a single solve for every target cell allocates one double per (observation + drift) pair per cell: measured on the development machine, an unchunked solve at 600 observations over a 4-million-cell grid needed roughly 18 GB. Chunking changes the result only at the level of floating-point rounding, about \(10^{-14}\) relative.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to interpolate</td></tr>
+      <tr><td class="param-name">PARAM_SOURCE</td><td class="param-type">Enum</td><td class="param-default">Fit a new model</td><td>Fit here / read the parameter layer</td><td>Where the semivariogram model comes from</td></tr>
+      <tr><td class="param-name">PARAMS_LAYER</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional</td><td>Output of Empirical Semivariogram &amp; Model Fitting; used only by the second option</td></tr>
+      <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Spherical</td><td>Spherical / Exponential / Gaussian / Linear / Stable</td><td>Model used when fitting here</td></tr>
+      <tr><td class="param-name">ALPHA</td><td class="param-type">Double</td><td class="param-default">1.5</td><td>0.1–2.0</td><td>Stable-model shape exponent; ignored by other models</td></tr>
+      <tr><td class="param-name">N_BINS</td><td class="param-type">Integer</td><td class="param-default">15</td><td>4–200</td><td>Bins used by the internal fit</td></tr>
+      <tr><td class="param-name">DRIFT</td><td class="param-type">Enum</td><td class="param-default">None (ordinary)</td><td>None / Linear / Quadratic</td><td>Trend removed before kriging; linear or quadratic selects universal kriging</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">2000</td><td>10–200000</td><td>Cap on observations used; cost is cubic in this number</td></tr>
+      <tr><td class="param-name">RUN_LOO</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Leave-one-out cross-validation; adds one solve per observation</td></tr>
+      <tr><td class="param-name">PREDICTION</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Predicted surface (Float32 GeoTIFF)</td></tr>
+      <tr><td class="param-name">VARIANCE</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>Optional</td><td>Kriging variance surface; omit it to skip the second raster</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the model, cross-validation statistics and guidance</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>PREDICTION</code> — Float32 GeoTIFF of the interpolated surface, in the input layer's CRS and covering its extent &middot; <code>VARIANCE</code> — Float32 GeoTIFF of the kriging variance in squared map units, written with the same grid and extent &middot; <code>HTML_REPORT</code> — the model actually used, the surface summary, the cross-validation statistics, quality flags, and the assumptions the prediction rests on
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  Both rasters carry the layer's CRS, extent and cell size. Cells outside the modelled area — where the fitted model returned a non-finite value — are written as the nodata value \(-9999\) rather than being silently left at zero. The variance raster is written with the same grid as the prediction, so the two can be compared cell for cell in the raster calculator or in QGIS's own band statistics.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  The <strong>variance raster</strong> is the part of this tool worth understanding, because it is what separates it from an interpolator that returns only numbers. Low variance means the surrounding observations constrain the cell tightly; high variance means they do not, and it is highest away from all observations. Two properties look like faults and are not: because the model is exact at a datum, the variance is zero there and rises with distance from observations; and for ordinary kriging the variance at the edge of the data converges to the sill plus a term for the unknown mean, so the surface can legitimately exceed the fitted sill. Read it as a relative statement about prediction error, because it is conditional on the variogram being right and cannot itself reveal that the variogram is wrong.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The cross-validation statistics are the tool's own audit.</strong> Leave-one-out cross-validation predicts each observation from all the others, so the model is judged on points it did not see, and four numbers are reported. The <strong>mean error</strong> should be near zero — a systematic bias means the drift or the mean is mis-specified. The <strong>root mean squared error</strong> is in the field's own units, so its acceptable size depends on the question, but it can be compared across candidate models on the same data. The <strong>mean standardised error</strong> should also be near zero, and the <strong>root mean squared standardised error</strong> — the RMSE divided by the kriging standard deviation at each point — should be near 1. That last number is the diagnostic to read first: substantially above 1 means the variogram is understating the real prediction error and the variance raster is too optimistic; substantially below 1 means it is overstating it.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Cost, and why there is a cap.</strong> The kriging system is built from every pair of observations, so the work grows with the cube of the observation count: measured on the development machine, 200 observations cost about 26 600 cells per second, 800 cost about 2 100, and 2 000 cost about 300 — a roughly hundredfold slowdown over that range, and leave-one-out cross-validation multiplies it by another factor of the observation count. The default cap of 2 000 observations is therefore a deliberate limit rather than an arbitrary one, and the tool refuses a larger input with a message stating the count and the cap instead of appearing to hang. Where more observations are available, the practical options are to raise the cap knowingly, to interpolate a subsample, or to interpolate in tiles.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-prediction-uncertainty">Prediction Uncertainty Map</a> &middot; <a href="#alg-conformal-prediction">Conformal Prediction Interval</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Krige, D.G.</strong> (1951). "A Statistical Approach to Some Basic Mine Valuation Problems on the Witwatersrand." <em>Journal of the Chemical, Metallurgical and Mining Society of South Africa</em> 52(6): 119–139. — The empirical origin of distance-weighted estimation of ore grades.</p>
+  <p style="margin:4px 0;"><strong>Matheron, G.</strong> (1963). "Principles of Geostatistics." <em>Economic Geology</em> 58(8): 1246–1266. DOI: <a href="https://doi.org/10.2113/gsecongeo.58.8.1246">10.2113/gsecongeo.58.8.1246</a> — Formalises Krige's procedure as the best linear unbiased predictor under a fitted variogram.</p>
+  <p style="margin:4px 0;"><strong>Journel, A.G. &amp; Huijbregts, C.J.</strong> (1978). <em>Mining Geostatistics.</em> London: Academic Press. — The standard derivation of the ordinary and universal kriging systems and of the kriging variance used here.</p>
+  <p style="margin:4px 0;"><strong>Cressie, N.A.C.</strong> (1993). <em>Statistics for Spatial Data</em> (rev. ed.). New York: Wiley. — Comprehensive treatment of kriging, including the behaviour of the variance at the edge of the data and the distinction from simple kriging.</p>
+  <p style="margin:4px 0;"><strong>Goovaerts, P.</strong> (1997). <em>Geostatistics for Natural Resources Evaluation.</em> New York: Oxford University Press. — Practical guidance on choosing between ordinary and universal kriging and on reading cross-validation diagnostics.</p>
+  </div>
+</div>
+</article>
+
 <section id="methodological-notes" class="section-intro" style="margin-top:40px;">
 <h2>Methodological Notes</h2>
 
@@ -9729,7 +9942,7 @@ Modern supervised-learning models (tree ensembles, gradient boosting across four
 <!--  FOOTER                                                        -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <footer class="refman-footer">
-  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.8.2.</strong><br>
+  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.9.0.</strong><br>
   Developed by Yusuf Eminoğlu with feedback from educational workflows at Dokuz Eylül University, Department of City and Regional Planning.<br>
   Licensed under GPL-3.0. Source repository: <a href="https://gitlab.com/geophilo1/planx_geostats" style="color:var(--gs-teal-600);">gitlab.com/geophilo1/planx_geostats</a>.<br>
   <em>All methods are documented with their primary academic references. The plugin implements its own engines for core computations; advanced models delegate to community-vetted Python packages with full version transparency.</em>

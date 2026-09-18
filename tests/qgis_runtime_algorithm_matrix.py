@@ -1358,6 +1358,48 @@ def _all_cases() -> list[RuntimeCase]:
             },
             layer_outputs={"OUTPUT": 1},
         ),
+        RuntimeCase(
+            "empirical_semivariogram",
+            "Empirical Semivariogram & Model Fitting",
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "N_BINS": 12,
+                "MAX_LAG": 0.0,
+                "MODEL": 0,
+                "ALPHA": 1.5,
+                "N_DIRECTIONS": 8,
+                "DIRECTION_TOLERANCE": 22.5,
+                "PARAMS_OUT": "memory:",
+                "HTML_REPORT": _path(env["out"], "07_semivariogram.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            layer_outputs={"PARAMS_OUT": 1},
+        ),
+        RuntimeCase(
+            "kriging_interpolation",
+            "Ordinary / Universal Kriging Interpolation",
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "PARAM_SOURCE": 0,
+                "MODEL": 0,
+                "ALPHA": 1.5,
+                "N_BINS": 12,
+                "DRIFT": 0,
+                "CELL_SIZE": 0.0,
+                "MAX_POINTS": 2000,
+                "RUN_LOO": True,
+                "PREDICTION": _path(env["out"], "07_kriging_prediction.tif"),
+                "VARIANCE": _path(env["out"], "07_kriging_variance.tif"),
+                "HTML_REPORT": _path(env["out"], "07_kriging.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            # Raster destinations are not covered by layer_outputs; asserting
+            # the two files exist on disk is what catches a run that returns a
+            # path but never finishes the write.
+            file_outputs=("PREDICTION", "VARIANCE"),
+        ),
     ]
 
 
