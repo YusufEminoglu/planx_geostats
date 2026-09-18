@@ -548,6 +548,264 @@ def rose_diagram_svg(
     return _wrap_chart(title, "".join(parts))
 
 
+def variogram_rose_svg(
+    ranges: list[float],
+    angles_deg: list[float],
+    *,
+    title: str = "",
+    width: int = 360,
+    height: int = 360,
+) -> str:
+    """Directional-range rose: one spoke per direction, length = fitted range.
+
+    Unlike rose_diagram_svg, which is a single arrow, this plots a *set* of
+    directions -- what a directional variogram actually produces.  Angles are
+    mathematical (0 deg = +x east, counter-clockwise), matching
+    core.geostat_engines, and every spoke is also drawn mirrored through the
+    centre: the semivariogram is symmetric under a 180 deg rotation, so the
+    fit uses half the ring and the picture fills the whole of it.
+
+    A direction whose range could not be fitted (too few pairs in its cone) is
+    drawn as an open grey marker at the rim and counted in the caption.  It is
+    deliberately NOT drawn as a zero-length spoke, because a zero reads as
+    "spatial structure has no extent in this direction", which is the opposite
+    of "this direction could not be measured".
+    """
+    if not ranges or not angles_deg or len(ranges) != len(angles_deg):
+        return _wrap_chart(title, no_data_svg(width, height))
+
+    finite = [r for r in ranges if r == r and math.isfinite(r) and r > 0]
+    if not finite:
+        return _wrap_chart(
+            title,
+            no_data_svg(width, height, "No direction had enough pairs to fit a range"),
+            "Directional ranges require at least 4 populated lag bins per cone.",
+        )
+    r_max = max(finite)
+
+    cx, cy = width / 2.0, height / 2.0
+    radius = min(width, height) / 2.0 - 34
+
+    parts = [_svg_open(width, height, title)]
+    for frac in (1 / 3, 2 / 3, 1.0):
+        style = "none" if frac == 1.0 else "2,3"
+        parts.append(
+            f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{radius * frac:.1f}" '
+            f'fill="none" stroke="{COLOR_GRID}" stroke-dasharray="{style}"/>'
+        )
+    # Cardinal ring.  Screen y grows downwards, so the sine term is negated:
+    # that puts 0 deg (east) to the right and 90 deg (north) at the top, which
+    # is the layout a geostatistical reader expects while keeping the angle
+    # convention identical to the engine.
+    for deg, label in ((0, "E"), (90, "N"), (180, "W"), (270, "S")):
+        rad = math.radians(deg)
+        lx = cx + (radius + 16) * math.cos(rad)
+        ly = cy - (radius + 16) * math.sin(rad)
+        parts.append(
+            f'<text x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle" '
+            f'dominant-baseline="middle" font-size="11" '
+            f'fill="{COLOR_AXIS_TEXT}">{label}</text>'
+        )
+
+    unfitted = 0
+    for rng, ang in zip(ranges, angles_deg):
+        rad = math.radians(float(ang))
+        if rng != rng or not math.isfinite(rng) or rng <= 0:
+            unfitted += 1
+            parts.append(
+                f'<circle cx="{cx + radius * math.cos(rad):.1f}" '
+                f'cy="{cy - radius * math.sin(rad):.1f}" r="3.5" fill="none" '
+                f'stroke="{COLOR_GRID}" stroke-width="1.5"/>'
+            )
+            continue
+        tip = radius * (rng / r_max)
+        for sign in (1.0, -1.0):
+            x1 = cx + sign * tip * math.cos(rad)
+            y1 = cy - sign * tip * math.sin(rad)
+            parts.append(
+                f'<line x1="{cx:.1f}" y1="{cy:.1f}" x2="{x1:.1f}" y2="{y1:.1f}" '
+                f'stroke="{COLOR_PRIMARY}" stroke-width="2.5" stroke-linecap="round"/>'
+            )
+        parts.append(
+            f'<circle cx="{cx + tip * math.cos(rad):.1f}" '
+            f'cy="{cy - tip * math.sin(rad):.1f}" r="3" fill="{COLOR_PRIMARY}"/>'
+        )
+    parts.append(f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="3" fill="{COLOR_AXIS_TEXT}"/>')
+    parts.append("</svg>")
+
+    caption = (
+        f"Fitted range per direction ({len(finite)} of {len(ranges)} directions "
+        f"fitted); the outer ring is the longest fitted range ({_fmt(r_max)} map "
+        "units). Spokes are drawn mirrored because the semivariogram is "
+        "symmetric under a 180 deg rotation, while the fit itself uses half "
+        "the ring."
+    )
+    if unfitted:
+        caption += (
+            f" {unfitted} direction(s) drew an open grey marker: too few pairs "
+            "in that cone to fit, so those directions are unmeasured rather "
+            "than unstructured."
+        )
+    ratio = (r_max / min(finite)) if len(finite) >= 2 and min(finite) > 0 else None
+    if ratio is not None:
+        caption += f" Longest-to-shortest fitted range ratio: {ratio:.2f}."
+    return _wrap_chart(title, "".join(parts), caption)
+
+
+def semivariogram_svg(
+    lag: list[float],
+    semivariance: list[float],
+    *,
+    fitted: tuple[list[float], list[float]] | None = None,
+    npairs: list[float] | None = None,
+    nugget: float | None = None,
+    sill: float | None = None,
+    range_: float | None = None,
+    model_label: str = "",
+    x_label: str = "Distance (map units)",
+    y_label: str = "Semivariance",
+    title: str = "",
+    width: int = CHART_WIDTH,
+    height: int = CHART_HEIGHT,
+) -> str:
+    """Empirical semivariogram points with the fitted model drawn over them.
+
+    The empirical bins and the fitted model live on different x supports (bin
+    centres vs a dense grid), which is why this is not line_chart_svg: that
+    shares one x across all its series and labels every marker, which would
+    put 15 overlapping captions on the plot.
+
+    Empirical markers are sized by sqrt(N(h)) over the largest bin, so a bin
+    built from few pairs is visibly smaller -- the standard visual warning
+    that the long-lag tail is the least reliable part of the estimate. The
+    nugget, sill and range guides are drawn only when the caller passes them,
+    because drawing a sill line for a model that was never fitted would imply
+    a fit that does not exist.
+    """
+    if not lag or not semivariance or len(lag) != len(semivariance):
+        return _wrap_chart(title, no_data_svg(width, height))
+
+    plot_left = MARGIN["left"]
+    plot_right = width - MARGIN["right"]
+    plot_top = MARGIN["top"] + 16
+    plot_bottom = height - MARGIN["bottom"]
+
+    xs = list(lag)
+    ys = list(semivariance)
+    if fitted is not None and fitted[0]:
+        xs = xs + list(fitted[0])
+        ys = ys + list(fitted[1])
+    for guide in (nugget, sill):
+        if guide is not None:
+            ys.append(float(guide))
+
+    x_max = max(xs) or 1.0
+    y_max = max(ys) or 1.0
+    y_top = y_max * 1.08
+
+    sx = _make_scale((0.0, x_max), (plot_left, plot_right))
+    sy = _make_scale((0.0, y_top), (plot_bottom, plot_top))
+
+    parts = [_svg_open(width, height, title)]
+
+    for ty in _axis_ticks(0.0, y_top, 5):
+        ty_px = sy(ty)
+        parts.append(
+            f'<line x1="{plot_left}" y1="{ty_px:.1f}" x2="{plot_right}" '
+            f'y2="{ty_px:.1f}" stroke="{COLOR_GRID}" stroke-dasharray="2,3"/>'
+        )
+        parts.append(
+            f'<text x="{plot_left - 6:.1f}" y="{ty_px + 3:.1f}" '
+            f'text-anchor="end" font-size="9" fill="{COLOR_AXIS_TEXT}">{_fmt(ty)}</text>'
+        )
+    for tx in _axis_ticks(0.0, x_max, 5):
+        tx_px = sx(tx)
+        parts.append(
+            f'<text x="{tx_px:.1f}" y="{plot_bottom + 14:.1f}" '
+            f'text-anchor="middle" font-size="9" fill="{COLOR_AXIS_TEXT}">{_fmt(tx)}</text>'
+        )
+
+    parts.append(
+        f'<line x1="{plot_left}" y1="{plot_bottom}" x2="{plot_right}" y2="{plot_bottom}" stroke="{COLOR_AXIS_TEXT}"/>'
+        f'<line x1="{plot_left}" y1="{plot_top}" x2="{plot_left}" y2="{plot_bottom}" stroke="{COLOR_AXIS_TEXT}"/>'
+    )
+
+    if sill is not None and 0.0 <= float(sill) <= y_top:
+        y_sill = sy(float(sill))
+        parts.append(
+            f'<line x1="{plot_left}" y1="{y_sill:.1f}" x2="{plot_right}" y2="{y_sill:.1f}" '
+            f'stroke="{COLOR_SECONDARY}" stroke-width="1.5" stroke-dasharray="6,3"/>'
+            f'<text x="{plot_right - 4:.1f}" y="{y_sill - 5:.1f}" text-anchor="end" '
+            f'font-size="10" fill="{COLOR_SECONDARY}">sill {_fmt(float(sill))}</text>'
+        )
+    if nugget is not None and 0.0 <= float(nugget) <= y_top:
+        y_nug = sy(float(nugget))
+        parts.append(
+            f'<line x1="{plot_left}" y1="{y_nug:.1f}" x2="{plot_left + 90:.1f}" y2="{y_nug:.1f}" '
+            f'stroke="{COLOR_AXIS_TEXT}" stroke-width="1" stroke-dasharray="3,3"/>'
+            f'<text x="{plot_left + 4:.1f}" y="{y_nug + 11:.1f}" '
+            f'font-size="10" fill="{COLOR_AXIS_TEXT}">nugget {_fmt(float(nugget))}</text>'
+        )
+    if range_ is not None and 0.0 <= float(range_) <= x_max and sill is not None:
+        x_rng = sx(float(range_))
+        parts.append(
+            f'<line x1="{x_rng:.1f}" y1="{sy(float(sill)):.1f}" x2="{x_rng:.1f}" y2="{plot_bottom}" '
+            f'stroke="{COLOR_AXIS_TEXT}" stroke-width="1" stroke-dasharray="3,3"/>'
+            f'<text x="{x_rng + 4:.1f}" y="{plot_bottom - 4:.1f}" '
+            f'font-size="10" fill="{COLOR_AXIS_TEXT}">range {_fmt(float(range_))}</text>'
+        )
+
+    if fitted is not None and fitted[0]:
+        fx, fy = fitted
+        pts = " ".join(
+            f"{sx(fx[k]):.1f},{sy(fy[k]):.1f}" for k in range(min(len(fx), len(fy)))
+        )
+        parts.append(f'<polyline points="{pts}" fill="none" stroke="{COLOR_PRIMARY}" stroke-width="2"/>')
+
+    n_max = max(npairs) if npairs else 0
+    for k in range(len(lag)):
+        r = 4.0
+        if npairs and n_max > 0:
+            r = 2.5 + 3.5 * math.sqrt(max(float(npairs[k]), 0.0) / float(n_max))
+        parts.append(
+            f'<circle cx="{sx(lag[k]):.1f}" cy="{sy(semivariance[k]):.1f}" '
+            f'r="{r:.1f}" fill="{COLOR_TREND}"/>'
+        )
+
+    lx = plot_left
+    parts.append(
+        f'<circle cx="{lx}" cy="{MARGIN["top"] - 6}" r="4" fill="{COLOR_TREND}"/>'
+        f'<text x="{lx + 8}" y="{MARGIN["top"] - 2}" font-size="10" fill="{COLOR_AXIS_TEXT}">Empirical</text>'
+    )
+    if fitted is not None and fitted[0]:
+        label = f"Fitted {model_label}".strip()
+        parts.append(
+            f'<circle cx="{lx + 110}" cy="{MARGIN["top"] - 6}" r="4" fill="{COLOR_PRIMARY}"/>'
+            f'<text x="{lx + 118}" y="{MARGIN["top"] - 2}" font-size="10" fill="{COLOR_AXIS_TEXT}">{_esc(label)}</text>'
+        )
+
+    parts.append(
+        f'<text x="{(plot_left + plot_right) / 2:.1f}" y="{height - 8}" text-anchor="middle" '
+        f'font-size="11" fill="{COLOR_AXIS_TEXT}">{_esc(x_label)}</text>'
+    )
+    if y_label:
+        mid_y = (plot_top + plot_bottom) / 2
+        parts.append(
+            f'<text x="14" y="{mid_y:.1f}" text-anchor="middle" font-size="11" fill="{COLOR_AXIS_TEXT}" '
+            f'transform="rotate(-90 14 {mid_y:.1f})">{_esc(y_label)}</text>'
+        )
+    parts.append("</svg>")
+
+    caption = (
+        "Empirical semivariance per distance bin (red)"
+        + (", with the fitted model drawn over it" if fitted is not None and fitted[0] else "")
+        + ". Marker size is proportional to the square root of the number of "
+        "point pairs in the bin, so small markers at long lags mark the least "
+        "reliable bins."
+    )
+    return _wrap_chart(title, "".join(parts), caption)
+
+
 def lorenz_curve_svg(
     cum_pop_share: list[float],
     cum_value_share: list[float],
