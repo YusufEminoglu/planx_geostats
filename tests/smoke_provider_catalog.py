@@ -39,7 +39,7 @@ EXPECTED_GROUPS = {
     "07 | Interpolation and Geostatistics",
 }
 
-MIN_EXPECTED_ALGORITHM_COUNT = 87
+MIN_EXPECTED_ALGORITHM_COUNT = 88
 
 
 def _module_tree(path: Path) -> ast.Module:

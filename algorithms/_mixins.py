@@ -99,6 +99,7 @@ HELP_SLUGS = {
     "idw_interpolation": "alg-idw",
     "rbf_interpolation": "alg-rbf",
     "natural_neighbour_interpolation": "alg-natural-neighbour",
+    "ebk_interpolation": "alg-ebk",
     "polynomial_trend_surface": "alg-trend-surface",
 }
 

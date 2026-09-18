@@ -1475,6 +1475,54 @@ def _all_cases() -> list[RuntimeCase]:
             file_outputs=("PREDICTION", "NEIGHBOUR_COUNT"),
         ),
         RuntimeCase(
+            "ebk_interpolation",
+            "Empirical Bayesian Kriging Interpolation",
+            # The Izmir fixture's 387 observations clear the 8-observation
+            # floor and the 16 a cross-validation split needs, and sit under
+            # the 500-observation limit for the five-fold validation this
+            # method uses, so the default RUN_CV runs a real protocol here
+            # rather than taking a skip path - which is the point, since the
+            # cross-validation half of this tool is where the variance is
+            # tested.  They are above the workload guard's soft limit, so this
+            # case also exercises the warning a large run raises before it
+            # starts.
+            #
+            # N_SIMS is 30 rather than the 100 default.  The measured cost on a
+            # fixture this size is 8.6 s of prediction at 30 simulations
+            # against 26.0 s at 100, and 3.4 s of cross-validation against
+            # 8.4 s - all real runs of this method, not estimates - so the
+            # default would make this the slowest case in the matrix by a wide
+            # margin without testing anything the cheaper run does not.
+            # CELL_SIZE is 500 map units because the fixture spans about 43 km:
+            # the automatic grid would put hundreds of thousands of cells over
+            # it, and cost here is the product of cells, simulations and the
+            # observations each simulation solves over.
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "MODEL": 0,
+                "ALPHA": 1.5,
+                "DRIFT": 0,
+                "N_SIMS": 30,
+                "SUBSET_SIZE": 100,
+                "OVERLAP": 1,
+                "SEED": 0,
+                "N_BINS": 15,
+                "CELL_SIZE": 500.0,
+                "MAX_POINTS": 20000,
+                "RUN_CV": True,
+                "CV_FOLDS": 5,
+                "MASK_OUTSIDE": True,
+                "PREDICTION": _path(env["out"], "07_ebk_prediction.tif"),
+                "VARIANCE": _path(env["out"], "07_ebk_variance.tif"),
+                "SUBSET_LAYER": _path(env["out"], "07_ebk_subsets.gpkg"),
+                "HTML_REPORT": _path(env["out"], "07_ebk.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("PREDICTION", "VARIANCE"),
+            layer_outputs={"SUBSET_LAYER": 4},
+        ),
+        RuntimeCase(
             "polynomial_trend_surface",
             "Polynomial Trend Surface Interpolation",
             lambda env: {

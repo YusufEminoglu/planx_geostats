@@ -784,6 +784,7 @@ main {
 <a href="#alg-rbf">Radial Basis Function (RBF)</a>
 <a href="#alg-natural-neighbour">Natural Neighbour (Sibson)</a>
 <a href="#alg-trend-surface">Polynomial Trend Surface</a>
+<a href="#alg-ebk">Empirical Bayesian Kriging</a>
 
   <div class="group-label">Appendices</div>
   <a href="#methodological-notes">Methodological Notes</a>
@@ -811,7 +812,7 @@ main {
 
 <div class="meta-row">
     <span class="meta-chip">v3.9.0</span>
-    <span class="meta-chip">87 algorithms</span>
+    <span class="meta-chip">88 algorithms</span>
     <span class="meta-chip">8 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -827,7 +828,7 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">87</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">88</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">12</div><div class="stat-label">Regression Variants</div></div>
   <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
@@ -10163,6 +10164,131 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   <p style="margin:4px 0;"><strong>Davis, J.C.</strong> (1973). <em>Statistics and Data Analysis in Geology.</em> New York: Wiley. — The standard treatment of choosing the polynomial order and of the extrapolation hazard at the edge of the control area.</p>
   <p style="margin:4px 0;"><strong>Wameling, A.</strong> (2003). "Accuracy of Trend Surface Analysis." In <em>Proceedings of the 7th International Conference on Geocomputation</em>, Southampton. — Quantifies how far a fitted low-order surface can be trusted outside the observation hull.</p>
   <p style="margin:4px 0;"><strong>Hengl, T.</strong> (2009). <em>A Practical Guide to Geostatistical Mapping</em> (2nd ed.). Amsterdam: University of Amsterdam. — Situates global and local polynomial fits within the wider interpolation workflow and against kriging.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-ebk">
+<div class="alg-card-header">
+  <div class="alg-icon">⚙️</div>
+  <div class="alg-info">
+    <h4>Empirical Bayesian Kriging Interpolation</h4>
+    <div class="alg-id">ebk_interpolation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-ebk" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Fits a semivariogram to each local subset, simulates a new dataset from that fit, refits the family to the simulated data, and weights every refit by how likely the real observations are under it — so the surface is an average over the models that could have produced the data, and the variance it reports includes the uncertainty in the variogram itself. No variogram has to be supplied or inspected first.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Ordinary kriging treats its variogram as known. Its weights and its prediction variance are both derived from the fitted nugget, sill and range as though those three numbers had been measured rather than estimated from the same observations being predicted. When the fit was chosen by eye, or by a single least-squares pass over a binned and noisy empirical variogram, the reported uncertainty is narrower than the evidence supports — and the analyst has no way of telling from the output how much narrower. Empirical Bayesian Kriging is the answer to that specific problem, and it is the reason it is the method a planner without a background in geostatistics should reach for first: it does the variogram fitting itself, and it reports an uncertainty that reflects the fact that the fitting was uncertain.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The loop, in words.</strong> Every subset of the data is fitted as ordinary kriging would fit it. A new dataset is then <em>simulated</em> from that fitted model, at the same locations and of the same size, and the family is refitted to the simulated data. That refit is a draw from the distribution of models that could plausibly have produced the real observations — a model that would have generated data like these is more likely to be the model that did, so a refit which arose from simulated data resembling the real data is a refit worth trusting. Each draw is given a weight equal to the Gaussian likelihood of the real observations under that draw's parameters, the draws are normalised to sum to one, and the prediction at each output cell is the weighted average of what all those draws predict there. Nothing about this requires the analyst to recognise a spherical variogram from a noisy cloud of points; the whole family is fitted and the data decide.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The variance is the point, not a by-product.</strong> The variance at a cell is the <em>law of total variance</em> over the weighted draws: the weighted average of the draws' own kriging variances, plus the weighted spread of the draws' predictions around their common average. The second term is the one ordinary kriging cannot produce, because a single fitted model has no spread to measure — it is the variance that comes from the variogram being estimated rather than known. It is therefore never smaller than an ordinary kriging variance from a comparable fit, and the difference is not a loss of precision. Measured against ordinary kriging fitted to the same data on the engine's synthetic test fields, its variance is 1.11 times the kriging variance overall and 1.28 times within 25 map units of an observation — the inflation is largest where the observations are dense, because that is where local subsets disagree most about the structure. Point accuracy is <em>not</em> improved: on identical cross-validation folds the two methods scored RMSE 1.1555 and 1.1549 respectively. What the method buys is a variance that does not pretend to more knowledge than the data contain, along with the removal of the manual fitting step.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why subsets, and why the model may change between them.</strong> The fit is performed inside local subsets rather than once over the whole layer, with each subset extended by a ring of neighbouring subsets so the edge of a subset is not fitted on those of its own points closest to it and no others. Two things follow. The cost is bounded by the subset size rather than by the observation count, since the kriging solve is cubic in the observations it runs over — which is what makes the method affordable on a layer with thousands of points. And the fitted model is allowed to differ from place to place, which a single global fit forbids by construction. Where the per-subset layer shows the family changing from one subset to the next, that is a finding about the field: the spatial structure is not the same everywhere, which is exactly the situation in which a single variogram quietly averaged over all of it would mislead.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Choosing the family automatically is a defensible default, on measurement rather than convenience.</strong> In automatic mode each subset is fitted to spherical, exponential, Gaussian and stable forms and keeps whichever fits best. On the engine's test fields this recovers the family that generated the data about two times in three, and where it chooses wrongly the cross-validation RMSE is about 1 per cent worse. A one per cent penalty for removing the single most difficult decision in variogram modelling is a trade worth making by default, and the per-subset layer and the report's fitted-range and nugget figures are there for the analyst who wants to check the choice rather than make it.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Step 1 — fit the subset.</strong> For subset \(S\) the family is fitted to the empirical semivariogram by weighted least squares, the standard fitting rule:</p>
+  $$ \hat{\theta} = \arg\min_{\theta} \sum_{h} \frac{n_h}{\gamma(h;\theta)^2}\, \bigl(\hat{\gamma}(h) - \gamma(h;\theta)\bigr)^2 \tag{1} $$
+  <p style="margin:8px 0;">with \(\hat{\gamma}(h)\) the binned empirical semivariogram, \(n_h\) the number of pairs in bin \(h\), and \(\theta = (\text{nugget}, \text{partial sill}, \text{range})\) — plus the shape exponent for the stable family. In automatic mode (1) is solved for every family in turn and the smallest weighted residual sum is kept.</p>
+  <p style="margin:8px 0;"><strong>Step 2 — simulate from the fit.</strong> A new dataset \(z^{*}\) of the same size at the same locations is drawn from the fitted model:</p>
+  $$ z^{*} \sim \mathcal{N}\!\left(\hat{\mu}\mathbf{1},\; \Sigma(\hat{\theta})\right), \qquad \Sigma = \text{the covariance implied by } \hat{\theta} \tag{2} $$
+  <p style="margin:8px 0;">The draw is taken as \(z^{*} = \hat{\mu}\mathbf{1} + L\,\mathbf{u}\) with \(\mathbf{u}\) standard normal and \(L\) the lower Cholesky factor of \(\Sigma\).</p>
+  <p style="margin:8px 0;"><strong>Step 3 — refit to the simulated data.</strong> Solving (1) again, this time on \(z^{*}\), gives \(\theta^{*}_{k}\) for the \(k\)-th draw. Because the simulated data are a plausible realisation of the fitted model rather than the observations themselves, the refit's parameter values vary from draw to draw, and that variation <em>is</em> the uncertainty being propagated.</p>
+  <p style="margin:8px 0;"><strong>Step 4 — weight the draws by the likelihood of the real data.</strong></p>
+  $$ w_k = \frac{\mathcal{L}\!\left(\theta^{*}_{k} \mid \mathbf{z}\right)}{\sum_{j=1}^{K} \mathcal{L}\!\left(\theta^{*}_{j} \mid \mathbf{z}\right)}, \qquad \mathcal{L}(\theta \mid \mathbf{z}) = \frac{1}{(2\pi)^{n/2}\sqrt{\det \Sigma(\theta)}}\, \exp\!\left(-\tfrac{1}{2}(\mathbf{z}-\hat{\mu}\mathbf{1})^{\top}\Sigma(\theta)^{-1}(\mathbf{z}-\hat{\mu}\mathbf{1})\right) \tag{3} $$
+  <p style="margin:8px 0;">A draw whose parameters would have made the observed data unlikely receives a small weight. This is the Bayesian step: the simulations supply candidates, and the data decide how much each one counts.</p>
+  <p style="margin:8px 0;"><strong>Step 5 — predict with every weighted draw and average.</strong> Each draw krigs with its own parameters, giving \(\hat{z}_k(p)\) and \(\sigma^2_k(p)\) at a target \(p\), and the reported prediction is the mixture mean:</p>
+  $$ \hat{z}(p) = \sum_{k} w_k\, \hat{z}_k(p) \tag{4} $$
+  <p style="margin:8px 0;"><strong>Step 6 — the mixture variance.</strong> The reported variance is the law of total variance for that mixture, which is the sum of the within-draw and between-draw terms:</p>
+  $$ \hat{\sigma}^2(p) = \underbrace{\sum_{k} w_k\, \sigma^2_k(p)}_{\text{within: average kriging variance}} + \underbrace{\sum_{k} w_k \bigl(\hat{z}_k(p) - \hat{z}(p)\bigr)^2}_{\text{between: spread of the models}} \tag{5} $$
+  <p style="margin:8px 0;">Equation (5) is where the method differs from ordinary kriging in substance rather than in procedure. The first term alone is what a single fitted variogram would report; the second exists only because the variogram is treated as unknown, and it is never negative. The engine's test suite checks the identity directly: the mixture variance rebuilt from the stored draws matches the predictive routine exactly, and its excess over the weighted mean of the individual variances equals the between-model spread to \(3 \times 10^{-13}\).</p>
+  <p style="margin:8px 0;"><strong>How much of the ensemble is real.</strong> The posterior weights are summarised by the effective model count, the reciprocal of the sum of their squares:</p>
+  $$ K_{\text{eff}} = \frac{1}{\sum_{k} w_k^2} \tag{6} $$
+  <p style="margin:8px 0;">If one draw takes all the weight this is 1 and the ensemble has collapsed onto a single model, in which case the extra simulations are buying nothing and (5)'s second term vanishes. Reported beside the number of simulations requested, it says whether the averaging is real. For reference, the plugin's bundled Izmir fixture — 387 road-density observations, the tool's default subset size of 100, 30 simulations and seed 0 — settles at 1.64 of 30: a genuine but not overwhelming mixture.</p>
+  <p style="margin:8px 0;"><strong>A fit that would be singular is rescued rather than abandoned.</strong> Spatial covariance matrices estimated from local subsets are frequently near-singular, most often when the fitted nugget is at or near zero and observations are close together. The Cholesky factorisation is attempted on \(\Sigma\), then on \(\Sigma + \delta I\) with \(\delta\) starting at \(10^{-10}\) and doubling through twelve steps, and the value of \(\delta\) that succeeded is reported. On the test suite's deliberate near-singular case the ladder succeeds at \(4 \times 10^{-10}\) where an unjittered factorisation refuses outright, and the reported number is small enough that the perturbation is immaterial to the surface.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The method is implemented in <code>core/ebk_engine.py</code> with <code>numpy</code> alone — <code>fit_variogram</code>, <code>simulate_realisation</code>, <code>fit_ensemble</code>, <code>ebk_predict</code>, <code>spatial_subsets</code> and <code>ebk_fold_cross_validation</code> — using the same binned empirical variogram and the same fitting rule as the Ordinary / Universal Kriging tool, so a variogram fitted by either tool is comparable. The simulation is checked against theory rather than against a reference implementation: over 800 realisations the ratio of the simulated variance to the modelled variance is within 0.0094 of 1 against a Monte Carlo standard error of 0.0086, and a deliberately wrong negative control measures 0.4621 and fails the same check. The cross-validation here is five-fold, not leave-one-out, and the two are not comparable: a held-out observation costs this method a complete refit — a simulated ensemble and a Cholesky factorisation per draw, in every subset — rather than the single kriging solve it costs ordinary kriging, so leave-one-out is not attempted at all rather than attempted and abandoned. Five-fold validation is limited to 500 observations, a limit derived from the same cost model that bounds the run itself rather than chosen: at the defaults, five folds over 500 observations costs about eight seconds. The report names the protocol, so a figure quoted from it cannot be mistaken for a leave-one-out one.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to interpolate</td></tr>
+      <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Automatic</td><td>Automatic / spherical / exponential / Gaussian / stable</td><td>Semivariogram family; Automatic fits every subset to them all and keeps the best</td></tr>
+      <tr><td class="param-name">ALPHA</td><td class="param-type">Double</td><td class="param-default">1.5</td><td>0.1–2.0</td><td>Shape exponent for the stable family; ignored by the others</td></tr>
+      <tr><td class="param-name">DRIFT</td><td class="param-type">Enum</td><td class="param-default">None</td><td>None / linear / quadratic</td><td>Polynomial trend removed before each fit and added back to the prediction</td></tr>
+      <tr><td class="param-name">N_SIMS</td><td class="param-type">Integer</td><td class="param-default">100</td><td>1–500</td><td>Simulations per subset; cost is linear in this number, and below about 20 the average is visibly noisy</td></tr>
+      <tr><td class="param-name">SUBSET_SIZE</td><td class="param-type">Integer</td><td class="param-default">100</td><td>0–200000</td><td>Observations per local subset; 0 puts every observation in one subset. The main cost knob</td></tr>
+      <tr><td class="param-name">OVERLAP</td><td class="param-type">Integer</td><td class="param-default">1</td><td>0–5</td><td>Rings of neighbouring subsets added to each subset, so its edge is fitted on data beyond it</td></tr>
+      <tr><td class="param-name">SEED</td><td class="param-type">Integer</td><td class="param-default">0</td><td>0–2147483647</td><td>Random seed; the same seed reproduces the same surface exactly</td></tr>
+      <tr><td class="param-name">N_BINS</td><td class="param-type">Integer</td><td class="param-default">15</td><td>4–200</td><td>Distance bins for each internal fit; the report states how many were actually used</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">4000</td><td>8–200000</td><td>Cap on observations this run will accept; a larger layer is refused rather than run for hours</td></tr>
+      <tr><td class="param-name">RUN_CV</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Five-fold cross-validation; the only measure of whether the ensemble's variance matches its error</td></tr>
+      <tr><td class="param-name">CV_FOLDS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>2–20</td><td>Cross-validation folds; each fold refits every subset</td></tr>
+      <tr><td class="param-name">MASK_OUTSIDE</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Write cells outside the observations' convex hull as no-data; the method returns a number there, but nothing constrains it</td></tr>
+      <tr><td class="param-name">PREDICTION</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Predicted surface (Float32 GeoTIFF)</td></tr>
+      <tr><td class="param-name">VARIANCE</td><td class="param-type">Raster Layer</td><td class="param-default">On</td><td>Optional</td><td>Prediction variance including the variogram uncertainty ordinary kriging omits; not a confidence interval</td></tr>
+      <tr><td class="param-name">SUBSET_LAYER</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional, point</td><td>One point per subset carrying its fitted family, nugget, partial sill, range, fit quality and effective model count</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the ensemble's properties, cross-validation statistics and their protocol, and extrapolation summary</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>PREDICTION</code> — Float32 GeoTIFF of the mixture mean, in the input layer's CRS and covering its extent &middot; <code>VARIANCE</code> — Float32 GeoTIFF of the mixture variance from equation (5) &middot; <code>SUBSET_LAYER</code> — one point per subset carrying its fitted family and parameters, the fit's quality, its posterior effective model count and whether it fell back to a single fit &middot; <code>HTML_REPORT</code> — the ensemble's effective model count and posterior weights, the median fitted range, nugget and partial sill across subsets, the cross-validation statistics with their protocol named, the count of cells written as no-data, and the analyst guidance
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  Both rasters are written before the hull mask is applied to the report's statistics, so the summary describes the surface the method actually produced, and the masked cell count is stated separately. Where a subset could not refit enough models — possible only at very low simulation counts — it falls back to its single initial fit, its cells carry an ordinary kriging variance rather than a mixture variance, and both the count of such subsets and their identity in the per-subset layer make that visible.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Do not compare this variance with a kriging variance as though the larger number were the worse one.</strong> The two surfaces answer different questions. Ordinary kriging's variance is conditional on its variogram being right; this one is not, and the excess — the second term of equation (5) — is the price of that honesty rather than an inefficiency. A decision that needs a conservative error bar should use this one. A decision that needs to compare two nearby cells with each other can use either, because the between-model term varies slowly across the map and largely cancels in a difference.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Read the cross-validation protocol before quoting the number.</strong> The reported error is five-fold, which fits each model on four fifths of the data, so it is larger than a leave-one-out figure would be on the same points. Comparing it against the leave-one-out number that the other interpolation tools in this plugin report — and concluding that this method is less accurate — mistakes the protocol for the method. The report names the protocol on every run for that reason.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The standardised errors are what test the variance itself.</strong> The mean error should be near zero, and the root mean square standardised error — the cross-validation errors divided by the variance the method predicted for them — should be near 1. A value well below 1 means the variance surface is smaller than the errors it is describing, and a value well above 1 means it is larger. Skip the variance raster and this check disappears, which is the reason the variance output is on by default.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The per-subset layer is the diagnostic worth opening.</strong> A fitted range that changes by an order of magnitude between neighbouring subsets, or a family that changes from exponential to Gaussian across the area, is information about the field rather than a failure of the fitting — the structure genuinely is not the same everywhere. A nugget pinned near zero in a subset with close-together observations usually means the subset's spacing is too coarse to resolve micro-scale variation, not that the field is continuous. Where the changes follow a boundary an analyst recognises, that boundary is worth mapping in its own right.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When not to use this method.</strong> Where the variogram is already known independently and its enforcement is the point — a regulatory calculation that must use a published model, or a comparison against a fixed baseline — this tool is the wrong one, because it will quietly fit a different variogram wherever the data suggest one. For a field with sharp boundaries, any continuous-covariance interpolator including this one will smooth the discontinuity into a gradient; delineate the boundary first and interpolate within the units. And where the observations are so dense that a global fit is affordable and the structure is visibly stable across the area, ordinary kriging with an inspected variogram gives the same surface with fewer moving parts and one less source of random variation.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Krivoruchko, K.</strong> (2012). "Empirical Bayesian Kriging." <em>ArcUser</em> (Fall 2012): 6–7. — The clearest statement of the algorithm this tool implements: the simulate-refit-weight loop, and the argument that treating the variogram as unknown is what distinguishes the method from ordinary kriging.</p>
+  <p style="margin:4px 0;"><strong>Gribov, A. &amp; Krivoruchko, K.</strong> (2020). "Empirical Bayesian Kriging Implementation and Usage." <em>Science of the Total Environment</em> 722: 137290. DOI: <a href="https://doi.org/10.1016/j.scitotenv.2020.137290">10.1016/j.scitotenv.2020.137290</a> — The reference implementation paper, covering the local subsets, the automatic family selection and the simulation count needed for a stable result.</p>
+  <p style="margin:4px 0;"><strong>Omre, H.</strong> (1987). "Bayesian Kriging — Merging Observations and Qualified Guesses in Kriging." <em>Mathematical Geology</em> 19(1): 25–39. DOI: <a href="https://doi.org/10.1007/BF01275469">10.1007/BF01275469</a> — The origin of treating variogram parameters as random rather than fixed, and of the likelihood weighting in equation (3).</p>
+  <p style="margin:4px 0;"><strong>Kitanidis, P.K.</strong> (1986). "Parameter Uncertainty in Estimation of Spatial Functions: Bayesian Analysis." <em>Water Resources Research</em> 22(4): 499–507. DOI: <a href="https://doi.org/10.1029/WR022i004p00499">10.1029/WR022i004p00499</a> — Derives the inflation of the prediction variance that follows from parameter uncertainty, which is the second term of equation (5).</p>
+  <p style="margin:4px 0;"><strong>Diggle, P.J. &amp; Ribeiro, P.J.</strong> (2007). <em>Model-based Geostatistics.</em> New York: Springer. DOI: <a href="https://doi.org/10.1007/978-0-387-48536-2">10.1007/978-0-387-48536-2</a> — The general Bayesian treatment of spatial prediction, and the standard reference for the simulation-based approach to the posterior.</p>
+  <p style="margin:4px 0;"><strong>Chilès, J.-P. &amp; Delfiner, P.</strong> (2012). <em>Geostatistics: Modeling Spatial Uncertainty</em> (2nd ed.). Hoboken: Wiley. DOI: <a href="https://doi.org/10.1002/9781118136188">10.1002/9781118136188</a> — The estimable-variogram problem stated at length, including the practice of fitting several authorised models and comparing them, which is what the automatic mode does per subset.</p>
   </div>
 </div>
 </article>
