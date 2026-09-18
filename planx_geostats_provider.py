@@ -92,6 +92,7 @@ from .algorithms.alg_semivariogram import EmpiricalSemivariogramAlgorithm
 from .algorithms.alg_kriging import KrigingAlgorithm
 from .algorithms.alg_idw import IdwAlgorithm
 from .algorithms.alg_rbf import RbfAlgorithm
+from .algorithms.alg_natural_neighbour import NaturalNeighbourAlgorithm
 from .algorithms.alg_trend_surface import TrendSurfaceAlgorithm
 
 
@@ -213,4 +214,5 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(KrigingAlgorithm())
         self.addAlgorithm(IdwAlgorithm())
         self.addAlgorithm(RbfAlgorithm())
+        self.addAlgorithm(NaturalNeighbourAlgorithm())
         self.addAlgorithm(TrendSurfaceAlgorithm())

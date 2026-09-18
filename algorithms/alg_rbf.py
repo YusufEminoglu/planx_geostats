@@ -516,7 +516,9 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             raise QgsProcessingException(str(exc)) from exc
 
         stats = {
-            "prediction": surface_stats(write_grid),
+            "prediction": surface_stats(
+                write_grid, DEFAULT_NODATA if mask_outside else None
+            ),
             "cols": cols,
             "rows": rows,
             "cells": cells,

@@ -98,6 +98,7 @@ HELP_SLUGS = {
     "kriging_interpolation": "alg-kriging",
     "idw_interpolation": "alg-idw",
     "rbf_interpolation": "alg-rbf",
+    "natural_neighbour_interpolation": "alg-natural-neighbour",
     "polynomial_trend_surface": "alg-trend-surface",
 }
 

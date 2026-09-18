@@ -804,3 +804,513 @@ def cv_protocol_for(n_obs, loo_limit=None):
     if loo_limit is None or int(n_obs) <= int(loo_limit):
         return "loo", int(n_obs)
     return "kfold", DEFAULT_FOLDS
+
+
+# ── natural neighbour ────────────────────────────────────────────────────────
+
+#: Triangulating is O(n log n) in principle, but every insertion is located by
+#: walking the mesh in Python, so the measured cost is closer to quadratic:
+#: 500 points build in 0.10 s, 2 000 in 0.50 s, 8 000 in 2.9 s.  The ceiling
+#: sits where that is still a wait rather than a refusal, and matches IDW's
+#: because neither method has a dense solve to pay for.
+NATURAL_SOFT_LIMIT = 20_000
+
+#: Leave-one-out for this method means one re-triangulation per held-out
+#: observation, because removing an observation changes the mesh rather than
+#: only a right-hand side.  Measured here rather than guessed: 150 points take
+#: 4 s, 250 take 12 s and 300 take 17.5 s, so the limit is set where the wait
+#: is still worth the stronger score.  Above it k-fold validation runs instead
+#: and the report names the protocol, because the two are not comparable.
+NATURAL_LOO_LIMIT = 300
+
+#: Relative slack in the in-circle test.  Ties are resolved *into* the cavity:
+#: points on a common circle are common in gridded data, and a maximal cavity
+#: keeps the boundary a simple polygon, whereas breaking the other way can
+#: leave a cavity whose boundary is not star-shaped around the inserted point.
+INCIRCLE_REL = 1e-12
+
+
+def orient(a, b, c) -> float:
+    """Twice the signed area of the triangle ``(a, b, c)``.
+
+    Positive when the three points run counter-clockwise.  This is the whole of
+    the inside/outside test for a counter-clockwise triangle: a point is inside
+    exactly when it lies to the left of all three directed edges.
+    """
+    return float((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]))
+
+
+def circumcentres(a, b, c):
+    """Circumcentres of a batch of point triples, each an ``(n, 2)`` array."""
+    a = np.atleast_2d(np.asarray(a, dtype=float))
+    b = np.atleast_2d(np.asarray(b, dtype=float))
+    c = np.atleast_2d(np.asarray(c, dtype=float))
+    ax, ay = a[:, 0], a[:, 1]
+    bx, by = b[:, 0], b[:, 1]
+    cx, cy = c[:, 0], c[:, 1]
+    den = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ux = ((ax * ax + ay * ay) * (by - cy)
+              + (bx * bx + by * by) * (cy - ay)
+              + (cx * cx + cy * cy) * (ay - by)) / den
+        uy = ((ax * ax + ay * ay) * (cx - bx)
+              + (bx * bx + by * by) * (ax - cx)
+              + (cx * cx + cy * cy) * (bx - ax)) / den
+    return np.column_stack([ux, uy])
+
+
+class DelaunayTriangulation:
+    """Incremental (Bowyer-Watson) Delaunay triangulation of 2-D points.
+
+    Hand-written rather than taken from ``scipy.spatial`` for the reason the
+    module docstring gives: scipy is not a dependency this plugin declares, so
+    importing it here would create one tool that needs a package the installer
+    never installs.  The scratch harness cross-checks the result against
+    scipy's triangulation when scipy happens to be present; the shipped code
+    never touches it.
+
+    A super-triangle is built around the data and its three vertices are
+    removed at the end, which is what lets incremental insertion treat the hull
+    as ordinary interior.  Internal indices are therefore not the input
+    indices: ``points`` is the input stacked on the three super vertices, and
+    ``triangles`` is the filtered view of the real ones.
+    """
+
+    def __init__(self, points):
+        p = np.asarray(points, dtype=float)
+        if p.ndim != 2 or p.shape[1] != 2:
+            raise ValueError("Triangulation needs an (n, 2) array of points.")
+        self.n = len(p)
+        if self.n < 3:
+            raise ValueError("Triangulation needs at least three points.")
+
+        lo, hi = p.min(axis=0), p.max(axis=0)
+        centre = (lo + hi) / 2.0
+        span = float(np.max(hi - lo))
+        if span <= 0.0:
+            raise ValueError(
+                "Every observation shares one location, so there is no "
+                "triangulation to build."
+            )
+        # Wide enough that its circumcircle contains the whole bounding box: at
+        # 20 spans the circle reaches about 20.02 spans from the centre.
+        super_tri = np.array([
+            [centre[0] - 20.0 * span, centre[1] - span],
+            [centre[0] + 20.0 * span, centre[1] - span],
+            [centre[0], centre[1] + 20.0 * span],
+        ])
+        self.points = np.vstack([p, super_tri])
+
+        self._triangles = [(self.n, self.n + 1, self.n + 2)]
+        self._alive = [True]
+        self._circles = [None]
+        self._edge_tris = {}
+        self._index_triangle(0)
+        self._last = 0
+
+        for k in range(self.n):
+            self._insert(k)
+        self._drop_super()
+
+    # ── circle bookkeeping ───────────────────────────────────────────────────
+
+    def _circle(self, t):
+        if self._circles[t] is None:
+            a, b, c = (self.points[i] for i in self._triangles[t])
+            centre = circumcentres(a, b, c)[0]
+            self._circles[t] = (centre, float(np.sum((a - centre) ** 2)))
+        return self._circles[t]
+
+    def _in_circle(self, t, p):
+        centre, radius2 = self._circle(t)
+        if not np.isfinite(radius2):
+            return False
+        d2 = float(np.sum((p - centre) ** 2))
+        return d2 <= radius2 * (1.0 + INCIRCLE_REL)
+
+    # ── graph bookkeeping ────────────────────────────────────────────────────
+
+    def _directed_edges(self, t):
+        a, b, c = self._triangles[t]
+        return ((a, b), (b, c), (c, a))
+
+    def _index_triangle(self, t):
+        for a, b in self._directed_edges(t):
+            self._edge_tris.setdefault((min(a, b), max(a, b)), set()).add(t)
+
+    def _unindex_triangle(self, t):
+        for a, b in self._directed_edges(t):
+            key = (min(a, b), max(a, b))
+            bucket = self._edge_tris.get(key)
+            if bucket is not None:
+                bucket.discard(t)
+                if not bucket:
+                    del self._edge_tris[key]
+
+    def _other_triangle(self, a, b, t):
+        """The alive triangle sharing edge ``(a, b)`` with ``t``, if any."""
+        bucket = self._edge_tris.get((min(a, b), max(a, b)))
+        if not bucket:
+            return None
+        for u in bucket:
+            if u != t:
+                return u
+        return None
+
+    def _add_triangle(self, verts):
+        t = len(self._triangles)
+        self._triangles.append(tuple(verts))
+        self._alive.append(True)
+        self._circles.append(None)
+        self._index_triangle(t)
+        return t
+
+    def _retire(self, t):
+        self._unindex_triangle(t)
+        self._alive[t] = False
+        self._circles[t] = None
+
+    # ── insertion ────────────────────────────────────────────────────────────
+
+    def _first_alive(self):
+        for t in range(len(self._triangles)):
+            if self._alive[t]:
+                return t
+        raise ValueError("The triangulation has no triangles left.")
+
+    def _locate(self, p):
+        """A triangle whose circumcircle contains ``p``, or ``None``.
+
+        Walks from the last located triangle, crossing whichever edge ``p``
+        lies to the right of.  A raster scanned row by row lands each cell near
+        the previous one, so the walk is a handful of steps in practice; the
+        scan at the end is the safety net for the case where the walk cannot
+        leave the super-triangle.
+
+        The walk must start on a live triangle.  Starting on a retired one is
+        not a visible error at the start - it returns a triangle, and a
+        triangle has the edges it always had - but its edges have been removed
+        from the adjacency index, so its cavity comes back as itself alone and
+        the retriangulation around it silently overlaps the triangles that
+        replaced it.
+        """
+        t = self._last if self._alive[self._last] else self._first_alive()
+        for _ in range(4 * len(self._triangles) + 16):
+            tri = self._triangles[t]
+            stepped = False
+            for i in range(3):
+                a, b = tri[i], tri[(i + 1) % 3]
+                if orient(self.points[a], self.points[b], p) < 0.0:
+                    nxt = self._other_triangle(a, b, t)
+                    if nxt is None or not self._alive[nxt]:
+                        stepped = False
+                        break
+                    t = nxt
+                    stepped = True
+                    break
+            if not stepped:
+                break
+            self._last = t
+        if self._in_circle(t, p):
+            return t
+        for u in range(len(self._triangles)):
+            if self._alive[u] and self._in_circle(u, p):
+                return u
+        return None
+
+    def _cavity(self, p, t0):
+        """Every alive triangle whose circumcircle contains ``p``."""
+        stack = [t0]
+        seen = {t0}
+        bad = []
+        while stack:
+            t = stack.pop()
+            bad.append(t)
+            for a, b in self._directed_edges(t):
+                u = self._other_triangle(a, b, t)
+                if u is None or u in seen or not self._alive[u]:
+                    continue
+                if self._in_circle(u, p):
+                    seen.add(u)
+                    stack.append(u)
+        return bad
+
+    def _cavity_boundary(self, bad):
+        """The directed edges bounding a cavity, verified to form one cycle.
+
+        The check is worth the loop.  A boundary that is not a single closed
+        counter-clockwise cycle means the cavity was not star-shaped around the
+        inserted point, and retriangulating it would produce overlapping
+        triangles; raising here turns a silently corrupt triangulation into a
+        message that says what happened.
+        """
+        members = set(bad)
+        edges = []
+        for t in bad:
+            for a, b in self._directed_edges(t):
+                u = self._other_triangle(a, b, t)
+                if u is None or u not in members:
+                    edges.append((a, b))
+        tails, heads = {}, {}
+        for a, b in edges:
+            tails[a] = tails.get(a, 0) + 1
+            heads[b] = heads.get(b, 0) + 1
+        if set(tails) != set(heads) or any(v != 1 for v in tails.values()):
+            raise ValueError(
+                "The triangulation could not be updated: the cavity around a "
+                "point did not close into a single polygon, which happens when "
+                "observations are so nearly collinear or duplicated that the "
+                "in-circle test cannot separate them. Remove duplicate "
+                "locations or thin the observations."
+            )
+        return edges
+
+    def _insert(self, k):
+        p = self.points[k]
+        t = self._locate(p)
+        if t is None:
+            raise ValueError(
+                "A point could not be located inside the triangulation, which "
+                "means the observation set is numerically degenerate."
+            )
+        bad = self._cavity(p, t)
+        edges = self._cavity_boundary(bad)
+        for u in bad:
+            self._retire(u)
+        for a, b in edges:
+            self._add_triangle((a, b, k))
+
+    def _drop_super(self):
+        """Retire every triangle that touches a super-triangle vertex."""
+        for t in range(len(self._triangles)):
+            if self._alive[t] and max(self._triangles[t]) >= self.n:
+                self._retire(t)
+
+    # ── public view ──────────────────────────────────────────────────────────
+
+    @property
+    def triangles(self):
+        """The real triangles, ``(m, 3)``, counter-clockwise, input indices."""
+        return np.array(
+            [self._triangles[t] for t in range(len(self._triangles))
+             if self._alive[t] and max(self._triangles[t]) < self.n],
+            dtype=int,
+        )
+
+    def cavity_boundary(self, p, t0):
+        """The ordered neighbour ring around a target inside the triangulation.
+
+        Returned as the vertex cycle rather than as edges, because the cycle is
+        what the weights are defined on: consecutive ring vertices bound one
+        Voronoi edge of the inserted point.
+        """
+        edges = self._cavity_boundary(self._cavity(p, t0))
+        nxt = {}
+        for a, b in edges:
+            nxt[a] = b
+        start = edges[0][0]
+        ring = [start]
+        while True:
+            step = nxt.get(ring[-1])
+            if step is None or step == start:
+                break
+            ring.append(step)
+            if len(ring) > len(edges):
+                return None
+        if len(ring) != len(edges):
+            return None
+        return ring
+
+
+def _bisector_half_plane(a, b):
+    """``(nx, ny, c)`` for the half-plane ``{x : |x - a| <= |x - b|}``.
+
+    ``|x-a|^2 <= |x-b|^2`` rearranges to ``2(b-a).x <= |b|^2 - |a|^2``, so the
+    bisector is a straight line in the coordinates and the set closer to ``a``
+    is one of its two sides.  That linearity is what makes the clipping below
+    exact rather than iterative.
+    """
+    nx = 2.0 * (b[0] - a[0])
+    ny = 2.0 * (b[1] - a[1])
+    return nx, ny, b[0] * b[0] + b[1] * b[1] - a[0] * a[0] - a[1] * a[1]
+
+
+def _clip_half_plane(poly, nx, ny, c):
+    """Sutherland-Hodgman clip of a convex polygon to ``nx*x + ny*y <= c``."""
+    out = []
+    n = len(poly)
+    for i in range(n):
+        px, py = poly[i]
+        qx, qy = poly[(i + 1) % n]
+        dp = nx * px + ny * py - c
+        dq = nx * qx + ny * qy - c
+        if dp <= 0.0:
+            out.append((px, py))
+        if (dp < 0.0) != (dq < 0.0):
+            t = dp / (dp - dq)
+            out.append((px + t * (qx - px), py + t * (qy - py)))
+    return out
+
+
+def _polygon_area(poly):
+    """Signed area of a polygon given as a list of ``(x, y)`` tuples."""
+    total = 0.0
+    n = len(poly)
+    for i in range(n):
+        x1, y1 = poly[i]
+        x2, y2 = poly[(i + 1) % n]
+        total += x1 * y2 - x2 * y1
+    return 0.5 * total
+
+
+def natural_neighbour_weights(triangulation, target):
+    """Sibson's natural-neighbour coordinates of one target.
+
+    Returns ``(ring, weights)`` with the neighbours' indices and their
+    normalised coordinates, ``(ring, None)`` when the geometry of the ring is
+    degenerate, or ``None`` when the target has no neighbour ring at all.
+
+    The weights are Sibson's (1981): the fraction of the target's new Voronoi
+    cell that falls inside each natural neighbour's old one - the area that
+    neighbour "loses" when the target is inserted.  ArcGIS's Natural Neighbor
+    tool computes the same quantity, so the surface this feeds is the surface
+    that tool draws.
+
+    Two facts make this affordable without constructing a single Voronoi cell.
+    The first is that the target's new cell is the polygon of circumcentres of
+    the triangles around it, which the triangulation already has.  The second
+    is Sibson's covering property: every point of the new cell has one of the
+    *ring* vertices as its nearest old site, so "inside neighbour ``i``'s old
+    cell" reduces to "closer to ring vertex ``i`` than to any other ring
+    vertex".  The stolen area is therefore the new cell clipped by ``k - 1``
+    bisector half-planes, each of which is a straight line.
+
+    Sibson's coordinates reproduce a constant *and* a linear function exactly,
+    which is what separates them from the cheaper Laplacian (non-Sibson)
+    coordinates that take Voronoi edge *lengths* instead of areas.  The
+    Laplacian form is non-negative and sums to one like this one, so it looks
+    right on a smooth field, but it does not reproduce a plane - a fact worth
+    recording because it was measured here, not assumed: on the harness's
+    planar field it misses by about two observation spacings, which no
+    interpolation scheme presented as natural-neighbour should do.
+    """
+    p = np.asarray(target, dtype=float)
+    t0 = triangulation._locate(p)
+    if t0 is None:
+        return None
+    raw = triangulation.cavity_boundary(p, t0)
+    if raw is None or len(raw) < 3:
+        return None
+    ring = np.asarray(raw, dtype=int)
+
+    k = len(ring)
+    verts = triangulation.points[ring]
+    # The target's own Voronoi cell: one vertex per ring edge, the circumcentre
+    # of the triangle formed by the target and two consecutive ring vertices.
+    a = np.broadcast_to(p, (k, 2))
+    b = verts
+    c = triangulation.points[np.roll(ring, -1)]
+    centres = circumcentres(a, b, c)
+    if not np.all(np.isfinite(centres)):
+        return ring, None
+    cell = [(float(x), float(y)) for x, y in centres]
+    if _polygon_area(cell) < 0.0:
+        cell.reverse()
+    total_area = _polygon_area(cell)
+    if not np.isfinite(total_area) or total_area <= 0.0:
+        return ring, None
+
+    stolen = []
+    for i in range(k):
+        poly = cell
+        for j in range(k):
+            if j == i:
+                continue
+            nx, ny, cc = _bisector_half_plane(verts[i], verts[j])
+            poly = _clip_half_plane(poly, nx, ny, cc)
+            if len(poly) < 3:
+                break
+        stolen.append(max(_polygon_area(poly), 0.0))
+    total = float(sum(stolen))
+    if not np.isfinite(total) or total <= 0.0:
+        return ring, None
+    return ring, np.asarray(stolen, dtype=float) / total
+
+
+def natural_neighbour(coords, values, targets, progress=None):
+    """Natural-neighbour interpolation over a target grid.
+
+    Returns ``(prediction, used, detail)``: the interpolated values, the number
+    of natural neighbours behind each cell, and a dict counting the cells that
+    landed exactly on an observation and the cells whose ring geometry was
+    degenerate.
+
+    Cells outside the observations' convex hull are ``nan`` with ``used`` 0.
+    That is not a policy the caller can switch off the way it is for the other
+    methods: a natural neighbour is a vertex of the Voronoi cell the target
+    would have, and a target outside the hull has no such cell, because its
+    Voronoi region is unbounded in at least one direction.  There is nothing to
+    mask away, since there is nothing computed to mask.
+
+    ``used`` is a count of neighbours, not an uncertainty.  It is the closest
+    thing this method offers to one and it is not one.
+    """
+    c = as_points(coords)
+    z = as_values(values)
+    t = np.atleast_2d(np.asarray(targets, dtype=float))
+    m = len(t)
+    if len(c) < 3:
+        raise ValueError(
+            "Natural neighbour interpolation needs at least 3 observations."
+        )
+
+    hull = convex_hull(c)
+    if len(hull) < 3:
+        raise ValueError(
+            "Natural neighbour interpolation needs at least three observations "
+            "that are not collinear. These lie on a line, so their Voronoi "
+            "cells are unbounded strips rather than areas, and the natural "
+            "neighbours of a point are not defined."
+        )
+    inside = within_hull(t, hull)
+    triangulation = DelaunayTriangulation(c)
+
+    prediction = np.full(m, np.nan)
+    used = np.zeros(m, dtype=int)
+    detail = {"exact": 0, "degenerate": 0, "no_ring": 0}
+
+    for i in range(m):
+        if not inside[i]:
+            continue
+        p = t[i]
+        # A target on top of an observation is answered with it.  The weights
+        # degenerate there - the target's Voronoi cell has zero area - and the
+        # limit of the interpolant is the observed value, so this evaluates the
+        # limit where it is not numerically reachable.
+        same = np.flatnonzero(np.all(np.abs(c - p) <= COINCIDENT, axis=1))
+        if len(same):
+            prediction[i] = z[same[0]]
+            used[i] = 1
+            detail["exact"] += 1
+            continue
+        ring_weights = natural_neighbour_weights(triangulation, p)
+        if ring_weights is None:
+            detail["no_ring"] += 1
+            continue
+        ring, w = ring_weights
+        if w is None:
+            # Every Voronoi vertex of the target coincided, which happens when
+            # the ring is numerically collinear with the target.  Inverse
+            # squared distance over the same ring keeps the surface bounded by
+            # the observations, and the count is reported rather than hidden.
+            detail["degenerate"] += 1
+            d = np.linalg.norm(c[ring] - p, axis=1)
+            w = 1.0 / np.maximum(d, COINCIDENT) ** 2
+            w = w / w.sum()
+        prediction[i] = float(np.dot(w, z[ring]))
+        used[i] = len(ring)
+        if progress is not None and (i % 256 == 0 or i == m - 1):
+            if progress(i + 1, m) is False:
+                raise RuntimeError("Natural neighbour interpolation cancelled.")
+
+    return prediction, used, detail

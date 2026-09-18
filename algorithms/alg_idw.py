@@ -487,7 +487,12 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 raise QgsProcessingException(str(exc)) from exc
 
         stats = {
-            "prediction": surface_stats(write_grid),
+            # The predicate grid carries the sentinel only where the hull was
+            # masked; the neighbour-count grid is written unmasked, so it is
+            # summarised without one.
+            "prediction": surface_stats(
+                write_grid, DEFAULT_NODATA if mask_outside else None
+            ),
             "used": surface_stats(used_grid),
             "cols": cols,
             "rows": rows,

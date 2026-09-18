@@ -1447,6 +1447,34 @@ def _all_cases() -> list[RuntimeCase]:
             file_outputs=("PREDICTION",),
         ),
         RuntimeCase(
+            "natural_neighbour_interpolation",
+            "Natural Neighbour Interpolation (Sibson)",
+            # The Izmir fixture has 387 valid observations, which clears the
+            # default cap of 20 000, so no MAX_POINTS change is needed here -
+            # unlike the RBF case above. It does sit above the 300-observation
+            # leave-one-out limit, so this case exercises the ten-fold fallback
+            # rather than leave-one-out; the report says which was used.
+            # CELL_SIZE is set explicitly because each cell is weighted
+            # individually at about 0.4 ms: the automatic grid puts hundreds of
+            # thousands of cells over this fixture's 43 km extent and would make
+            # this the slowest case in the matrix by a wide margin. 500 map
+            # units gives a few thousand cells - a real surface, a real hull
+            # mask and a real neighbour-count raster - in a couple of seconds.
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "CELL_SIZE": 500.0,
+                "MAX_POINTS": 20000,
+                "MASK_OUTSIDE": True,
+                "RUN_CV": True,
+                "PREDICTION": _path(env["out"], "07_natural_prediction.tif"),
+                "NEIGHBOUR_COUNT": _path(env["out"], "07_natural_neighbours.tif"),
+                "HTML_REPORT": _path(env["out"], "07_natural.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("PREDICTION", "NEIGHBOUR_COUNT"),
+        ),
+        RuntimeCase(
             "polynomial_trend_surface",
             "Polynomial Trend Surface Interpolation",
             lambda env: {

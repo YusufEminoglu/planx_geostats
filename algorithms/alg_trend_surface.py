@@ -538,8 +538,14 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 raise QgsProcessingException(str(exc)) from exc
 
         stats = {
-            "prediction": surface_stats(write_grid),
-            "std_error": surface_stats(se_write),
+            # Both masked surfaces hold the sentinel outside the hull; the
+            # neighbour-count grid is written unmasked and is summarised as is.
+            "prediction": surface_stats(
+                write_grid, DEFAULT_NODATA if mask_outside else None
+            ),
+            "std_error": surface_stats(
+                se_write, DEFAULT_NODATA if (mask_outside and se_path) else None
+            ),
             "used": surface_stats(used_grid),
             "cols": cols,
             "rows": rows,

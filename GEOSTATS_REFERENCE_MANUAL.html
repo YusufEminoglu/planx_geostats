@@ -782,6 +782,7 @@ main {
   <a href="#alg-kriging">Ordinary / Universal Kriging</a>
 <a href="#alg-idw">Inverse Distance Weighted (IDW)</a>
 <a href="#alg-rbf">Radial Basis Function (RBF)</a>
+<a href="#alg-natural-neighbour">Natural Neighbour (Sibson)</a>
 <a href="#alg-trend-surface">Polynomial Trend Surface</a>
 
   <div class="group-label">Appendices</div>
@@ -810,7 +811,7 @@ main {
 
 <div class="meta-row">
     <span class="meta-chip">v3.9.0</span>
-    <span class="meta-chip">86 algorithms</span>
+    <span class="meta-chip">87 algorithms</span>
     <span class="meta-chip">8 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -826,7 +827,7 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">86</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">87</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">12</div><div class="stat-label">Regression Variants</div></div>
   <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
@@ -9961,6 +9962,108 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   <p style="margin:4px 0;"><strong>Micchelli, C.A.</strong> (1986). "Interpolation of Scattered Data: Distance Matrices and Conditionally Positive Definite Functions." <em>Constructive Approximation</em> 2(1): 11–22. DOI: <a href="https://doi.org/10.1007/BF01893414">10.1007/BF01893414</a> — Proves the conditional positive definiteness that requires the polynomial tail in the thin plate system.</p>
   <p style="margin:4px 0;"><strong>Wahba, G.</strong> (1990). <em>Spline Models for Observational Data.</em> Philadelphia: SIAM. DOI: <a href="https://doi.org/10.1137/1.9781611970128">10.1137/1.9781611970128</a> — The smoothing-spline formulation and the choice of the smoothing parameter by cross-validation.</p>
   <p style="margin:4px 0;"><strong>Buhmann, M.D.</strong> (2003). <em>Radial Basis Functions: Theory and Implementations.</em> Cambridge: Cambridge University Press. DOI: <a href="https://doi.org/10.1017/CBO9780511543241">10.1017/CBO9780511543241</a> — The standard reference on kernel choice, solvability and the conditioning of the augmented system.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-natural-neighbour">
+<div class="alg-card-header">
+  <div class="alg-icon">🔷</div>
+  <div class="alg-info">
+    <h4>Natural Neighbour Interpolation (Sibson)</h4>
+    <div class="alg-id">natural_neighbour_interpolation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-natural-neighbour" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Weights each observation by the share of the target's own Voronoi cell that the observation would surrender to it — Sibson's natural-neighbour coordinates — giving a smooth surface that passes exactly through every observation and reproduces any plane through the data.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Every set of observation locations partitions the plane into Voronoi cells: the region closer to one observation than to any other. Natural-neighbour interpolation reads the geometry of that partition directly. Drop the target point into the arrangement and it takes a bite out of the cells around it; the size of the bite it takes from each neighbour, as a fraction of the area it takes in total, is that neighbour's weight. The method is therefore governed by where the observations are, not by how far away the target is, which is what distinguishes it from inverse distance weighting: an observation in a densely sampled area commands a small cell and carries correspondingly little weight, while an isolated observation commands a large one and carries more, with no user-supplied power to tune.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The weights are Sibson's, and the alternative is easy to mistake for them.</strong> Sibson's coordinates measure the area that each neighbour's cell loses. A cheaper variant — the <em>Laplacian</em>, or non-Sibsonian, coordinates — measures instead the length of the Voronoi edge the target shares with each neighbour. Both forms are non-negative, both sum to one, both are continuous, and on a smooth field they produce surfaces that look alike. They are not the same weights, and the difference is not cosmetic: <strong>Sibson's coordinates reproduce any plane exactly, and the Laplacian ones do not.</strong> Because linear precision is part of what "natural neighbour interpolation" names, this tool computes Sibson's coordinates. The Laplacian form was implemented and measured during development rather than dismissed from the literature: on the engine's own test field it missed a plane through the data by about a tenth of the field's range, where Sibson's matched it to \(10^{-13}\).
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Outside the convex hull there is nothing to compute.</strong> A natural neighbour is a vertex of the Voronoi cell the target would have. For a target outside the hull of the observations, that cell is unbounded in at least one direction — so it has infinite area, the partition of it is undefined, and there is no neighbour set to weight. This is not a masking policy that a user may switch off, as it is for the distance-based methods: there is no value being computed and discarded. Cells outside the hull are written as no-data because no number exists for them.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The observations on the hull cannot be validated against the others.</strong> Leave one out and the point that was a hull vertex of the full set falls outside the hull of what remains, so the reduced interpolant has no value at it. This is a genuine structural limitation rather than a numerical one, and it means the reported cross-validation error describes the interior of the sampled area. The count of such observations is reported, because a statistic silently computed over a subset is worse than one computed over a subset that says so.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The Voronoi cell</strong> of observation \(i\) is the set of locations at least as close to it as to any other observation:</p>
+  $$V_i = \left\{\, x : \|x - x_i\| \le \|x - x_j\| \ \ \forall j \ne i \,\right\} \tag{1}$$
+  <p style="margin:8px 0;"><strong>Sibson's coordinate</strong> of observation \(i\) at a target \(p\) is the fraction of the target's new cell that falls inside \(V_i\):</p>
+  $$\lambda_i(p) = \frac{\operatorname{Area}\!\left( V_p \cap V_i \right)}{\operatorname{Area}\!\left( V_p \right)}, \qquad \sum_i \lambda_i(p) = 1, \qquad \lambda_i(p) \ge 0 \tag{2}$$
+  <p style="margin:8px 0;">and the prediction is the corresponding convex combination, \( \hat{z}(p) = \sum_i \lambda_i(p)\, z_i \).</p>
+  <p style="margin:8px 0;"><strong>Linear precision</strong> is the property that separates Sibson's coordinates from the Laplacian ones. The coordinates reproduce the location of the target itself:</p>
+  $$\sum_i \lambda_i(p)\, x_i = p \tag{3}$$
+  <p style="margin:8px 0;">so any field that is exactly linear in the coordinates is reproduced exactly, with no residual. The Laplacian coordinates \( \mu_i = |e_i| \big/ \sum_j |e_j| \), where \( |e_i| \) is the length of the Voronoi edge shared between \(p\) and observation \(i\), satisfy non-negativity and the partition of unity in (2) but not (3).</p>
+  <p style="margin:8px 0;"><strong>Computing it without building a Voronoi diagram.</strong> Two facts make the computation local and cheap. First, the target's new cell \(V_p\) is the polygon whose vertices are the circumcentres of the triangles incident to \(p\) in the Delaunay triangulation of the augmented set — geometry the triangulation already holds. Second, Sibson's covering property states that <em>every</em> point of \(V_p\) has one of the target's Delaunay neighbours as its nearest observation, so membership of a neighbour's old cell reduces to a test against the neighbour ring alone. The stolen area is therefore \(V_p\) clipped by \(k-1\) bisector half-planes, each of which is a straight line, since</p>
+  $$\|x - a\|^2 \le \|x - b\|^2 \iff 2\,(b - a)^{\top} x \le \|b\|^2 - \|a\|^2 \tag{4}$$
+  <p style="margin:8px 0;">and the whole weight vector costs \(O(k^2)\) per target, with \(k\) the ring size — typically six. The covering property is not assumed here: the test suite checks it by brute force, sampling a target's cell and confirming that no observation outside the ring is ever the nearest one.</p>
+  <p style="margin:8px 0;"><strong>A case with a known answer.</strong> At the centre of a square of four observations, fourfold symmetry forces the four weights to be equal, so each is \(1/4\); at the centroid of an equilateral triangle the three weights are \(1/3\). These are exact values requiring no reference implementation, and both are checked in the test suite alongside the cross-check against an independent Voronoi computation.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The Delaunay triangulation and the Sibson coordinates are implemented in <code>core/interpolation_engines.py</code> — <code>DelaunayTriangulation</code>, <code>natural_neighbour_weights</code> and <code>natural_neighbour</code> — using <code>numpy</code> alone. The triangulation is hand-written Bowyer–Watson rather than taken from <code>scipy.spatial</code>, because <code>scipy</code> is not a dependency this plugin declares and importing it would make one tool require a package the installer never installs. The hand-written triangulation is checked against <code>scipy.spatial.Delaunay</code> in the development harness, where the same triangle set is obtained on random point sets at 12, 40, 150 and 400 points with a symmetric difference of zero, and the weights are checked against the stolen areas measured from an independent <code>scipy.spatial.Voronoi</code> computation. Triangulation is close to quadratic in practice — 500 points build in 0.10 s and 8 000 in 2.9 s — because each insertion walks the mesh from Python. Leave-one-out validation rebuilds the mesh once per held-out observation, so it is capped at 300 observations; above that ten-fold validation runs instead and the report names the protocol, since the two are not comparable.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to interpolate</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">20000</td><td>3–200000</td><td>Cap on observations used; the mesh build is close to quadratic in this number</td></tr>
+      <tr><td class="param-name">MASK_OUTSIDE</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Write cells outside the convex hull as no-data; outside it this method has no value to write either way</td></tr>
+      <tr><td class="param-name">RUN_CV</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Cross-validation; the only quality measure this method has</td></tr>
+      <tr><td class="param-name">PREDICTION</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Predicted surface (Float32 GeoTIFF)</td></tr>
+      <tr><td class="param-name">NEIGHBOUR_COUNT</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>Optional</td><td>Number of natural neighbours behind each cell; a count, not an uncertainty</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the weighting scheme, cross-validation statistics and extrapolation summary</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>PREDICTION</code> — Float32 GeoTIFF of the interpolated surface, in the input layer's CRS and covering its extent &middot; <code>NEIGHBOUR_COUNT</code> — optional Float32 GeoTIFF holding the number of natural neighbours that contributed to each cell &middot; <code>HTML_REPORT</code> — the weighting scheme, the count of cells that landed exactly on an observation, the cross-validation statistics and their protocol, and how much of the output the observations do not span
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  The report states the weighting scheme by name — Sibson coordinates — and records the number of observations excluded from the cross-validation statistics as hull vertices, so neither the method variant nor the coverage of the reported error has to be inferred.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>The neighbour count is not an uncertainty.</strong> It is tempting to read a cell with eight neighbours as twice as reliable as one with four, and the raster invites exactly that reading. It is a count of contributors. This method has no variance model: no output from it carries a per-cell uncertainty, and the <code>NEIGHBOUR_COUNT</code> raster does not substitute for one. For an analytic error surface, use kriging.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading the cross-validation figure.</strong> The observations on the convex hull cannot be predicted from the others and are excluded, so the reported error describes the interior of the sampled area and says nothing about accuracy at its edge — which is, unfortunately, exactly where an interpolated map is most often read. The exclusion count is in the report. Where natural-neighbour interpolation is strong is the interior of an irregularly sampled region: it adapts to varying sample density automatically, which neither inverse distance weighting nor a fixed-kernel radial basis function does.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing between the exact interpolators.</strong> Natural neighbour and the thin plate spline are both exact and both have linear precision, so they agree on data lying on a plane. They differ away from it: natural neighbour is local, so an extreme value influences only its own neighbourhood, while the thin plate spline is global and will spread the same value across the whole map. Where the sampling density varies sharply — a clustered survey — natural neighbour is usually the more sensible of the two, and where the field is genuinely smooth at a scale larger than the sample spacing, the thin plate spline will read better.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When not to use this method.</strong> The weights depend on the observation locations alone, never on the observed values, so an outlier is spread over its neighbours' cells whether or not it represents a real local feature. For a field with sharp boundaries — a geological contact, a land-use edge — a method built on continuous Voronoi geometry will smooth the discontinuity into a gradient that does not exist. Delineate the boundary first.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation (RBF)</a> &middot; <a href="#alg-kriging">Ordinary / Universal Kriging</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Sibson, R.</strong> (1981). "A Brief Description of Natural Neighbour Interpolation." In V. Barnett (ed.), <em>Interpreting Multivariate Data</em>, 21–36. Chichester: John Wiley &amp; Sons. — The original definition of the coordinates this tool implements, and the source of the area-stealing construction in equation (2).</p>
+  <p style="margin:4px 0;"><strong>Sibson, R.</strong> (1978). "Locally Equiangular Triangulations." <em>The Computer Journal</em> 21(3): 243–245. DOI: <a href="https://doi.org/10.1093/comjnl/21.3.243">10.1093/comjnl/21.3.243</a> — Establishes the max-min angle property that makes the Delaunay triangulation the right mesh for these coordinates.</p>
+  <p style="margin:4px 0;"><strong>Bowyer, A.</strong> (1981). "Computing Dirichlet Tessellations." <em>The Computer Journal</em> 24(2): 162–166. DOI: <a href="https://doi.org/10.1093/comjnl/24.2.162">10.1093/comjnl/24.2.162</a> — The incremental insertion algorithm the implementation follows, including the cavity retriangulation in section 2.</p>
+  <p style="margin:4px 0;"><strong>Watson, D.F.</strong> (1981). "Computing the n-Dimensional Delaunay Tessellation with Application to Voronoi Polytopes." <em>The Computer Journal</em> 24(2): 167–172. DOI: <a href="https://doi.org/10.1093/comjnl/24.2.167">10.1093/comjnl/24.2.167</a> — The independent statement of the same algorithm, and the source of the empty-circumcircle condition the implementation tests against.</p>
+  <p style="margin:4px 0;"><strong>Sambridge, M., Braun, J. &amp; McQueen, H.</strong> (1995). "Geophysical Parametrization and Interpolation of Irregular Data Using Natural Neighbours." <em>Geophysical Journal International</em> 122(3): 837–857. DOI: <a href="https://doi.org/10.1111/j.1365-246X.1995.tb06841.x">10.1111/j.1365-246X.1995.tb06841.x</a> — The standard geophysical application, and the clearest account of why the method suits irregularly sampled spatial data.</p>
+  <p style="margin:4px 0;"><strong>Belikov, V.V. &amp; Semenov, A.Yu.</strong> (2000). "Non-Sibsonian Interpolation on Arbitrary System of Points in Euclidean Space and Adaptive Isolines Generation." <em>Applied Numerical Mathematics</em> 32(4): 371–387. DOI: <a href="https://doi.org/10.1016/S0168-9274(99)00058-6">10.1016/S0168-9274(99)00058-6</a> — Defines the Laplacian coordinates and establishes their properties, including the absence of the linear precision that Sibson's coordinates have.</p>
   </div>
 </div>
 </article>

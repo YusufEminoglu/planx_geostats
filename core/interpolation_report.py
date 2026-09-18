@@ -354,21 +354,38 @@ def hull_note(hull, masked: bool, nodata) -> str:
 
 # ── statistics ───────────────────────────────────────────────────────────────
 
-def surface_stats(values):
-    """Min/max/mean/std of a surface, ignoring non-finite cells."""
+def surface_stats(values, nodata=None):
+    """Min/max/mean/std of a surface, ignoring no-data cells.
+
+    ``nodata`` is the sentinel the caller writes for cells it could not
+    compute.  Passing it is not optional bookkeeping: the sentinel is an
+    ordinary finite number, so a masked grid summarised without it reports the
+    sentinel itself as the surface's minimum and drags the mean towards it,
+    while the no-data count reads zero.  That failure is silent - the table
+    still fills in, it just fills in wrongly - and it was found by reading a
+    generated report rather than by any test, which is the reason this
+    parameter exists and the reason every masking caller passes it.
+
+    Leaving ``nodata`` as ``None`` keeps the earlier behaviour of ignoring only
+    non-finite cells, which is correct for grids that were never masked.
+    """
     arr = np.asarray(values, dtype=float)
-    finite = arr[np.isfinite(arr)]
+    missing = ~np.isfinite(arr)
+    if nodata is not None:
+        missing |= arr == float(nodata)
+    finite = arr[~missing]
+    n_nodata = int(missing.sum())
     if finite.size == 0:
         return {"min": float("nan"), "max": float("nan"),
                 "mean": float("nan"), "std": float("nan"),
-                "n_finite": 0, "n_nodata": int(arr.size)}
+                "n_finite": 0, "n_nodata": n_nodata}
     return {
         "min": float(finite.min()),
         "max": float(finite.max()),
         "mean": float(finite.mean()),
         "std": float(finite.std()),
         "n_finite": int(finite.size),
-        "n_nodata": int(arr.size - finite.size),
+        "n_nodata": n_nodata,
     }
 
 
