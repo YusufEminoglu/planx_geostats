@@ -1400,6 +1400,73 @@ def _all_cases() -> list[RuntimeCase]:
             # path but never finishes the write.
             file_outputs=("PREDICTION", "VARIANCE"),
         ),
+        RuntimeCase(
+            "idw_interpolation",
+            "Inverse Distance Weighted Interpolation (IDW)",
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "POWER": 2.0,
+                "NEIGHBOURHOOD": 1,
+                "NEIGHBOURS": 12,
+                "RADIUS": 0.0,
+                "CELL_SIZE": 0.0,
+                "MAX_POINTS": 2000,
+                "MASK_OUTSIDE": True,
+                "RUN_CV": True,
+                "PREDICTION": _path(env["out"], "07_idw_prediction.tif"),
+                "NEIGHBOUR_COUNT": _path(env["out"], "07_idw_neighbours.tif"),
+                "HTML_REPORT": _path(env["out"], "07_idw.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("PREDICTION", "NEIGHBOUR_COUNT"),
+        ),
+        RuntimeCase(
+            "rbf_interpolation",
+            "Radial Basis Function Interpolation (RBF)",
+            # 500 clears the 387 valid observations in the Izmir fixture, which
+            # matters because the tool refuses rather than silently subsampling
+            # when the cap is below the point count. The dense solve at that
+            # size is a fraction of a second, so the run stays inside the
+            # matrix's usual budget while still exercising the thin-plate
+            # augmented system and a real leave-one-out refit.
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "KERNEL": 0,
+                "SHAPE": 0.0,
+                "SMOOTHING": 0.0,
+                "CELL_SIZE": 0.0,
+                "MAX_POINTS": 500,
+                "MASK_OUTSIDE": True,
+                "RUN_CV": True,
+                "PREDICTION": _path(env["out"], "07_rbf_prediction.tif"),
+                "HTML_REPORT": _path(env["out"], "07_rbf.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("PREDICTION",),
+        ),
+        RuntimeCase(
+            "polynomial_trend_surface",
+            "Polynomial Trend Surface Interpolation",
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "ORDER": 1,
+                "NEIGHBOURHOOD": 0,
+                "NEIGHBOURS": 24,
+                "RADIUS": 0.0,
+                "CELL_SIZE": 0.0,
+                "MAX_POINTS": 2000,
+                "MASK_OUTSIDE": True,
+                "RUN_CV": True,
+                "PREDICTION": _path(env["out"], "07_trend_prediction.tif"),
+                "STD_ERROR": _path(env["out"], "07_trend_std_error.tif"),
+                "HTML_REPORT": _path(env["out"], "07_trend.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("PREDICTION", "STD_ERROR"),
+        ),
     ]
 
 

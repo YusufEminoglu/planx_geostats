@@ -90,6 +90,9 @@ from .algorithms.alg_ebm_regression import EBMRegressionAlgorithm
 from .algorithms.alg_ebm_classification import EBMClassificationAlgorithm
 from .algorithms.alg_semivariogram import EmpiricalSemivariogramAlgorithm
 from .algorithms.alg_kriging import KrigingAlgorithm
+from .algorithms.alg_idw import IdwAlgorithm
+from .algorithms.alg_rbf import RbfAlgorithm
+from .algorithms.alg_trend_surface import TrendSurfaceAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -208,3 +211,6 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         # 07 | Interpolation and Geostatistics
         self.addAlgorithm(EmpiricalSemivariogramAlgorithm())
         self.addAlgorithm(KrigingAlgorithm())
+        self.addAlgorithm(IdwAlgorithm())
+        self.addAlgorithm(RbfAlgorithm())
+        self.addAlgorithm(TrendSurfaceAlgorithm())

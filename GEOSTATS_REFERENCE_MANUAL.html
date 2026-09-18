@@ -780,6 +780,9 @@ main {
   <div class="group-label">07 — Interpolation &amp; Geostatistics</div>
   <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a>
   <a href="#alg-kriging">Ordinary / Universal Kriging</a>
+<a href="#alg-idw">Inverse Distance Weighted (IDW)</a>
+<a href="#alg-rbf">Radial Basis Function (RBF)</a>
+<a href="#alg-trend-surface">Polynomial Trend Surface</a>
 
   <div class="group-label">Appendices</div>
   <a href="#methodological-notes">Methodological Notes</a>
@@ -807,7 +810,7 @@ main {
 
 <div class="meta-row">
     <span class="meta-chip">v3.9.0</span>
-    <span class="meta-chip">83 algorithms</span>
+    <span class="meta-chip">86 algorithms</span>
     <span class="meta-chip">8 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -823,7 +826,7 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">83</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">86</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">12</div><div class="stat-label">Regression Variants</div></div>
   <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
@@ -9770,6 +9773,293 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   <p style="margin:4px 0;"><strong>Journel, A.G. &amp; Huijbregts, C.J.</strong> (1978). <em>Mining Geostatistics.</em> London: Academic Press. — The standard derivation of the ordinary and universal kriging systems and of the kriging variance used here.</p>
   <p style="margin:4px 0;"><strong>Cressie, N.A.C.</strong> (1993). <em>Statistics for Spatial Data</em> (rev. ed.). New York: Wiley. — Comprehensive treatment of kriging, including the behaviour of the variance at the edge of the data and the distinction from simple kriging.</p>
   <p style="margin:4px 0;"><strong>Goovaerts, P.</strong> (1997). <em>Geostatistics for Natural Resources Evaluation.</em> New York: Oxford University Press. — Practical guidance on choosing between ordinary and universal kriging and on reading cross-validation diagnostics.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-idw">
+<div class="alg-card-header">
+  <div class="alg-icon">📉</div>
+  <div class="alg-info">
+    <h4>Inverse Distance Weighted Interpolation (IDW)</h4>
+    <div class="alg-id">idw_interpolation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-idw" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Interpolates a continuous surface from scattered point observations as a distance-weighted average of the surrounding values, with the weight falling off as a power of distance and no model fitted to the field at all.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Inverse distance weighting is the oldest continuous interpolator in routine use and the one that assumes least. It takes Tobler's first law of geography — near things are more alike than distant things — as sufficient, and constructs each prediction as a weighted average in which an observation's influence decays with distance. Nothing is estimated from the data beyond the values themselves: there is no variogram, no covariance model, no fitted parameter. That is the method's appeal and, at the same time, the reason it cannot report how well it has done.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The power is the entire method.</strong> At a power of 1 the surface is close to a nearest-neighbour map and varies smoothly between the observations; at 2, the conventional default in GIS practice, the two or three nearest observations dominate each cell; past about 4 the weights are so concentrated that each observation produces an isolated local extremum — the bull's-eye artefact the method is routinely criticised for. This matters because the artefacts are not visible as errors: a bull's-eye map looks more detailed than a smooth one, and only cross-validation can show that the apparent detail is an effect of the parameter rather than a feature of the field.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>A weighted average cannot leave the range of its inputs.</strong> This is a property, not a defect, but it has a consequence that is easy to miss: the surface can never show a peak or a trough that was not sampled, so a genuine maximum lying between observations is invisible to the method by construction. It also means extrapolated cells look plausible — they are still averages of real observations — while carrying no information about how far the true field departs from them.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The predictor</strong> at an unobserved location \(x_0\) is a normalised weighted mean of the observations:</p>
+  $$\hat{z}(x_0) = \frac{\sum_{i=1}^{n} w_i \, z(x_i)}{\sum_{i=1}^{n} w_i}, \qquad w_i = \frac{1}{d(x_i, x_0)^{\,p}} \tag{1}$$
+  <p style="margin:8px 0;">where \(d(x_i, x_0)\) is the Euclidean distance from observation \(i\) to the target in map units and \(p\) is the power. Dividing by the sum of the weights is what makes the estimator exact rather than merely smooth, and it is what guarantees the interpolation stays inside the observed range.</p>
+  <p style="margin:8px 0;"><strong>The search neighbourhood</strong> restricts which observations enter the sum. With a neighbour count \(k\), only the \(k\) closest observations contribute and the effective power rises: a cell with four equidistant neighbours is an unweighted mean of them, so a narrow neighbourhood behaves like a nearest-neighbour map regardless of \(p\). With a radius \(r\), every observation inside the circle contributes and a cell with none is left as no-data.</p>
+  <p style="margin:8px 0;"><strong>Exactness at a datum.</strong> As \(d \to 0\) the weight of the coincident observation tends to infinity and the sum is dominated by it, so \(\hat{z}(x_i) = z(x_i)\) in the limit. The implementation returns the observed value directly when a target lands within \(10^{-9}\) map units of an observation, which is the same statement evaluated where the limit is not numerically reachable.</p>
+  <p style="margin:8px 0;"><strong>Why there is no variance.</strong> The weights are a deterministic function of the observation geometry and carry no probabilistic model of the field, so there is no \(\sigma^2(x_0)\) to compute. This is the structural difference from kriging, which derives its weights from a fitted variogram and therefore gets a variance in closed form. Here the only quality measure that can be reported honestly is cross-validation, and the plugin reports it by default.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> Distances are computed in <code>core/interpolation_engines.py::idw</code> with <code>numpy</code>, in chunks whose right-hand side is held under a fixed memory budget — the same device kriging uses, and for the same reason: one double per observation per target cell. Cross-validation is a genuine refit at every held-out point rather than a residual, because a residual against an exact interpolator is zero by construction and would measure nothing. Measured on the development machine, leave-one-out over 2 000 observations is affordable and is used; above that the tool falls back to ten-fold validation, and the report names the protocol it used, because the two are not comparable.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to interpolate</td></tr>
+      <tr><td class="param-name">POWER</td><td class="param-type">Double</td><td class="param-default">2.0</td><td>0.1–10.0</td><td>Distance weighting power; the whole of the method</td></tr>
+      <tr><td class="param-name">NEIGHBOURHOOD</td><td class="param-type">Enum</td><td class="param-default">All observations</td><td>All / nearest N / within radius</td><td>Which observations enter each cell's average</td></tr>
+      <tr><td class="param-name">NEIGHBOURS</td><td class="param-type">Integer</td><td class="param-default">12</td><td>1–100000</td><td>Neighbour count; used by the nearest-N mode only</td></tr>
+      <tr><td class="param-name">RADIUS</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Search radius; used by the radius mode only, 0 = three times the mean nearest-neighbour distance</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">20000</td><td>2–2000000</td><td>Cap on observations used</td></tr>
+      <tr><td class="param-name">MASK_OUTSIDE</td><td class="param-type">Boolean</td><td class="param-default">False</td><td>—</td><td>Write cells outside the observations' convex hull as no-data</td></tr>
+      <tr><td class="param-name">RUN_CV</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Cross-validation; the only quality measure this method has</td></tr>
+      <tr><td class="param-name">PREDICTION</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Predicted surface (Float32 GeoTIFF)</td></tr>
+      <tr><td class="param-name">NEIGHBOUR_COUNT</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>Optional</td><td>How many observations each cell was averaged from; not an error surface</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the cross-validation statistics, the neighbourhood used and the extrapolation summary</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>PREDICTION</code> — Float32 GeoTIFF of the interpolated surface, in the input layer's CRS and covering its extent &middot; <code>NEIGHBOUR_COUNT</code> — Float32 GeoTIFF giving the number of observations behind each cell &middot; <code>HTML_REPORT</code> — the search neighbourhood actually used, the cross-validation statistics, the surface summary and how much of the output falls outside the observed area
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  Cells whose search neighbourhood turned out to be empty are written as the no-data value \(-9999\) rather than filled with a nearest value or with zero. This happens only in the radius mode, and the tool warns before running when the radius is smaller than the mean spacing between observations, since that is the case in which it will happen.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Read the cross-validation error before the map.</strong> The normalised error — RMSE divided by the field's own standard deviation — is the number that says whether the surface is worth anything: below about 0.4 the method is reproducing real spatial structure, near 1 it is doing no better than returning the field mean at every cell, and above 1 it is doing worse while still producing a plausible-looking map. Because this method carries no variance model, that score is the whole of the evidence about its quality; there is no second diagnostic to fall back on.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The neighbour count raster is the nearest thing to an uncertainty map here, and it is not one.</strong> It states what went into each cell, which is honest and useful: where the count dips, the surface is being carried by few observations and a change of search neighbourhood would move it. It must not be read as an error estimate, because the method provides no way to say how wrong any cell is, and a cell averaged from two observations is not twice as uncertain as one averaged from four — it is simply built from different inputs.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>What to do when the surface looks wrong.</strong> If raising the power sharpens the map without lowering the cross-validation error, the sharpness is being manufactured by the parameter; revert it. If lowering the error requires a very small power, the field is smoother than the method's default assumes and radial basis or kriging will describe it better. If no setting of the power brings the error below the field's standard deviation, the observations do not carry spatial information at the scale being mapped, and no interpolator will recover it.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Shepard, D.</strong> (1968). "A Two-Dimensional Interpolation Function for Irregularly-Spaced Data." <em>Proceedings of the 1968 23rd ACM National Conference</em>: 517–524. DOI: <a href="https://doi.org/10.1145/800186.810616">10.1145/800186.810616</a> — The original formulation of distance-weighted interpolation, including the power-law weight.</p>
+  <p style="margin:4px 0;"><strong>Tobler, W.R.</strong> (1970). "A Computer Movie Simulating Urban Growth in the Detroit Region." <em>Economic Geography</em> 46(sup1): 234–240. DOI: <a href="https://doi.org/10.2307/143141">10.2307/143141</a> — The statement of the distance-decay assumption this interpolator rests on.</p>
+  <p style="margin:4px 0;"><strong>Franke, R.</strong> (1982). "Scattered Data Interpolation: Tests of Some Methods." <em>Mathematics of Computation</em> 38(157): 181–200. DOI: <a href="https://doi.org/10.1090/S0025-5718-1982-0637296-4">10.1090/S0025-5718-1982-0637296-4</a> — Comparative tests that established the power of 2 as a conventional default and documented the sensitivity to it.</p>
+  <p style="margin:4px 0;"><strong>Watson, D.F. &amp; Philip, G.M.</strong> (1985). "A Refinement of Inverse Distance Weighted Interpolation." <em>Geoprocessing</em> 2(4): 315–327. — Introduces the search-neighbourhood refinement used here, and the local-extremum artefact it produces at high powers.</p>
+  <p style="margin:4px 0;"><strong>Isaaks, E.H. &amp; Srivastava, R.M.</strong> (1989). <em>An Introduction to Applied Geostatistics.</em> New York: Oxford University Press. — Chapter 4 sets out the properties and the failure modes of inverse distance weighting against kriging.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-rbf">
+<div class="alg-card-header">
+  <div class="alg-icon">🌀</div>
+  <div class="alg-info">
+    <h4>Radial Basis Function Interpolation (RBF)</h4>
+    <div class="alg-id">rbf_interpolation</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-rbf" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Fits a sum of radial basis functions — one centred on each observation — by solving a dense linear system, producing the smoothest surface of its kind that passes exactly through every observation.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  Where inverse distance weighting averages its neighbours with a rule fixed in advance, a radial basis function solves for the coefficients of a kernel centred on each observation. The result is not smooth because a neighbourhood was made wide; it is smooth by construction, in the specific sense of minimising an energy functional over all surfaces that honour the data. The thin plate spline — the classical choice, and the default here — is exactly the function that minimises bending energy subject to passing through the observations, which is why it behaves as an idealised elastic plate pinned at the sample points.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The kernels are not interchangeable, and the difference is mathematical rather than numerical.</strong> The thin plate spline \(\varphi(r) = r^2 \ln r\) is conditionally positive definite of order 2: its system is solvable only with a linear polynomial term alongside the kernel, and the side conditions that go with it. That polynomial is what gives the thin plate spline linear precision — observations lying on a plane are reproduced exactly. The multiquadric, inverse multiquadric and gaussian kernels use the plain system, carry no polynomial term, and therefore have no linear precision: they will pass through the data but will not reproduce a plane that the data lies on. The report states which of the two situations applies to the kernel you selected, because a user comparing kernels deserves to know that the difference is a property of the mathematics and not an implementation detail.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Smoothing trades exactness for tolerance of noise.</strong> Adding a ridge to the kernel matrix relaxes the constraint that the surface pass through every observation. At zero smoothing — the default — the interpolation is exact and the reported residual is zero to rounding, which means the surface also reproduces whatever measurement error is in the input. Any non-zero smoothing makes the residual non-zero, and that residual is reported as the honest measure of exactness given up. Smoothing a noisy surface is defensible; doing it and then presenting the result as an exact interpolation is not, which is why the residual is not optional in the report.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The interpolant</strong> is a sum of kernel terms centred on the observations, plus — for the thin plate spline only — a linear polynomial tail:</p>
+  $$s(x) = \sum_{i=1}^{n} a_i \, \varphi\!\left( \|x - x_i\| \right) \;+\; b_0 + b_1 x + b_2 y \tag{1}$$
+  <p style="margin:8px 0;"><strong>The augmented system</strong> for the thin plate spline solves for the coefficients \(a\) and the polynomial \(b\) together, with the side conditions that make the polynomial part identifiable:</p>
+  $$\begin{bmatrix} K + \lambda I & P \\ P^{\top} & 0 \end{bmatrix} \begin{bmatrix} \mathbf{a} \\ \mathbf{b} \end{bmatrix} = \begin{bmatrix} \mathbf{z} \\ \mathbf{0} \end{bmatrix}, \qquad K_{ij} = \varphi\!\left( \|x_i - x_j\| \right), \quad P = \begin{bmatrix} 1 & x_1 & y_1 \\ \vdots & \vdots & \vdots \\ 1 & x_n & y_n \end{bmatrix} \tag{2}$$
+  <p style="margin:8px 0;">where \(\lambda\) is the smoothing parameter: \(\lambda = 0\) forces an exact interpolation, and \(\lambda > 0\) is the ridge that relaxes it. The three kernels without a polynomial tail solve the leading \(K + \lambda I\) block alone.</p>
+  <p style="margin:8px 0;"><strong>The kernels</strong> offered, with \(r\) in map units and \(c\) the shape parameter:</p>
+  $$\varphi_{\text{thin plate}}(r) = r^2 \ln r, \qquad \varphi_{\text{multiquadric}}(r) = \sqrt{r^2 + c^2}, \qquad \varphi_{\text{inv. multiquadric}}(r) = \frac{1}{\sqrt{r^2 + c^2}}, \qquad \varphi_{\text{gaussian}}(r) = e^{-r^2 / c^2} \tag{3}$$
+  <p style="margin:8px 0;"><strong>Where the shape parameter comes from.</strong> When \(c\) is not supplied it is set to the mean nearest-neighbour distance among the observations — the average spacing of the sample, which is the natural length scale of the data. The gaussian and inverse multiquadric kernels are the sensitive ones: a \(c\) far below the spacing makes each observation's influence local and the surface a set of isolated bumps, and a \(c\) far above it flattens the surface into a plane. The tool warns when a supplied \(c\) is more than an order of magnitude away from the spacing, in either direction.</p>
+  <p style="margin:8px 0;"><strong>Conditionally positive definite, and why it matters.</strong> The thin plate kernel is not positive definite in the ordinary sense — \(\sum a_i a_j \varphi(\|x_i - x_j\|)\) can be negative — so the system is solvable only over the subspace where the polynomial side conditions \(P^{\top}\mathbf{a} = \mathbf{0}\) hold. Omitting the polynomial does not produce a singular matrix that refuses to solve; it produces a different, well-invertible system that still passes through the data while behaving worse away from it. That is why the polynomial is part of the thin plate branch in the implementation rather than an optional term.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The system is assembled and solved in <code>core/interpolation_engines.py::rbf_weights</code> with <code>numpy</code>, using a dense solve. The cost grows with the square of the observation count for assembly and with its cube for the solve, which is why the default cap on observations is 4 000 here against 20 000 for inverse distance weighting. Cross-validation refits the whole system once per held-out point, since removing an observation changes the matrix and not merely its right-hand side — there is no closed-form shortcut of the kind ordinary least squares enjoys. Above 400 observations leave-one-out is therefore replaced by ten-fold validation, and the report names the protocol used.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to interpolate</td></tr>
+      <tr><td class="param-name">KERNEL</td><td class="param-type">Enum</td><td class="param-default">Thin plate spline</td><td>Thin plate / multiquadric / inverse multiquadric / gaussian</td><td>Radial basis kernel; only the thin plate spline has linear precision</td></tr>
+      <tr><td class="param-name">SHAPE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Kernel shape parameter; 0 = the mean nearest-neighbour distance, ignored by the thin plate spline</td></tr>
+      <tr><td class="param-name">SMOOTHING</td><td class="param-type">Double</td><td class="param-default">0.0</td><td>≥ 0</td><td>Ridge on the kernel matrix; 0 interpolates exactly through every observation</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">4000</td><td>3–200000</td><td>Cap on observations used; the solve is dense</td></tr>
+      <tr><td class="param-name">MASK_OUTSIDE</td><td class="param-type">Boolean</td><td class="param-default">False</td><td>—</td><td>Write cells outside the observations' convex hull as no-data</td></tr>
+      <tr><td class="param-name">RUN_CV</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Cross-validation; the only quality measure this method has</td></tr>
+      <tr><td class="param-name">PREDICTION</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Predicted surface (Float32 GeoTIFF)</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the kernel, residual, cross-validation statistics and extrapolation summary</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>PREDICTION</code> — Float32 GeoTIFF of the interpolated surface, in the input layer's CRS and covering its extent &middot; <code>HTML_REPORT</code> — the kernel and shape parameter used, whether the surface is exact, the residual that smoothing left, the cross-validation statistics, and how much of the output falls outside the observed area
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  The report records the polynomial term as either present, for the thin plate spline, or absent with an explicit note that the kernel does not reproduce a plane — so the mathematical difference between kernels is stated in the run's own output and does not have to be remembered from this manual.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>A zero residual is not a good result; it is a guarantee.</strong> At zero smoothing the surface passes through every observation by construction, so the residual is zero whether or not the surface is any good, and it says nothing about the method's quality. This is precisely why cross-validation is reported: because the interpolator is exact, the only observations that can test it are ones it did not see. Reading a zero residual as evidence of accuracy is the single most common misreading of this family of methods.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Choosing a kernel.</strong> Use the thin plate spline when the field is expected to vary smoothly and the observations are believed accurate; it is the default for good reason, and it is the only kernel here that will reproduce a regional gradient exactly. Use the multiquadric family when the field has more local character, remembering that it grows with distance rather than flattening and therefore extrapolates badly. Use the gaussian when the influence of each observation really is local, and be prepared to tune the shape parameter, because it is the most sensitive of the four.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When smoothing is the right answer.</strong> If the observations carry substantial measurement error, an exact interpolation reproduces that error as spurious detail at every sample point. Raising the smoothing parameter until the cross-validation error stops falling is a principled way to choose it, and the residual the report shows is the price paid. Smoothing to make the map look tidier, without a cross-validation argument, is decoration rather than analysis — and the surface will no longer be one through its own data.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-trend-surface">Polynomial Trend Surface</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Hardy, R.L.</strong> (1971). "Multiquadric Equations of Topography and Other Irregular Surfaces." <em>Journal of Geophysical Research</em> 76(8): 1905–1915. DOI: <a href="https://doi.org/10.1029/JB076i008p01905">10.1029/JB076i008p01905</a> — Introduces the multiquadric basis and its shape parameter.</p>
+  <p style="margin:4px 0;"><strong>Duchon, J.</strong> (1977). "Splines Minimizing Rotation-Invariant Semi-Norms in Sobolev Spaces." In <em>Constructive Theory of Functions of Several Variables</em>, Lecture Notes in Mathematics 571: 85–100. Berlin: Springer. DOI: <a href="https://doi.org/10.1007/BFb0086566">10.1007/BFb0086566</a> — The thin plate spline and its bending-energy derivation.</p>
+  <p style="margin:4px 0;"><strong>Franke, R.</strong> (1982). "Scattered Data Interpolation: Tests of Some Methods." <em>Mathematics of Computation</em> 38(157): 181–200. DOI: <a href="https://doi.org/10.1090/S0025-5718-1982-0637296-4">10.1090/S0025-5718-1982-0637296-4</a> — The comparative study that established the multiquadric family's standing in practice.</p>
+  <p style="margin:4px 0;"><strong>Micchelli, C.A.</strong> (1986). "Interpolation of Scattered Data: Distance Matrices and Conditionally Positive Definite Functions." <em>Constructive Approximation</em> 2(1): 11–22. DOI: <a href="https://doi.org/10.1007/BF01893414">10.1007/BF01893414</a> — Proves the conditional positive definiteness that requires the polynomial tail in the thin plate system.</p>
+  <p style="margin:4px 0;"><strong>Wahba, G.</strong> (1990). <em>Spline Models for Observational Data.</em> Philadelphia: SIAM. DOI: <a href="https://doi.org/10.1137/1.9781611970128">10.1137/1.9781611970128</a> — The smoothing-spline formulation and the choice of the smoothing parameter by cross-validation.</p>
+  <p style="margin:4px 0;"><strong>Buhmann, M.D.</strong> (2003). <em>Radial Basis Functions: Theory and Implementations.</em> Cambridge: Cambridge University Press. DOI: <a href="https://doi.org/10.1017/CBO9780511543241">10.1017/CBO9780511543241</a> — The standard reference on kernel choice, solvability and the conditioning of the augmented system.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-trend-surface">
+<div class="alg-card-header">
+  <div class="alg-icon">📈</div>
+  <div class="alg-info">
+    <h4>Polynomial Trend Surface Interpolation</h4>
+    <div class="alg-id">polynomial_trend_surface</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-trend-surface" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Fits a polynomial surface of order 1 to 3 to scattered point observations, either once over the whole layer or inside a moving neighbourhood around each cell, and reports the fitted coefficients together with an optional standard error raster.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  A polynomial trend surface is the oldest form of spatial trend analysis: a single low-order polynomial is fitted to the observations by least squares, and the fitted surface is read as the field's regional component while the residuals are read as local departures from it. The technique predates geostatistics and remains useful for the same reason it was adopted — it answers the question "which way does this field go, and by how much" with a small number of coefficients that can be stated, tested and compared between areas.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Order is the whole modelling decision.</strong> Order 1 describes a plane and its coefficients are a gradient in two directions. Order 2 describes a dome or a basin. Order 3 can describe a saddle or a ridge crossing the area. Past that the coefficients stop corresponding to any feature of the field and start describing the particular arrangement of the sample points, and the surface begins to oscillate between observations. A cubic has ten coefficients and will fit twenty observations closely enough to look convincing while being supported by almost nothing, which is why the plugin's cross-validation section exists and why the recommended action compares each order against the one below it.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Global and moving-window fits answer different questions.</strong> A single global fit gives one equation for the whole area, whose coefficients are readable statements about the field's overall shape. A moving-window fit refits the polynomial inside each cell's own neighbourhood, which follows a gradient that changes across the study area — the local form of trend surface analysis — at the cost of no longer being one surface: the coefficients vary from cell to cell, and only the mapped values remain comparable.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Extrapolation is the hazard that defines this tool.</strong> A weighted average cannot leave the range of its inputs; a polynomial has no such bound and keeps going. A cubic continued a few cells past the observations will leave the observed range entirely and keep climbing. This is why the tool masks cells outside the observations' convex hull by default — not because the numbers are undefined, but because nothing in the data constrains them and a map that shows them at the same apparent authority as the interior is misleading.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>The model</strong> is a polynomial in the two coordinates, written here at order 2 to show the term structure:</p>
+  $$z(x, y) = \beta_0 + \beta_1 x + \beta_2 y + \beta_3 x^2 + \beta_4 y^2 + \beta_5 xy + \varepsilon \tag{1}$$
+  <p style="margin:8px 0;">with 3 coefficients at order 1, 6 at order 2 and 10 at order 3. The coefficients are estimated by ordinary least squares, \(\hat{\boldsymbol{\beta}} = (X^{\top}X)^{-1} X^{\top}\mathbf{z}\), where the design matrix \(X\) has one column per retained term.</p>
+  <p style="margin:8px 0;"><strong>Centring and scaling are not cosmetic.</strong> On projected coordinates — hundreds of thousands of metres — the column for \(x^3\) spans nine orders of magnitude more than the intercept, and forming the normal equations squares the condition number on top of that, so the matrix becomes numerically singular long before it is mathematically singular. The implementation therefore centres the coordinates on the midpoint of their range and divides by half the larger span before building the basis. Without that step the symptom is not a wrong number but a rank test reporting a perfectly determined cubic as under-determined, and local fits refusing to happen at all.</p>
+  <p style="margin:8px 0;"><strong>The fitted coefficients are in those scaled units</strong>, not in map units, and the report states the centring point and divisor so the numbers can be converted if needed. A coefficient quoted without them is not interpretable.</p>
+  <p style="margin:8px 0;"><strong>The standard error</strong> at a location \(x_0\) with basis row \(\mathbf{x}_0\) is the ordinary regression one:</p>
+  $$\widehat{\mathrm{SE}}(x_0) = \sqrt{\hat{\sigma}^2 \, \mathbf{x}_0^{\top} (X^{\top}X)^{-1} \mathbf{x}_0}, \qquad \hat{\sigma}^2 = \frac{\mathbf{r}^{\top}\mathbf{r}}{n - p} \tag{2}$$
+  <p style="margin:8px 0;">This measures how well the coefficients are determined by the observation locations. It contains no spatial correlation term, so it understates the true error of the surface between observations and grows without bound outside them. It is the first term of the real uncertainty, not the whole of it.</p>
+  <p style="margin:8px 0;"><strong>A moving-window fit</strong> repeats this solve inside each cell's neighbourhood. Every window is fitted in the same centred and scaled coordinates as every other — derived once from the whole dataset — because a window that re-centred on itself would give each cell its coefficients in a different parametrisation, making the coefficient surface meaningless and each cell's fit depend on where its neighbours happen to sit. A window whose observations cannot pin the requested order is written as no-data rather than answered with a lower order the analyst did not ask for.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The fit is computed in <code>core/interpolation_engines.py::trend_surface</code> with <code>numpy</code> alone. The rank of the design matrix is tested <em>before</em> the normal equations are inverted, so a rank-deficient system produces a message naming how many independent directions are available and how many the order needs, instead of a bare singular-matrix error. Along a straight line this arithmetic is simple and worth stating: with six columns collapsing onto the span of \(1, x, x^2\), an order-2 design has rank 3, so a quadratic on collinear observations is refused with that number rather than fitted as though the second direction existed.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to fit</td></tr>
+      <tr><td class="param-name">ORDER</td><td class="param-type">Enum</td><td class="param-default">Order 1 (planar)</td><td>1 / 2 / 3</td><td>Polynomial order; 3, 6 or 10 coefficients respectively</td></tr>
+      <tr><td class="param-name">NEIGHBOURHOOD</td><td class="param-type">Enum</td><td class="param-default">Global</td><td>Global / nearest N / within radius</td><td>One fit over all observations, or a refit per cell</td></tr>
+      <tr><td class="param-name">NEIGHBOURS</td><td class="param-type">Integer</td><td class="param-default">24</td><td>1–100000</td><td>Neighbour count; used by the moving-window nearest mode, and must exceed the term count</td></tr>
+      <tr><td class="param-name">RADIUS</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Window radius; 0 = five times the mean nearest-neighbour distance</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">20000</td><td>4–2000000</td><td>Cap on observations used</td></tr>
+      <tr><td class="param-name">MASK_OUTSIDE</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Write cells outside the observations' convex hull as no-data; on by default because a polynomial extrapolates without bound</td></tr>
+      <tr><td class="param-name">RUN_CV</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Cross-validation; the only quality measure this method has</td></tr>
+      <tr><td class="param-name">PREDICTION</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Fitted trend surface (Float32 GeoTIFF)</td></tr>
+      <tr><td class="param-name">STD_ERROR</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>Optional</td><td>Regression standard error surface; not a confidence interval</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the fitted coefficients, cross-validation statistics and extrapolation summary</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>PREDICTION</code> — Float32 GeoTIFF of the fitted trend surface, in the input layer's CRS and covering its extent &middot; <code>STD_ERROR</code> — Float32 GeoTIFF of the regression standard error, masked with the same hull as the prediction &middot; <code>HTML_REPORT</code> — the coefficients in their scaled units, the centring and scaling used, the cross-validation statistics and the extrapolation summary
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  Cells that could not be fitted — because a moving window held too few observations for the requested order — and cells outside the convex hull when masking is on, are both written as the no-data value \(-9999\). The report distinguishes the two counts, so an empty-looking result can be attributed to the neighbourhood rather than to the mask.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Judge the order by cross-validation, not by the fit.</strong> The proportion of variance explained rises with every term added, always, because a polynomial asked to fit more of the data will fit more of it. Held-out error is the only number that falls when the extra terms are capturing the field and rises when they are capturing the sample. If order 2 does not beat order 1 on held-out observations, the curvature it draws is not supported, however convincing the map looks.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>The residuals are frequently the more useful product.</strong> Subtracting the fitted regional trend leaves the local component, which is what a variogram should be fitted to when a strong gradient would otherwise inflate the long-lag bins and push the estimated range towards the size of the study area. Running this tool and then the semivariogram tool on its residuals is the standard two-step treatment of a trended field.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Reading the standard error raster.</strong> It is smallest where the observations are dense and well spread and largest towards the edges of the sampled area, which makes it a useful guide to where the coefficients are weakly determined. It is not an error bar on any cell: because it excludes spatial correlation it systematically understates the real uncertainty between observations, and because it is a function of the design matrix alone it continues to grow without bound outside the data. Use it to compare places inside the mapped area, and mask with it rather than quoting it.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Krumbein, W.C.</strong> (1959). "Trend Surface Analysis of Contour-Type Maps with Irregular Control-Point Spacing." <em>Journal of Geophysical Research</em> 64(7): 823–834. DOI: <a href="https://doi.org/10.1029/JZ064i007p00823">10.1029/JZ064i007p00823</a> — The origin of polynomial trend surface analysis in the earth sciences.</p>
+  <p style="margin:4px 0;"><strong>Chorley, R.J. &amp; Haggett, P.</strong> (1965). "Trend-Surface Mapping in Geographical Research." <em>Transactions of the Institute of British Geographers</em> 37: 47–67. DOI: <a href="https://doi.org/10.2307/621692">10.2307/621692</a> — The adoption of trend surfaces into geography, with the case for reading residuals as the local component.</p>
+  <p style="margin:4px 0;"><strong>Davis, J.C.</strong> (1973). <em>Statistics and Data Analysis in Geology.</em> New York: Wiley. — The standard treatment of choosing the polynomial order and of the extrapolation hazard at the edge of the control area.</p>
+  <p style="margin:4px 0;"><strong>Wameling, A.</strong> (2003). "Accuracy of Trend Surface Analysis." In <em>Proceedings of the 7th International Conference on Geocomputation</em>, Southampton. — Quantifies how far a fitted low-order surface can be trusted outside the observation hull.</p>
+  <p style="margin:4px 0;"><strong>Hengl, T.</strong> (2009). <em>A Practical Guide to Geostatistical Mapping</em> (2nd ed.). Amsterdam: University of Amsterdam. — Situates global and local polynomial fits within the wider interpolation workflow and against kriging.</p>
   </div>
 </div>
 </article>

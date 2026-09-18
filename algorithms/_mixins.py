@@ -96,6 +96,9 @@ HELP_SLUGS = {
     "ebm_classification": "alg-ebm-classification",
     "empirical_semivariogram": "alg-semivariogram",
     "kriging_interpolation": "alg-kriging",
+    "idw_interpolation": "alg-idw",
+    "rbf_interpolation": "alg-rbf",
+    "polynomial_trend_surface": "alg-trend-surface",
 }
 
 

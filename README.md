@@ -11,14 +11,14 @@
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
 [![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
 [![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://gitlab.com/geophilo1/planx_geostats)
-[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-83_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
+[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-86_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
-**83 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
+**86 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 83 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 86 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
@@ -116,6 +116,9 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 |---|---|
 | Empirical Semivariogram & Model Fitting | How fast does similarity decay with distance here, and what nugget, sill and range describe it? |
 | Ordinary / Universal Kriging Interpolation | What does the surface look like between the observations — and how uncertain is each cell? |
+| Inverse Distance Weighted Interpolation (IDW) | A model-free surface from a distance-weighted average — and how does its power affect it? |
+| Radial Basis Function Interpolation (RBF) | The smoothest surface through the observations, from four interchangeable kernels |
+| Polynomial Trend Surface Interpolation | Which way does this field go, and what is left once the regional trend is removed? |
 
 ---
 
@@ -160,7 +163,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 83 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 86 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://gitlab.com/geophilo1/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -202,7 +205,7 @@ py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --
 
 **PlanX GeoStats Lab**, QGIS İşlem Araç Kutusu (Processing) içinde çalışan, plancılar için tasarlanmış bir **mekânsal istatistik laboratuvarıdır**:
 
-- **83 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
+- **86 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
 - **Jeoistatistik ve enterpolasyon (07):** *Empirical Semivariogram & Model Fitting* benzerliğin mesafeyle nasıl azaldığını ölçer ve beş kuramsal modelden birini (küresel, üstel, Gauss, doğrusal, kararlı) Cressie ağırlıklı en küçük kareler ile uydurur; *Ordinary / Universal Kriging Interpolation* bu parametrelerden yüzey üretir ve **kriging varyansını ikinci bir raster olarak** yazar, böylece her hücre kendi belirsizliğiyle birlikte gelir. Evrensel kriging eğilimi en küçük karelerle çıkarıp variogramı artıklardan kestirir.
 - **Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06):** Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost), SVM, Sinir Ağı, 2025 nesli TabPFN sıfır-eğitim tablosal temel modeli, mekânsal k-katlamalı çapraz doğrulama (K-Means blok veya kNNDM), **SHAP tabanlı açıklanabilirlik** (her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**), tam ve örneklemesiz katkı üreten cam-kutu **Explainable Boosting Machine**, **DiCE Counterfactual** (bir kaydın sınıfını değiştirecek en küçük değişiklik) ve dağılımdan bağımsız kapsama garantili **Conformal Prediction Interval**.
 - **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.
