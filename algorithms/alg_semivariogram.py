@@ -672,6 +672,16 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "maximum lag defaulted to half the largest pairwise separation "
             "(Journel &amp; Huijbregts, 1978)"
         )
+        caveat_text = [
+            "The model is fitted to binned averages of the point-pair "
+            "differences, so it inherits their sampling error. The number of "
+            "bins and the maximum lag are analyst choices, and both move the "
+            "fitted nugget, sill and range.",
+            "The parameters describe the field as it was sampled at these "
+            "locations. Carrying them to a different area, a different "
+            "sampling density or a different support size is an assumption the "
+            "fit cannot support on its own; re-estimate where the data allow.",
+        ]
         nugget_share_txt = (
             "n/a" if not np.isfinite(n_ratio)
             else format(n_ratio * 100.0, ".1f") + " %"
@@ -772,7 +782,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         <div class="next-action">{html.escape(next_action)}</div>
     </section>
 
-    {caveats_html("Semivariogram model fitting", None, numeric_summary)}
+    {caveats_html("Semivariogram model fitting", None, numeric_summary, caveat_text)}
 
     {guidance_html}
 

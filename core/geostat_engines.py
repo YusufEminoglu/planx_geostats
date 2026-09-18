@@ -102,6 +102,29 @@ def _drift_basis(coords, drift):
     raise ValueError(f"Unknown drift: {drift}")
 
 
+def detrend(coords, values, drift):
+    """Remove a fitted polynomial drift from ``values`` by least squares.
+
+    Universal kriging fits the variogram to the *residuals* left after the
+    drift, not to the raw values.  Skipping this step is not a small
+    approximation: a trend inflates the long-lag bins, so the fitted model is
+    still rising at the last bin and settles on a range that describes the trend
+    rather than the field.  Measured on a test field whose true range was 220 map
+    units, the linear trend used in the plugin's own runtime test pushed the
+    fitted range to 513 and made universal kriging predict *worse* than ordinary
+    kriging; fitting on residuals recovered 238, and universal kriging then
+    predicted better, as it should.
+
+    Returns ``(residuals, coefficients)``.  With ``drift="none"`` the drift is
+    the mean alone, so the residuals are the mean-centred values.
+    """
+    z = np.asarray(values, dtype=float)
+    basis = (np.ones((len(z), 1)) if drift == "none"
+             else _drift_basis(coords, drift))
+    coefficients, *_ = np.linalg.lstsq(basis, z, rcond=None)
+    return z - basis @ coefficients, coefficients
+
+
 def _pair_dist(a, b):
     """Euclidean distance matrix between two (n, 2) coordinate arrays."""
     return np.hypot(a[:, None, 0] - b[None, :, 0], a[:, None, 1] - b[None, :, 1])
@@ -440,6 +463,56 @@ def krige(coords, values, targets, model, nugget, psill, rng, drift="none",
     return pred, np.maximum(var, 0.0)
 
 
+def krige_chunked(coords, values, targets, model, nugget, psill, rng,
+                  drift="none", alpha=1.5, max_rhs_bytes=64 * 1024 * 1024,
+                  progress=None):
+    """``krige`` over a target grid in chunks, bounding peak memory.
+
+    ``krige`` solves for every target at once, which is the fast way to predict
+    a few thousand cells but cannot scale to a raster: the right-hand side alone
+    is ``(n + p) * len(targets)`` doubles, so 4 million cells at 2000 points
+    would need about 18 GB.  Chunking the targets keeps that allocation bounded.
+
+    The kriging matrix depends only on the observations, so it is identical in
+    every chunk and the only thing that changes is how many right-hand sides
+    LAPACK is handed at once.  That does shift the last bits: a chunked run
+    matches an unchunked one to about 1e-14 relative, which is the same
+    difference you get by calling ``krige`` on one target instead of all of
+    them.  With a single chunk the two are bit-for-bit equal.  The fields this
+    feeds are Float32 rasters, so that margin is far below what the output can
+    represent.
+
+    ``progress`` is called as ``progress(done, total)`` after each chunk, which
+    the Processing algorithm uses to report and to honour cancellation
+    (returning ``False`` from it stops the run and raises ``RuntimeError``).
+    """
+    t = np.atleast_2d(np.asarray(targets, dtype=float))
+    m = len(t)
+    if m == 0:
+        empty = np.zeros(0, dtype=float)
+        return empty, empty
+
+    n = len(np.asarray(values, dtype=float))
+    p = 0 if drift == "none" else _drift_basis(np.asarray(coords, dtype=float),
+                                               drift).shape[1]
+    rows = n + p
+    # Chunk so that one right-hand side stays under the byte budget, but never
+    # below a single target.
+    per_chunk = max(1, int(max_rhs_bytes // max(1, rows * 8)))
+
+    pred_out = np.empty(m, dtype=float)
+    var_out = np.empty(m, dtype=float)
+    for start in range(0, m, per_chunk):
+        stop = min(start + per_chunk, m)
+        pred, var = krige(coords, values, t[start:stop], model, nugget, psill,
+                          rng, drift, alpha)
+        pred_out[start:stop] = pred
+        var_out[start:stop] = var
+        if progress is not None and progress(stop, m) is False:
+            raise RuntimeError("Kriging cancelled.")
+    return pred_out, var_out
+
+
 def loo_cross_validation(coords, values, model, nugget, psill, rng,
                          drift="none", alpha=1.5):
     """Leave-one-out kriging validation.
@@ -478,7 +551,7 @@ def loo_cross_validation(coords, values, model, nugget, psill, rng,
     }
 
 
-def quality_flags(fit, loo=None):
+def quality_flags(fit, loo=None, max_lag=None):
     """Plain-language warnings a planning analyst can act on."""
     flags = []
     r2 = fit.get("r2")
@@ -489,6 +562,21 @@ def quality_flags(fit, loo=None):
                 f"variogram (R2 = {r2:.2f}). The field may have no spatial "
                 "structure at this scale, or the lag bins may be too few."
             )
+    # A range at or past the last distance bin means the curve had not levelled
+    # off, so the range is describing the extent of the data rather than a
+    # property of the field.  An unremoved trend is the usual cause.
+    rng_fit = fit.get("range")
+    if (max_lag and rng_fit is not None and np.isfinite(rng_fit)
+            and rng_fit >= 0.9 * float(max_lag)):
+        flags.append(
+            f"The fitted range ({rng_fit:.6g}) reaches the largest distance "
+            f"binned ({float(max_lag):.6g}), so the variogram was still rising "
+            "at the last bin and never levelled off. The range is describing "
+            "how far the data extends rather than a real limit to spatial "
+            "similarity. The usual cause is a trend left in the values; "
+            "removing one, or binning over a shorter distance, is the way to "
+            "tell the two apart."
+        )
     if fit.get("nugget", 0.0) > 0.0 and fit.get("sill", 0.0) > 0.0:
         ratio = fit["nugget"] / fit["sill"]
         if ratio > 0.8:

@@ -367,11 +367,24 @@ def diagnostics_html(numeric_summary: dict, neighborhood_summary: Optional[dict]
     )
 
 
-def caveats_html(method_name: str, neighborhood_summary: Optional[dict], numeric_summary: dict) -> str:
-    caveats = [
-        f"{method_name} evaluates spatial pattern under the selected spatial relationship; changing the distance band or K value can change the conclusion.",
-        "Interpret statistical significance together with planning context, data collection process, and known spatial boundaries.",
-    ]
+def caveats_html(method_name: str, neighborhood_summary: Optional[dict], numeric_summary: dict,
+                 method_caveats: Optional[list] = None) -> str:
+    """Assumptions block for a report.
+
+    The first two caveats are about spatial-pattern statistics: they name the
+    distance band and the K value, which only exist for the pattern tools.  A
+    method with no such knob (interpolation, for one) passes ``method_caveats``
+    to replace them, rather than shipping a report that tells the analyst to
+    tune a parameter the tool does not have.  When it is omitted the original
+    wording is used, so the existing report output is unchanged.
+    """
+    if method_caveats is None:
+        caveats = [
+            f"{method_name} evaluates spatial pattern under the selected spatial relationship; changing the distance band or K value can change the conclusion.",
+            "Interpret statistical significance together with planning context, data collection process, and known spatial boundaries.",
+        ]
+    else:
+        caveats = list(method_caveats)
     if numeric_summary.get("is_constant"):
         caveats.append("The analysis field is constant, so pattern statistics cannot provide meaningful contrast.")
     if neighborhood_summary:
