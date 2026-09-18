@@ -700,6 +700,34 @@ def trend_surface(coords, values, targets, order=1, k=None, radius=None,
 
 # ── cross-validation ─────────────────────────────────────────────────────────
 
+def as_prediction(out, expected, fold_index):
+    """A predictor's return value as one float per test location.
+
+    The contract is that ``predict`` returns predictions and nothing else, but
+    an engine that returns a tuple - :func:`idw` returns ``(prediction, used,
+    exact_hits)`` - reaches numpy as a ragged three-item sequence and raises
+    "setting an array element with a sequence", which names neither the
+    predictor nor the fold nor the real mistake.  A predictor that hands back
+    the engine's whole return value is a bug in the caller, and it is worth a
+    message that says so: the failure it produces is otherwise reported as a
+    method that could not be scored, which reads like a property of the data.
+    """
+    try:
+        array = np.asarray(out, dtype=float)
+    except ValueError as exc:
+        raise ValueError(
+            f"The interpolator returned {type(out).__name__} rather than one "
+            f"value per test location ({exc})."
+        ) from exc
+    if array.ndim != 1 or array.size != expected:
+        raise ValueError(
+            f"The interpolator returned {array.shape} for {expected} test "
+            f"location(s) in fold {fold_index + 1}; it must return one "
+            "prediction per location."
+        )
+    return array
+
+
 def cross_validate(predict, coords, values, protocol="loo", folds=DEFAULT_FOLDS,
                    seed=0, progress=None):
     """Score an interpolator on observations it was not fitted to.
@@ -746,7 +774,8 @@ def cross_validate(predict, coords, values, protocol="loo", folds=DEFAULT_FOLDS,
     for index, test in enumerate(groups):
         train = np.ones(n, dtype=bool)
         train[test] = False
-        out = np.asarray(predict(c[train], z[train], c[test]), dtype=float)
+        out = as_prediction(predict(c[train], z[train], c[test]), len(test),
+                            index)
         predicted[test] = out
         errors[test] = z[test] - out
         if progress is not None and progress(index + 1, len(groups)) is False:

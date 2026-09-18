@@ -1543,6 +1543,77 @@ def _all_cases() -> list[RuntimeCase]:
             html_outputs=("HTML_REPORT",),
             file_outputs=("PREDICTION", "STD_ERROR"),
         ),
+        RuntimeCase(
+            "indicator_kriging",
+            "Indicator Kriging (Threshold Exceedance Probability)",
+            # THRESHOLD_COUNT is 3 rather than the 5 default. Work here is
+            # cells x observations x thresholds, and each threshold also costs
+            # a variogram fit per validation fold, so the threshold axis is the
+            # one multiplier this case can turn down without stopping the tool
+            # from being a multiband tool: three bands still exercise the
+            # stacking, the order-relation repair and the band contract the
+            # report documents. The Izmir fixture's 387 observations sit above
+            # the 200-observation leave-one-out limit, so this case runs the
+            # five-fold path and the report has to name it.
+            #
+            # CELL_SIZE is 500 map units for the same reason the natural
+            # neighbour case sets it: the fixture spans about 43 km, and the
+            # automatic grid over that extent would put hundreds of thousands
+            # of cells through a per-threshold kriging loop.
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "THRESHOLDS": "",
+                "THRESHOLD_COUNT": 3,
+                "MODEL": 0,
+                "ALPHA": 1.5,
+                "N_BINS": 15,
+                "MAX_LAG": 0.0,
+                "CELL_SIZE": 500.0,
+                "MAX_POINTS": 2000,
+                "RUN_CV": True,
+                "CV_FOLDS": 5,
+                "MASK_OUTSIDE": True,
+                "EXCEEDANCE": _path(env["out"], "07_indicator_exceedance.tif"),
+                "ETYPE": _path(env["out"], "07_indicator_etype.tif"),
+                "ETYPE_VARIANCE": _path(env["out"], "07_indicator_etype_var.tif"),
+                "HTML_REPORT": _path(env["out"], "07_indicator.html"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("EXCEEDANCE", "ETYPE", "ETYPE_VARIANCE"),
+        ),
+        RuntimeCase(
+            "interp_compare",
+            "Compare Interpolation Methods",
+            # The default method list, so this case tests what a user gets by
+            # pressing Run rather than a hand-picked subset. Scoring all four
+            # under one protocol is the point of the tool: natural neighbour
+            # caps leave-one-out at 300 observations and the fixture has 387,
+            # so the run resolves to ten-fold and every method has to accept
+            # the stricter test - the case is green only if the kriging entry
+            # refits its variogram inside all ten folds, which is the most
+            # expensive thing this tool does and the part most likely to break.
+            #
+            # MAX_POINTS is the tool's own 3000 default: the fixture clears the
+            # cap, so the run is a real comparison rather than a refusal.
+            lambda env: {
+                "INPUT": env["izmir"],
+                "FIELD": "road_density",
+                "METHODS": [0, 1, 2, 6],
+                "IDW_POWER": 2.0,
+                "RBF_SMOOTHING": 0.0,
+                "KRIGING_MODEL": 0,
+                "ALPHA": 1.5,
+                "N_BINS": 15,
+                "MAX_LAG": 0.0,
+                "SEED": 0,
+                "MAX_POINTS": 3000,
+                "HTML_REPORT": _path(env["out"], "07_compare.html"),
+                "CSV_TABLE": _path(env["out"], "07_compare.csv"),
+            },
+            html_outputs=("HTML_REPORT",),
+            file_outputs=("CSV_TABLE",),
+        ),
     ]
 
 

@@ -21,6 +21,14 @@ and QGIS 4.2):
    volume) is reported by ``createOneBandRaster`` returning ``None`` or an
    invalid provider.  It does not raise, so both are checked.
 4. Block writes take ``xOffset`` / ``yOffset``, not ``offsetX`` / ``offsetY``.
+
+A fifth applies to the multi-band writer alone: bands cannot be named.
+``QgsRasterFileWriter.createMultiBandRaster`` exists on both runtimes and
+writes a valid stacked GeoTIFF, but nothing on the returned
+``QgsRasterDataProvider`` sets a band name, so a multi-band output is bands
+1..N to every reader.  The order is therefore part of the calling tool's
+documented contract, and :func:`write_float32_multiband_geotiff` hands the
+labels back to the caller to publish rather than pretending they were stored.
 """
 from __future__ import annotations
 
@@ -180,6 +188,34 @@ def grid_centres(extent, cols, rows):
     return xs, ys
 
 
+def _as_float32_surface(array, nodata, label):
+    """Validate one surface and replace its non-finite cells with ``nodata``."""
+    arr = np.asarray(array)
+    if arr.ndim != 2:
+        raise ValueError(f"Expected a 2-D surface for {label}; got shape {arr.shape}.")
+    arr = np.asarray(arr, dtype=np.float32)
+    rows, cols = arr.shape
+    if rows < 1 or cols < 1:
+        raise ValueError(
+            f"Refusing to write an empty raster for {label} ({rows} x {cols})."
+        )
+    if not np.all(np.isfinite(arr)):
+        replaced = int((~np.isfinite(arr)).sum())
+        logger.debug("Replacing %d non-finite cell(s) of %s with no-data",
+                     replaced, label)
+        arr = np.where(np.isfinite(arr), arr, np.float32(nodata))
+    return arr
+
+
+def _finalise(provider, path):
+    """Flush the file.  This is the call that turns the stub into a raster."""
+    if not provider.setEditable(False):
+        raise RuntimeError(
+            f"The raster '{path}' could not be finalised. Delete it and retry; "
+            "if it persists, the output folder may be full or read-only."
+        )
+
+
 def write_float32_geotiff(path, array, extent, crs, nodata=DEFAULT_NODATA,
                           driver=None, feedback=None):
     """Write a 2-D array as a single-band Float32 raster.
@@ -191,18 +227,8 @@ def write_float32_geotiff(path, array, extent, crs, nodata=DEFAULT_NODATA,
     Returns the path written.  Raises ``ValueError`` for a bad array or grid and
     ``RuntimeError`` when the file itself cannot be created or finalised.
     """
-    arr = np.asarray(array)
-    if arr.ndim != 2:
-        raise ValueError(f"Expected a 2-D surface; got shape {arr.shape}.")
-    arr = np.asarray(arr, dtype=np.float32)
+    arr = _as_float32_surface(array, nodata, "the surface")
     rows, cols = arr.shape
-    if rows < 1 or cols < 1:
-        raise ValueError(f"Refusing to write an empty raster ({rows} x {cols}).")
-
-    if not np.all(np.isfinite(arr)):
-        replaced = int((~np.isfinite(arr)).sum())
-        logger.debug("Replacing %d non-finite cell(s) with no-data", replaced)
-        arr = np.where(np.isfinite(arr), arr, np.float32(nodata))
 
     note = None
     if driver is None:
@@ -236,11 +262,91 @@ def write_float32_geotiff(path, array, extent, crs, nodata=DEFAULT_NODATA,
                 "output may be incomplete; delete it before retrying."
             )
 
-    # This is the call that flushes the file. Without it the raster stays a
-    # truncated stub until the provider is garbage collected.
-    if not provider.setEditable(False):
-        raise RuntimeError(
-            f"The raster '{path}' could not be finalised. Delete it and retry; "
-            "if it persists, the output folder may be full or read-only."
-        )
+    _finalise(provider, path)
     return str(path)
+
+
+def write_float32_multiband_geotiff(path, bands, extent, crs,
+                                    nodata=DEFAULT_NODATA, band_labels=None,
+                                    driver=None, feedback=None):
+    """Write a stack of 2-D arrays as one multi-band Float32 raster.
+
+    ``bands`` is a sequence of surfaces that all share a shape; band 1 of the
+    file is ``bands[0]``, in the order given.  That order matters more here than
+    it does for a single surface, so it is the caller's contract and the
+    caller's report has to state it - see the note on band labels below.
+
+    Row 0 of each array is the northern row, as for the single-band writer, and
+    non-finite cells become ``nodata`` in their own band.
+
+    ``band_labels`` is documentation, not data.  PyQGIS 3.44 exposes no way to
+    name a band through ``QgsRasterFileWriter`` - the ``QgsRasterBandStats``
+    naming that GDAL's Python bindings offer is not reachable from a
+    ``QgsRasterDataProvider`` - so the labels are logged and returned
+    alongside the path for the caller to put in a report, and the file itself
+    keeps its bands as plain numbers.  Anything written on the assumption that
+    the names reached the file would be wrong.
+
+    Returns ``(path, band_labels)``.
+    """
+    prepared = [
+        _as_float32_surface(band, nodata, f"band {index + 1}")
+        for index, band in enumerate(bands)
+    ]
+    if not prepared:
+        raise ValueError("Refusing to write a raster with no bands.")
+    rows, cols = prepared[0].shape
+    for index, band in enumerate(prepared):
+        if band.shape != (rows, cols):
+            raise ValueError(
+                f"Every band must share one shape; band {index + 1} is "
+                f"{band.shape[0]} x {band.shape[1]} against {rows} x {cols}."
+            )
+
+    note = None
+    if driver is None:
+        driver, note = driver_for_path(path)
+    if note and feedback is not None:
+        feedback.pushWarning(note)
+
+    labels = (list(band_labels) if band_labels is not None
+              else [f"Band {i + 1}" for i in range(len(prepared))])
+    if len(labels) != len(prepared):
+        raise ValueError(
+            f"{len(labels)} band label(s) for {len(prepared)} band(s)."
+        )
+
+    writer = QgsRasterFileWriter(str(path))
+    writer.setOutputFormat(driver)
+    provider = writer.createMultiBandRaster(
+        Qgis.Float32, cols, rows, extent, crs, len(prepared)
+    )
+    if provider is None or not provider.isValid():
+        raise RuntimeError(
+            f"The raster '{path}' could not be created. Check that the folder "
+            "exists and is writable, and that the file is not open in another "
+            "program."
+        )
+
+    if not provider.isEditable():
+        provider.setEditable(True)
+
+    for index, band in enumerate(prepared):
+        number = index + 1
+        # A no-data value per band, before any of it is written: a band that is
+        # wholly no-data - every threshold outside the observed range, say -
+        # must still carry the sentinel rather than defaulting to zero.
+        provider.setNoDataValue(number, float(nodata))
+        for start in range(0, rows, BLOCK_ROWS):
+            stop = min(start + BLOCK_ROWS, rows)
+            block = QgsRasterBlock(Qgis.Float32, cols, stop - start)
+            block.setData(band[start:stop, :].tobytes())
+            if not provider.writeBlock(block, number, xOffset=0, yOffset=start):
+                raise RuntimeError(
+                    f"Writing rows {start}-{stop - 1} of band {number} in "
+                    f"'{path}' failed. The output may be incomplete; delete it "
+                    "before retrying."
+                )
+
+    _finalise(provider, path)
+    return str(path), labels

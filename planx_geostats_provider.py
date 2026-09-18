@@ -95,6 +95,8 @@ from .algorithms.alg_rbf import RbfAlgorithm
 from .algorithms.alg_natural_neighbour import NaturalNeighbourAlgorithm
 from .algorithms.alg_ebk import EmpiricalBayesianKrigingAlgorithm
 from .algorithms.alg_trend_surface import TrendSurfaceAlgorithm
+from .algorithms.alg_indicator_kriging import IndicatorKrigingAlgorithm
+from .algorithms.alg_interp_compare import InterpolationComparisonAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -218,3 +220,5 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(NaturalNeighbourAlgorithm())
         self.addAlgorithm(EmpiricalBayesianKrigingAlgorithm())
         self.addAlgorithm(TrendSurfaceAlgorithm())
+        self.addAlgorithm(IndicatorKrigingAlgorithm())
+        self.addAlgorithm(InterpolationComparisonAlgorithm())

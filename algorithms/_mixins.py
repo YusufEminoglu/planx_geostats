@@ -101,6 +101,8 @@ HELP_SLUGS = {
     "natural_neighbour_interpolation": "alg-natural-neighbour",
     "ebk_interpolation": "alg-ebk",
     "polynomial_trend_surface": "alg-trend-surface",
+    "indicator_kriging": "alg-indicator",
+    "interp_compare": "alg-interp-compare",
 }
 
 

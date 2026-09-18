@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.9.0</title>
+<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.10.0</title>
 <script>
 MathJax = {
   tex: {
@@ -674,7 +674,7 @@ main {
 <nav id="sidebar">
 <div class="sidebar-header">
   <div class="brand">PlanX GeoStats Lab<span>Spatial Statistics</span></div>
-  <div class="version">Reference Manual — v3.9.0</div>
+  <div class="version">Reference Manual — v3.10.0</div>
   <input type="text" id="sidebar-search" class="sidebar-search" placeholder="Search manual&hellip;" autocomplete="off">
 </div>
 <div class="sidebar-nav">
@@ -785,6 +785,8 @@ main {
 <a href="#alg-natural-neighbour">Natural Neighbour (Sibson)</a>
 <a href="#alg-trend-surface">Polynomial Trend Surface</a>
 <a href="#alg-ebk">Empirical Bayesian Kriging</a>
+<a href="#alg-indicator">Indicator Kriging</a>
+<a href="#alg-interp-compare">Interpolation Model Comparison</a>
 
   <div class="group-label">Appendices</div>
   <a href="#methodological-notes">Methodological Notes</a>
@@ -811,8 +813,8 @@ main {
 </div>
 
 <div class="meta-row">
-    <span class="meta-chip">v3.9.0</span>
-    <span class="meta-chip">88 algorithms</span>
+    <span class="meta-chip">v3.10.0</span>
+    <span class="meta-chip">90 algorithms</span>
     <span class="meta-chip">8 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -828,7 +830,7 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">88</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">90</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">12</div><div class="stat-label">Regression Variants</div></div>
   <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
@@ -9671,7 +9673,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-incremental-autocorr">Incremental Spatial Autocorrelation</a> &middot; <a href="#alg-global-moran">Global Moran's I</a>
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-incremental-autocorr">Incremental Spatial Autocorrelation</a> &middot; <a href="#alg-global-moran">Global Moran's I</a> &middot; <a href="#alg-indicator">Indicator Kriging</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -9765,7 +9767,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-prediction-uncertainty">Prediction Uncertainty Map</a> &middot; <a href="#alg-conformal-prediction">Conformal Prediction Interval</a>
+    <strong>See also:</strong> <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-prediction-uncertainty">Prediction Uncertainty Map</a> &middot; <a href="#alg-conformal-prediction">Conformal Prediction Interval</a> &middot; <a href="#alg-indicator">Indicator Kriging</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -9858,7 +9860,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a> &middot; <a href="#alg-indicator">Indicator Kriging</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -9952,7 +9954,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-trend-surface">Polynomial Trend Surface</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+    <strong>See also:</strong> <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-trend-surface">Polynomial Trend Surface</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a> &middot; <a href="#alg-indicator">Indicator Kriging</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -10054,7 +10056,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation (RBF)</a> &middot; <a href="#alg-kriging">Ordinary / Universal Kriging</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+    <strong>See also:</strong> <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation (RBF)</a> &middot; <a href="#alg-kriging">Ordinary / Universal Kriging</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a> &middot; <a href="#alg-indicator">Indicator Kriging</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -10154,7 +10156,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a>
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a> &middot; <a href="#alg-indicator">Indicator Kriging</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -10278,7 +10280,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   </p>
 
     <div class="see-also-box">
-    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a> &middot; <a href="#alg-indicator">Indicator Kriging</a>
   </div>
 
 <h5>6. Literature</h5>
@@ -10289,6 +10291,245 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
   <p style="margin:4px 0;"><strong>Kitanidis, P.K.</strong> (1986). "Parameter Uncertainty in Estimation of Spatial Functions: Bayesian Analysis." <em>Water Resources Research</em> 22(4): 499–507. DOI: <a href="https://doi.org/10.1029/WR022i004p00499">10.1029/WR022i004p00499</a> — Derives the inflation of the prediction variance that follows from parameter uncertainty, which is the second term of equation (5).</p>
   <p style="margin:4px 0;"><strong>Diggle, P.J. &amp; Ribeiro, P.J.</strong> (2007). <em>Model-based Geostatistics.</em> New York: Springer. DOI: <a href="https://doi.org/10.1007/978-0-387-48536-2">10.1007/978-0-387-48536-2</a> — The general Bayesian treatment of spatial prediction, and the standard reference for the simulation-based approach to the posterior.</p>
   <p style="margin:4px 0;"><strong>Chilès, J.-P. &amp; Delfiner, P.</strong> (2012). <em>Geostatistics: Modeling Spatial Uncertainty</em> (2nd ed.). Hoboken: Wiley. DOI: <a href="https://doi.org/10.1002/9781118136188">10.1002/9781118136188</a> — The estimable-variogram problem stated at length, including the practice of fitting several authorised models and comparing them, which is what the automatic mode does per subset.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-indicator">
+<div class="alg-card-header">
+  <div class="alg-icon">📊</div>
+  <div class="alg-info">
+    <h4>Indicator Kriging (Threshold Exceedance Probability)</h4>
+    <div class="alg-id">indicator_kriging</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-indicator" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Turns the observations into a yes/no variable at each threshold you name — is this location at or below the level — and kriges that variable on its own, so the result is a probability of exceeding the threshold by construction rather than by assuming the field is well behaved around a predicted value. It costs one variogram and one kriging system per threshold, and it also returns the expected value rebuilt from those probabilities.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  The usual way to turn an interpolated surface into a probability is to assume the field is normal around the prediction and to read the tail off that normal curve. The assumption is rarely checked and it is frequently false: urban density, pollution concentration, land value and flood depth are all skewed, all bounded below, and all prone to the occasional extreme value that a normal distribution treats as impossible. Indicator kriging removes the assumption instead of testing it. It makes no statement about the shape of the field's distribution at all, and the price it pays for that is a variogram per threshold rather than one variogram for the whole surface.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The transform, and why the result is a probability rather than a guess.</strong> Each threshold \(z_k\) turns the observations into a set of zeros and ones — one where the observation is at or below the level, zero where it is above — and that 0/1 variable is then interpolated by ordinary kriging exactly as a continuous field would be. The interpolated value lies between 0 and 1 because it is a weighted average of zeros and ones, and it is a probability because the variable being averaged <em>is</em> the event whose probability is wanted. Nothing is assumed about the original distribution; the distribution of a 0/1 variable is fixed by its own mean. Ordinary kriging is used rather than simple kriging for a specific reason: simple kriging requires the mean to be supplied in advance, and here the mean of the indicator — the proportion of the study area at or below the threshold — is precisely the quantity being estimated, so it cannot be an input. The Lagrange multiplier that the ordinary system carries is what allows the mean to be unknown.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>What the price buys, measured.</strong> On the plugin's bundled İzmir road-density fixture — 387 observations, three thresholds placed at the sample's own quartiles, 12.9765, 27.1038 and 34.3258 — the three indicators fitted Gaussian, spherical and spherical models with ranges of 22656.3, 11261.4 and 981.4 map units and \(R^2\) of 0.9880, 0.9549 and 0.0000 respectively. Those are three different curves with ranges two orders of magnitude apart, from one field and three levels of it. That is the honest description of what happens: the spatial structure of "is it above the median" is not the spatial structure of "is it above the top quartile", and a method that assumed one shared variogram would have averaged the two together without saying so. The tool reports every threshold's fitted family, nugget, partial sill, range and \(R^2\) on the page for exactly this reason, and it warns when an \(R^2\) at or below zero means the indicator has no structure the lag range can resolve — at the top threshold above, the kriged surface is very close to that threshold's overall frequency everywhere and should be read as a constant with noise rather than as a map.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Order relations are not automatic, and are repaired rather than hidden.</strong> A probability estimated threshold by threshold has no reason to rise with the threshold. The three indicators are three separately fitted models on three separately kriged systems, and where two adjacent bands come out of order the result is a set of numbers that falls somewhere — not a distribution, and not usable as one. The standard repair replaces any out-of-order run of adjacent bands with their average, which conserves each cell's total probability, and the tool applies it in one pass and <em>reports the size of the repair</em> rather than applying it silently. On the İzmir run the raw estimates left the unit interval on 11,679 of 81,600 cell-threshold pairs and were clipped, and the repair then changed 20,124 of 81,600 cells, pooled at most three thresholds into a single probability in the worst cell, and altered a probability by as much as 0.207545. A repair that large is a finding about the data, not a defect of the method: it means the thresholds are closer together than this sampling can tell apart, so those bands are really one probability rather than several, and they should be read that way.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Validation has to score a probability, so it is a Brier score rather than an RMSE.</strong> An error measured in the field's own units is not comparable between two thresholds, because the thresholds have different base rates. The Brier score is the mean squared error in probability units, and because a small Brier score is not by itself evidence of anything — a surface that quotes the same frequency everywhere is perfectly correct on average — it is reported with a skill score against that base rate, and with a calibration table. On the İzmir run the Brier score was 0.125997 against 0.208548 for always quoting each threshold's observed frequency, a skill of \(+0.3958\), computed as 5-fold cross-validation over 1,161 held-out scores. Per threshold the mean predicted probability of being at or below the level was 0.2445, 0.4965 and 0.7295 against observed frequencies of 0.2506, 0.5013 and 0.7494. The calibration table bins those held-out scores into five equal-count groups and compares the mean prediction in each against the frequency the event actually occurred at; the widest gap in the İzmir run was 0.0543, in the second bin, which is the range of predictions over which the surface leans furthest from the truth.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The number that looks like a bug and is not.</strong> The bands' average probability over the mapped area will not equal the proportion of observations below the threshold, and on a clustered sample the two can be far apart. On the İzmir run the mapped band means were 0.6170, 0.8228 and 0.8976 against sample frequencies of 0.2506, 0.5013 and 0.7494. The surface is not wrong. Ordinary kriging's weights at a target far beyond the variogram's range are determined by the observations' <em>configuration</em> and not by their values: when every observation is beyond the range of every other, the semivariance is the sill for all of them, the right-hand side of the kriging system is constant, and the solution is simply the one that gives weight to the observations that have no neighbour within range. The far field therefore converges on the mean of the observations reweighted so that a lone observation counts as much as a crowded cluster — the <em>declustered</em> mean — and not on the plain sample mean. For the İzmir top threshold the fitted range is 981.4 map units and the far targets are thousands of units away, so the semivariance is exactly the sill at every observation, the right-hand side of the kriging system is the same constant for all of them, and the estimate is fixed by the observation configuration alone — well determined rather than ill-conditioned, with a condition number of about \(2 \times 10^3\). Weights do not fall evenly: 88 of the 387 observations have no neighbour within the fitted range and carry the larger share, the smallest weight is 0.00004 and the largest 0.003777 against an equal weight of 0.002584, and the same estimate — 0.858195 — comes back from all 36 far targets sampled on rings one, two and four box-spans out from the observations, because the right-hand side of the system is that same constant at every one of them. That is the sense in which the far field is forced by the sampling design: the values enter only through the weights, and the weights are a property of where the observations are. Reweighting the İzmir observations by cell declustering — each observation counting as \(1/n_{\text{cell}}\) — with the cell size swept from 2163.75 to 32456.2 map units gives cumulative frequencies of 0.5467 to 0.9504 across the sweep, medians 0.6048, 0.8128 and 0.9283, and the tool's mapped band means sit on those medians rather than on the sample frequencies. The report prints all three numbers side by side for every threshold and names the threshold whose mapped fraction is furthest from its declustered frequency, because a gap between the mapped and the sample figure is only readable against the sweep's spread.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Step 1 — the indicator transform.</strong> For each threshold \(z_k\) and each observation location \(s_i\):</p>
+  $$ I(s_i; z_k) = \begin{cases} 1, & Z(s_i) \le z_k \\ 0, & Z(s_i) > z_k \end{cases} \tag{1} $$
+  <p style="margin:8px 0;">Nothing is assumed about the distribution of \(Z\); the transform is a thresholding, and it is exact.</p>
+  <p style="margin:8px 0;"><strong>Step 2 — ordinary kriging of the indicator.</strong> With \(\gamma_k(h)\) the variogram fitted to indicator \(k\), the weights at a target \(s_0\) solve</p>
+  $$ \begin{cases} \sum_{j=1}^{n} w_j^{(k)} \gamma_k(|s_i - s_j|) + \mu^{(k)} = \gamma_k(|s_i - s_0|), & i = 1, \dots, n \\[4pt] \sum_{j=1}^{n} w_j^{(k)} = 1 \end{cases} \tag{2} $$
+  <p style="margin:8px 0;">where \(\mu^{(k)}\) is the Lagrange multiplier that carries the unknown mean of the indicator. The estimate is the weighted average</p>
+  $$ \hat{p}_k(s_0) = \sum_{i=1}^{n} w_i^{(k)} I(s_i; z_k) \tag{3} $$
+  <p style="margin:8px 0;">and because \(I \in \{0, 1\}\) and \(\sum w_i = 1\), \(\hat{p}_k\) lies in \([0, 1]\) whenever the weights do. They need not: negative and above-one weights are a known property of the ordinary system near clustered data, which is why the tool counts and reports the raw estimates it had to clip — 11,679 of 81,600 cell-threshold pairs on the İzmir fixture.</p>
+  <p style="margin:8px 0;"><strong>Step 3 — the order-relation repair.</strong> The raw estimates \(\hat{p}_1, \dots, \hat{p}_K\) are not guaranteed to be non-decreasing in \(k\). They are replaced by the non-decreasing vector \(\tilde{p}\) that is nearest in squared distance, which is the pool-adjacent-violators solution and, for this particular problem, the maximum-likelihood projection onto the monotone cone. Wherever adjacent values are out of order they are replaced by their average, and the operation conserves \(\sum_k \hat{p}_k\) at every cell. The tool reports how many cells the repair touched, the largest number of bands pooled into one probability, and the largest single change it made.</p>
+  <p style="margin:8px 0;"><strong>Step 4 — the E-type estimate.</strong> The repaired cumulative probabilities define a discrete distribution over the classes cut by the thresholds. With \(t_0 = -\infty\), \(t_{K+1} = +\infty\), class \(j\) is \((t_j, t_{j+1}]\) and its probability at \(s_0\) is \(\tilde{p}_{j+1}(s_0) - \tilde{p}_j(s_0)\), taking \(\tilde{p}_0 = 0\) and \(\tilde{p}_{K+1} = 1\). The expected value is</p>
+  $$ \hat{z}(s_0) = \sum_{j=0}^{K} m_j \bigl(\tilde{p}_{j+1}(s_0) - \tilde{p}_j(s_0)\bigr) \tag{4} $$
+  <p style="margin:8px 0;">where \(m_j\) is the mean of the observations falling in class \(j\) — the interval midpoint is used only for an empty class, where there are no observations to average. Equation (4) is exact at an observation in the sense that the indicator curve there is a perfect step, so the expected value lands on that observation's class mean rather than on the observation itself. That is the whole of the E-type surface's inexactness, and it is the reason this raster is not an exact interpolator even though the probabilities underneath it are.</p>
+  <p style="margin:8px 0;"><strong>Step 5 — the Brier score and its skill score.</strong> For threshold \(k\) over \(n\) held-out observations,</p>
+  $$ \mathrm{BS}_k = \frac{1}{n}\sum_{i=1}^{n} \bigl(\hat{p}_k(s_i) - I(s_i; z_k)\bigr)^2, \qquad \mathrm{BSS}_k = 1 - \frac{\mathrm{BS}_k}{\bar{p}_k(1 - \bar{p}_k)} \tag{5} $$
+  <p style="margin:8px 0;">The denominator is the score of the <em>climatological</em> forecast — always quoting the observed frequency \(\bar{p}_k\) and ignoring location — so a skill of zero means the surface has learned nothing spatial however small its Brier score looks, and a negative skill means it is doing worse than that constant. Both are proper scoring rules for a probability forecast; the Brier score is the mean square, and its resolution into reliability, resolution and uncertainty is what the calibration table displays directly.</p>
+  <p style="margin:8px 0;"><strong>Step 6 — the declustered reference frequency.</strong> Partition the observations' bounding box into square cells of side \(d\), let \(n_{\text{cell}(i)}\) be the number of observations sharing a cell with observation \(i\), and weight</p>
+  $$ w_i \propto \frac{1}{n_{\text{cell}(i)}}, \qquad \sum_i w_i = 1 \tag{6} $$
+  <p style="margin:8px 0;">so that a crowded cell counts as one observation in total rather than as many. The declustered cumulative frequency of threshold \(z_k\) is then \(\sum_i w_i I(s_i; z_k)\). The tool evaluates (6) over a sweep of cell sizes from 5 per cent to 75 per cent of the longer side of the bounding box, returns the low, median and high across the sweep, and reports the spread, because the answer moves with \(d\) and a single choice would hide that it does. This is the quantity ordinary kriging's far field converges on, and it is the reference the tool prints between the mapped and the sample frequency. A point of algebra worth recording, because it removes a standing source of confusion about the E-type level: if the class probabilities at every cell were the sample's own marginal class frequencies, equation (4) would return the observed mean exactly — on the İzmir run the four class means 1.7931, 21.4255, 30.8315 and 39.1842 weighted by those frequencies give 23.290 against an observed mean of 23.2891. Weighted by the declustered frequencies they give 11.912 instead, and the report's E-type mean is 11.8342. The E-type gap is therefore the mapped-versus-sample distinction almost entirely, and the class-representative effect of equation (4) is only the small residual between 11.912 and 11.8342.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The method lives in <code>core/indicator_engine.py</code> on <code>numpy</code> alone — <code>indicator_vector</code>, <code>fit_indicator_variograms</code>, <code>correct_order_relations</code>, <code>class_means</code>, <code>declustered_frequencies</code>, <code>indicator_cross_validation</code> — reusing the same binned empirical variogram and the same weighted-least-squares fitting rule as the Ordinary / Universal Kriging tool, so an indicator variogram and a value variogram fitted by this plugin are directly comparable. Each threshold's kriging goes through the same chunked solver the value tools use. The variogram family list is the same five as ordinary kriging, with the linear model admitted here although Empirical Bayesian Kriging refuses it: EBK simulates from the fitted model and needs a covariance to draw from, whereas indicator kriging only ever solves the ordinary system, which an unbounded variogram satisfies perfectly well. The run is capped at 2,000 observations by default and the cap is a cost model rather than a guess — the work is the output cell count multiplied by the observation count multiplied by the threshold count, measured at 1.4 to 1.7 million such units per second on synthetic fields, and the tool refuses a run whose estimate exceeds about three minutes rather than starting it. Leave-one-out costs one variogram refit per observation per threshold, so above 200 observations the tool validates by grouped folds instead and states the fold count and the seed in the report; the two protocols are not interchangeable and a grouped figure is systematically worse.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field whose exceedance probability is wanted</td></tr>
+      <tr><td class="param-name">THRESHOLDS</td><td class="param-type">String</td><td class="param-default">empty</td><td>Comma or semicolon separated numbers</td><td>The levels to exceed. Used exactly as given — a regulatory limit is someone else's number and replacing it with a quantile of your sample would answer a different question</td></tr>
+      <tr><td class="param-name">THRESHOLD_COUNT</td><td class="param-type">Integer</td><td class="param-default">5</td><td>1–50</td><td>How many thresholds to place when none are given, at quantiles of the observed values; those carry no external meaning and the report says so</td></tr>
+      <tr><td class="param-name">MODEL</td><td class="param-type">Enum</td><td class="param-default">Automatic</td><td>Automatic / spherical / exponential / Gaussian / linear / stable</td><td>Semivariogram family; Automatic fits every threshold to all of them and keeps the best, so the thresholds may end up on different families</td></tr>
+      <tr><td class="param-name">ALPHA</td><td class="param-type">Double</td><td class="param-default">1.5</td><td>0.1–2.0</td><td>Shape exponent for the stable family; ignored by the others</td></tr>
+      <tr><td class="param-name">N_BINS</td><td class="param-type">Integer</td><td class="param-default">15</td><td>4–200</td><td>Distance bins for each threshold's variogram</td></tr>
+      <tr><td class="param-name">MAX_LAG</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Maximum lag for the variograms; 0 uses the standard automatic span</td></tr>
+      <tr><td class="param-name">CELL_SIZE</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Output cell size; 0 = about 200 cells on the longer side</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">2000</td><td>8–200000</td><td>Cap on observations; cost is their count multiplied by the cell count and the threshold count, and a run past the cap is refused rather than started</td></tr>
+      <tr><td class="param-name">RUN_CV</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Score the probabilities by cross-validation: Brier score, skill score against the base rate, and the calibration table</td></tr>
+      <tr><td class="param-name">CV_FOLDS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>2–20</td><td>Folds used only when leave-one-out is unaffordable, which it is above 200 observations</td></tr>
+      <tr><td class="param-name">MASK_OUTSIDE</td><td class="param-type">Boolean</td><td class="param-default">True</td><td>—</td><td>Write cells outside the observations' convex hull as no-data. A probability surface reads as confident everywhere, so the extrapolated area needs to be visible</td></tr>
+      <tr><td class="param-name">EXCEEDANCE</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>One band per threshold, band 1 = smallest threshold, holding the probability of exceeding it</td></tr>
+      <tr><td class="param-name">ETYPE</td><td class="param-type">Raster Layer</td><td class="param-default">—</td><td>—</td><td>Expected value of the field rebuilt from the probabilities by equation (4); not an exact interpolator</td></tr>
+      <tr><td class="param-name">ETYPE_VARIANCE</td><td class="param-type">Raster Layer</td><td class="param-default">Off</td><td>Optional</td><td>Variance of the value implied by the probability curve; not a kriging variance and not a confidence interval</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the per-threshold variograms, the order-relation repair, the cross-validation and calibration tables, the band level against the sample and the declustered frequency, the E-type explanation and the surface statistics</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>EXCEEDANCE</code> — Float32 GeoTIFF with one band per threshold, band \(k\) holding \(P(Z > z_k)\) with the thresholds ascending, so the bands fall as the band number rises and the highest band is the rarest event &middot; <code>ETYPE</code> — Float32 GeoTIFF of the expected value from equation (4) &middot; <code>ETYPE_VARIANCE</code> — Float32 GeoTIFF of the spread of the value implied by the probability curve &middot; <code>HTML_REPORT</code> — the thresholds and where they came from, the families actually fitted and their parameters, the repair size, the Brier and skill scores with the protocol named, the five-bin calibration table, the band level against all three frequencies, the class means, and the surface statistics
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  Nothing in a GeoTIFF names its bands, so the band order is a contract carried by the report and the help text rather than by the file: band 1 is the smallest threshold throughout. The report repeats the order in full, naming each band with its threshold. The report's surface statistics are taken over the cells that were written rather than over the unmasked array behind them, so the table, the no-data cell count and the band-level table all describe the same set of cells.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Read the probabilities, not the E-type level, when the question is a threshold.</strong> The exceedance bands are the output the method exists to produce, and they are validated directly by the Brier score and the calibration table. The E-type surface is a reconstruction of the field from those probabilities and is optimal for a different loss; its level is low on a skewed field and its tails are the least trustworthy part of it. Use it to compare the probabilities against a value prediction on the same points, which is what it is for, and add thresholds before reading its level as a value.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A mapped band average that disagrees with the sample frequency is not a bug, and the report now says so with the numbers.</strong> Ordinary kriging's far field converges on the declustered mean, so a surface that is correct will still average to something other than the proportion of observations below the threshold when the sample is clustered. The band-level table prints the mapped fraction, the sample fraction and the declustered frequency for every threshold, together with the declustering sweep's range and the busiest cell's count, and names the threshold whose mapped fraction is furthest from its declustered frequency. Compare the gap against the sweep's spread before reading it as an error — on the İzmir fixture that spread is 0.1555, and the worst gap is 0.0308.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Check the per-threshold \(R^2\) before believing the map.</strong> Each threshold has its own variogram and its own quality of fit, and a threshold whose \(R^2\) is at or below zero has no spatial structure this lag range can resolve: the kriged surface there is very nearly that threshold's overall frequency at every location. That is not a failure of the run, it is information — the indicator is spatially flat at that level — but a reader who looks only at the mapped surface will see a plausible-looking map with no signal in it. The report calls this out by threshold, and the skill score is an average over all thresholds and will not single it out.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A high \(R^2\) is not the converse of a low one.</strong> It says the fitted curve tracks the binned cloud of the empirical variogram; it does not say the indicator has a sill inside the lag range. Where the semivariance is still climbing at the largest lag — which is what a spatial trend at that threshold looks like — the fitted partial sill can exceed the indicator's own variance, and the kriging then has no sill to shrink to, so past the observations it extrapolates the trend instead of returning to the overall frequency. The clipped-estimate count in the report's surface table is where that shows up, and the extrapolated area should be masked rather than read.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>When not to use this tool.</strong> Where the question is what the value is rather than how likely the threshold is, krige the values directly: the E-type surface is a way of comparing probabilities and is not a substitute for a value prediction. Where the field has a legitimate trend that you want removed, the polynomial trend tool and the universal kriging drift options are the right instruments — this tool has no drift term, and a threshold whose indicator is still climbing at the largest lag is a sign that one is needed. And where the observations are clustered so severely that the declustering sweep disagrees with itself across its range, the honest conclusion is that the band levels are not well determined by this sampling, whatever the map looks like.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-semivariogram">Empirical Semivariogram &amp; Model Fitting</a> &middot; <a href="#alg-ebk">Empirical Bayesian Kriging Interpolation</a> &middot; <a href="#alg-interp-compare">Interpolation Model Comparison</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Journel, A.G.</strong> (1983). "Nonparametric Estimation of Spatial Distributions." <em>Journal of the International Association for Mathematical Geology</em> 15(3): 445–468. DOI: <a href="https://doi.org/10.1007/BF01031292">10.1007/BF01031292</a> — The paper that introduced the indicator formalism and the estimate of the distribution function directly from thresholded data, which is the method this tool implements.</p>
+  <p style="margin:4px 0;"><strong>Goovaerts, P.</strong> (1997). <em>Geostatistics for Natural Resources Evaluation.</em> New York: Oxford University Press. — The standard development of indicator kriging in practice, including the order-relation problem, the repair, and the E-type estimate of equation (4).</p>
+  <p style="margin:4px 0;"><strong>Deutsch, C.V. &amp; Journel, A.G.</strong> (1998). <em>GSLIB: Geostatistical Software Library and User's Guide</em> (2nd ed.). New York: Oxford University Press. — The reference implementation of the indicator routines, and the source of the practical conventions this tool follows for the transform, the per-threshold fits and the repair.</p>
+  <p style="margin:4px 0;"><strong>Isaaks, E.H. &amp; Srivastava, R.M.</strong> (1989). <em>An Introduction to Applied Geostatistics.</em> New York: Oxford University Press. — The clearest plain-language account of two things this tool leans on: why kriging's weights depend on the data configuration rather than on the data values, which is the reason the far field converges on the declustered mean; and, in chapter 13, the cell-weighting construction of equation (6) together with the argument for sweeping the cell size rather than nominating one.</p>
+  <p style="margin:4px 0;"><strong>Brier, G.W.</strong> (1950). "Verification of Forecasts Expressed in Terms of Probability." <em>Monthly Weather Review</em> 78(1): 1–3. DOI: <a href="https://doi.org/10.1175/1520-0493(1950)078&lt;0001:VOFEIT&gt;2.0.CO;2">10.1175/1520-0493(1950)078&lt;0001:VOFEIT&gt;2.0.CO;2</a> — The original definition of the score used in equation (5).</p>
+  <p style="margin:4px 0;"><strong>Gneiting, T. &amp; Raftery, A.E.</strong> (2007). "Strictly Proper Scoring Rules, Prediction, and Estimation." <em>Journal of the American Statistical Association</em> 102(477): 359–378. DOI: <a href="https://doi.org/10.1198/016214506000001437">10.1198/016214506000001437</a> — Why a probability forecast must be scored by a proper rule, and the decomposition of the Brier score into reliability, resolution and uncertainty that the calibration table displays.</p>
+  <p style="margin:4px 0;"><strong>Barlow, R.E., Bartholomew, D.J., Bremner, J.M. &amp; Brunk, H.D.</strong> (1972). <em>Statistical Inference under Order Restrictions.</em> London: Wiley. — The isotonic regression and pool-adjacent-violators algorithm used to repair the order relations.</p>
+  <p style="margin:4px 0;"><strong>Chilès, J.-P. &amp; Delfiner, P.</strong> (2012). <em>Geostatistics: Modeling Spatial Uncertainty</em> (2nd ed.). Hoboken: Wiley. DOI: <a href="https://doi.org/10.1002/9781118136188">10.1002/9781118136188</a> — The properties of the ordinary kriging system treated at length, including the behaviour of the weights in the far field and the exactness of the indicator estimate at the data.</p>
+  </div>
+</div>
+</article>
+
+<article class="alg-card" id="alg-interp-compare">
+<div class="alg-card-header">
+  <div class="alg-icon">⚖️</div>
+  <div class="alg-info">
+    <h4>Interpolation Model Comparison</h4>
+    <div class="alg-id">interp_compare</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-interp-compare" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Scores several interpolators on one field under a single validation protocol — one shared split, one seed, every model refitted from scratch inside every fold — and reports which one leads, by how wide a margin, and whether that margin is larger than the noise of this sample. It writes no surface: the point of the tool is the ranking, and the winner is then produced by its own tool so the surface comes with that tool's settings and report.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  "Which interpolation method should I use here?" is a question about a particular field and a particular sampling design, and the literature will not answer it. The relative performance of inverse distance weighting, thin-plate splines, natural neighbour and kriging depends on the density and regularity of the observations, on how smoothly the field varies, and on how much of the variation is at a scale smaller than the spacing between samples. The only honest answer for a given layer is to score the candidates on that layer. This tool does that, and it is deliberately narrow: it answers the ranking question and nothing else.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The trap it exists to avoid.</strong> Three of the four methods offered by default are exact interpolators: they pass through their own observations, so the residual at a datum is zero by construction and says nothing about the method. An analyst who evaluates them by fitting a surface to all the data and comparing the surface against those same data will measure an error of zero for every one of them and learn nothing. The comparison therefore refits every method from scratch inside every validation fold and scores it only on the observations held out from that fit. That is the single design decision the rest of the tool follows from, and it is also why ordinary kriging is treated differently here than in its own tool: the kriging tool fits one variogram on the whole dataset and validates the prediction from it, whereas here the variogram is refitted inside every fold, because otherwise kriging would be the one method whose model had already seen the observation it was being scored on. The consequence is worth stating plainly — the kriging RMSE in this table is <em>not</em> the figure the kriging tool reports for the same field, and the difference is the refit rather than a disagreement.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>One protocol, chosen by the most constrained method on the list.</strong> Leave-one-out is affordable for some methods and not others, and comparing one method's leave-one-out error against another's 10-fold error would compare protocols rather than methods. Each method carries the observation count above which it cannot afford leave-one-out — 300 for natural neighbour, 400 for the thin-plate spline and for kriging with a per-fold refit — and the run takes the smallest of those limits as its own. On the bundled İzmir fixture with the four defaults selected, natural neighbour's limit is the binding one, so the whole comparison ran as 10-fold. The report names which method set the protocol and why, so a reader can see what the binding constraint was rather than inferring it from the fold count.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The comparison set is the intersection, not the union.</strong> Natural neighbour declines to extrapolate past the edge of the convex hull of its training points, so on the İzmir run it predicted 374 of the 387 observations and dropped 13. Averaging one method's error over 387 points and another's over 374 would compare them on different ground; the tool therefore computes every error statistic in the table over the observations that <em>every</em> scored method could predict, states that count, and states separately how many each method scored and dropped. The dropped observations are reported rather than quietly excluded, because a method that declines to answer is telling you something and the tool should not hide it.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Aggregate errors cannot separate two close methods; the pairing can.</strong> Because every method saw the same split, their errors on a given observation are paired, and the difference of two methods' absolute errors at one location cancels the part of the difficulty that belongs to that location rather than to the method. That leaves a much smaller standard error than either RMSE has on its own, and the tool reports the mean difference against the leader, its standard error, and that ratio. On the İzmir run natural neighbour led with RMSE 7.42891 against 7.74238 for the thin-plate spline, a 4.0 per cent reduction — but the paired margin is −0.321116 with a standard error of 0.177752, only 1.8 standard errors, and the two methods swap places across locations, natural neighbour closer on 50.8 per cent of them and the spline on 49.2 per cent. The report's verdict is that this sample does not separate the two. The third and fourth places are a different matter: ordinary kriging trails by 2.132309 against a standard error of 0.260793, 8.2 standard errors, and inverse distance weighting by 2.769481 against 0.364977, 7.6 standard errors. Those margins are findings; the one at the top is not.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why no surface is written.</strong> A comparison is a diagnostic, and the winning configuration here is a method name, not a set of settings: the tool refits the variogram inside every fold, which is not what a production run should do. Handing the user a raster from this tool would produce a surface whose settings the analyst never chose and whose report is the wrong one. The report names the tool that produces the winner's surface instead, so that the surface arrives with the settings, the diagnostics and the caveats that belong to it.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Step 1 — a shared split.</strong> The \(n\) observations are divided into \(F\) folds by a seeded shuffle, so that every method sees the same partition. Fold \(f\) trains on the complement of \(f\) and predicts the observations in \(f\): this is what makes the errors paired, and the pairing is what the margin test in step 4 depends on.</p>
+  <p style="margin:8px 0;"><strong>Step 2 — refit inside every fold.</strong> For each method and each fold, the model is estimated from the training observations alone and applied to the held-out ones, giving \(\hat{z}_i^{(m)}\) for method \(m\) at held-out observation \(i\) and error \(e_i^{(m)} = z_i - \hat{z}_i^{(m)}\). A method whose fit is analytic (IDW, thin-plate spline, natural neighbour) costs one prediction per fold; a method whose fit is estimated — ordinary kriging — costs a variogram fit per fold as well, which is why it carries a much lower affordable count.</p>
+  <p style="margin:8px 0;"><strong>Step 3 — the error statistics.</strong> Over the \(n_c\) observations that every scored method could predict:</p>
+  $$ \mathrm{RMSE}_m = \sqrt{\frac{1}{n_c}\sum_{i=1}^{n_c} \bigl(e_i^{(m)}\bigr)^2}, \qquad \mathrm{MAE}_m = \frac{1}{n_c}\sum_{i=1}^{n_c} \bigl|e_i^{(m)}\bigr|, \qquad \mathrm{NRMSE}_m = \frac{\mathrm{RMSE}_m}{\sigma_z} \tag{1} $$
+  <p style="margin:8px 0;">where \(\sigma_z\) is the sample standard deviation of the field. The normalised figure is the one column comparable across fields, since an RMSE in the field's own units is not. The mean error \(\frac{1}{n_c}\sum e_i^{(m)}\) is reported beside them because it detects a bias that both of the above would hide, and the maximum absolute error is reported because a method that is good on average while failing badly at a few locations is a different instrument from one that is uniformly mediocre.</p>
+  <p style="margin:8px 0;"><strong>Step 4 — the paired margin against the leader.</strong> For the leader \(L\) and a challenger \(m\), the paired differences are \(d_i = |e_i^{(L)}| - |e_i^{(m)}|\), so a positive mean means the challenger is closer:</p>
+  $$ \bar{d} = \frac{1}{n_c}\sum_{i=1}^{n_c} d_i, \qquad s_{\bar{d}} = \frac{\mathrm{sd}(d)}{\sqrt{n_c}}, \qquad t = \frac{|\bar{d}|}{s_{\bar{d}}} \tag{2} $$
+  <p style="margin:8px 0;">The ratio is read against the same two-standard-error convention the rest of the plugin uses: below 2 the sample does not separate the two methods, and the report says so in those words rather than reporting a ranking as though it were a result. The tool also reports the fraction of locations on which each method was strictly closer, because a method can win the average while losing most locations, and those are different findings about the two surfaces. When fewer than eight observations were scored by both methods the margin is not computed at all and the report says it was not tested, which is a real answer rather than a number to invent. One degenerate case is handled explicitly: if every paired difference is identical the standard error is zero, and the ratio is infinite when the mean is non-zero and zero when it is not, which is the honest description of both.</p>
+  <p style="margin:8px 0;"><strong>Step 5 — the protocol's own limit.</strong> The observation count above which a method cannot afford leave-one-out is fixed for each method (300 for natural neighbour, 400 for the thin-plate spline and for kriging with a per-fold refit), and the run adopts the smallest limit among the selected methods. Below that count leave-one-out runs and the report names it; above it, \(F\) folds run with \(F\) fixed at 10. The two are not comparable, so the fold count, the seed and the binding method are all stated on the page.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> The comparison shares the plugin's single implementation of each method rather than reimplementing them for scoring: the IDW, thin-plate spline, natural neighbour and polynomial trend predictors come from <code>core/interpolation_engines.py</code>, and the kriging entry calls the same empirical variogram, the same weighted-least-squares family fit and the same solver as the Ordinary / Universal Kriging tool. Refitting is done through the same code path as a production run, so what is scored is what the plugin would produce. The shuffle is seeded once per run and every method consumes the same partition, which is what makes equation (2) valid. There is exactly one random number generator in the comparison path and it is seeded, so a given seed and observation set reproduce the table exactly. The run is capped at 3,000 observations by default, and the tool refuses a comparison whose estimated cost exceeds a few minutes rather than starting it.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Any geometry type</td><td>Input vector layer; centroids are used</td></tr>
+      <tr><td class="param-name">FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>Numeric</td><td>Field to interpolate</td></tr>
+      <tr><td class="param-name">METHODS</td><td class="param-type">Enum</td><td class="param-default">IDW, natural neighbour, RBF, ordinary kriging</td><td>Multi-select from seven</td><td>The methods to score. Also IDW, natural neighbour, RBF, and global polynomial trend of orders 1, 2 and 3, and ordinary kriging; each is scored under one shared protocol</td></tr>
+      <tr><td class="param-name">IDW_POWER</td><td class="param-type">Double</td><td class="param-default">2.0</td><td>0.1–10.0</td><td>Inverse distance weighting power; applies only if IDW is selected</td></tr>
+      <tr><td class="param-name">RBF_SMOOTHING</td><td class="param-type">Double</td><td class="param-default">0.0</td><td>≥ 0</td><td>Smoothing of the thin-plate spline; 0 is the exact interpolator the RBF tool uses, and any non-zero value is a different method being scored</td></tr>
+      <tr><td class="param-name">KRIGING_MODEL</td><td class="param-type">Enum</td><td class="param-default">Automatic</td><td>Automatic / spherical / exponential / Gaussian / linear / stable</td><td>Semivariogram family for the kriging entry, refitted inside every fold</td></tr>
+      <tr><td class="param-name">ALPHA</td><td class="param-type">Double</td><td class="param-default">1.5</td><td>0.1–2.0</td><td>Shape exponent for the stable family in the kriging entry; ignored by the others</td></tr>
+      <tr><td class="param-name">N_BINS</td><td class="param-type">Integer</td><td class="param-default">15</td><td>4–200</td><td>Distance bins for the kriging entry's per-fold variogram</td></tr>
+      <tr><td class="param-name">MAX_LAG</td><td class="param-type">Double</td><td class="param-default">0 (auto)</td><td>≥ 0 map units</td><td>Maximum lag for the kriging entry's variograms; 0 uses the automatic span</td></tr>
+      <tr><td class="param-name">SEED</td><td class="param-type">Integer</td><td class="param-default">0</td><td>≥ 0</td><td>Seed for the fold split. Fixed so that every method sees the same folds and the run is reproducible</td></tr>
+      <tr><td class="param-name">MAX_POINTS</td><td class="param-type">Integer</td><td class="param-default">3000</td><td>8–200000</td><td>Cap on observations this comparison will accept</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .html</td><td>Report with the verdict, the protocol and the method that set it, the comparison table and the margin test, and the choice guidance</td></tr>
+      <tr><td class="param-name">CSV_TABLE</td><td class="param-type">File</td><td class="param-default">—</td><td>Optional, .csv</td><td>The comparison table as CSV, with a commented header stating the protocol, the seed, the field and the observation counts so a row quoted elsewhere carries its conditions with it</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+    <code>HTML_REPORT</code> — the verification verdict in one line, the protocol and which method's limit set it, the observations compared and the count each method actually scored, the comparison table ranked by RMSE with NRMSE, MAE, mean error, maximum absolute error and the paired margin against the leader, and the guidance for choosing between the methods &middot; <code>CSV_TABLE</code> — the same table as ranked rows under a commented header carrying the protocol, fold count, seed, field and observation counts
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  There is no raster output, deliberately: the tool answers which method to use, not what the surface is. The report names the tool that produces the winner's surface so that the run which generates it is the one that carries its own settings and diagnostics. The CSV's commented header exists because a row quoted out of a comparison is meaningless without the protocol that produced it, and the header is written so that the conditions travel with the numbers.
+  </p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>The margin column is the result; the ranking column alone is not.</strong> Read the leader's margin against the runner-up in standard errors before treating the ranking as a finding. Below two standard errors the sample does not separate the methods, and the report says so in those words — on the bundled İzmir fixture the top two methods are 1.8 standard errors apart and swap places on 50.8 and 49.2 per cent of the locations respectively, which is a tie. A tie is a useful answer: it means the choice should be made on grounds other than accuracy on this field — whether the method extrapolates, what its report contains, whether its variance is interpretable — and the report's guidance is written to be read in exactly that case.
+  </div>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Do not carry the kriging number across to the kriging tool.</strong> Here the variogram is refitted inside every fold, which is necessary for the comparison to be fair and is not what a production run does. The kriging figure in this table will therefore differ from the one the Ordinary / Universal Kriging tool reports on the same field with the same settings, and the difference is the per-fold refit rather than a contradiction. Compare like with like: use this table to rank methods, and the individual tools' own reports to judge a surface.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Read the dropped-observation counts.</strong> A method that declines to extrapolate outside its training points scores on fewer observations, and the table's statistics are taken over the intersection so that the comparison is fair. The counts are printed for the same reason: if a method dropped many observations, its error is measured on the easier interior of the study area, and a reader comparing that figure against a method tested over the whole extent is comparing two different tasks.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>A large margin is not a licence to skip the method's own report.</strong> A margin of eight standard errors says the loser is worse on this field, not that the winner is good. Check the winner's own diagnostics — the variogram fit, the cross-validation protocol, the extrapolation summary — before using its surface for anything. The comparison can tell you that one method is better than another here; it cannot tell you that either of them is adequate.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:10px 0;">
+  <strong>Change the seed before believing a narrow ranking.</strong> The fold split is seeded and reported, so the entire comparison is reproducible — and so is the sensitivity of the ranking to the split. Re-running with a different seed and finding that the top two swap places is a direct demonstration that the margin was noise, and it costs one run. Where two methods are genuinely separated the ranking will survive the seed; where it does not, the honest report is that this sample cannot choose between them.
+  </p>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-kriging">Ordinary / Universal Kriging Interpolation</a> &middot; <a href="#alg-idw">Inverse Distance Weighted Interpolation</a> &middot; <a href="#alg-rbf">Radial Basis Function Interpolation</a> &middot; <a href="#alg-natural-neighbour">Natural Neighbour (Sibson) Interpolation</a> &middot; <a href="#alg-trend-surface">Polynomial Trend Surface</a> &middot; <a href="#alg-indicator">Indicator Kriging</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Isaaks, E.H. &amp; Srivastava, R.M.</strong> (1989). <em>An Introduction to Applied Geostatistics.</em> New York: Oxford University Press. — The standard treatment of exact interpolators and of why a residual measured against a surface fitted to the same data is zero by construction, which is the reason this tool refits inside every fold.</p>
+  <p style="margin:4px 0;"><strong>Davis, B.M.</strong> (1987). "Uses and Abuses of Cross-Validation in Geostatistics." <em>Mathematical Geology</em> 19(3): 241–248. DOI: <a href="https://doi.org/10.1007/BF00898198">10.1007/BF00898198</a> — The classic statement of what cross-validation can and cannot establish about an interpolator, and of the tendency to read a ranking out of a difference that the data do not support.</p>
+  <p style="margin:4px 0;"><strong>Willmott, C.J. &amp; Matsuura, K.</strong> (2005). "Advantages of the Mean Absolute Error (MAE) over the Root Mean Square Error (RMSE) in Assessing Average Model Performance." <em>Climate Research</em> 30(1): 79–82. DOI: <a href="https://doi.org/10.3354/cr030079">10.3354/cr030079</a> — Why both statistics are reported here rather than one: the RMSE is dominated by the largest errors while the MAE is not, so a method can lead on one and trail on the other.</p>
+  <p style="margin:4px 0;"><strong>Cressie, C.</strong> (1993). <em>Statistics for Spatial Data</em> (rev. ed.). New York: Wiley. DOI: <a href="https://doi.org/10.1002/9781119115151">10.1002/9781119115151</a> — The theoretical comparison of the interpolators offered here, and the conditions under which kriging's optimality over the deterministic interpolators does and does not translate into better cross-validated accuracy.</p>
+  <p style="margin:4px 0;"><strong>Li, J. &amp; Heap, A.D.</strong> (2014). "Spatial Interpolation Methods Applicable to Marine and Estuarine Benthic Species Abundance Data." <em>Ecological Modelling</em> 210(4): 387–397. DOI: <a href="https://doi.org/10.1016/j.ecolmodel.2007.08.013">10.1016/j.ecolmodel.2007.08.013</a> — A cross-validation comparison of exactly this family of methods on observational data, and a demonstration that the winner changes with the field and the sampling density rather than being a property of the method.</p>
+  <p style="margin:4px 0;"><strong>Kitanidis, P.K.</strong> (1997). <em>Introduction to Geostatistics: Applications in Hydrogeology.</em> Cambridge: Cambridge University Press. DOI: <a href="https://doi.org/10.1017/CBO9780511626166">10.1017/CBO9780511626166</a> — The effect of refitting the variogram within a validation fold, and why a model fitted on a fraction of the data is not the model a full run would use.</p>
   </div>
 </div>
 </article>
@@ -10461,7 +10702,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
 <!--  FOOTER                                                        -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <footer class="refman-footer">
-  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.9.0.</strong><br>
+  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.10.0.</strong><br>
   Developed by Yusuf Eminoğlu with feedback from educational workflows at Dokuz Eylül University, Department of City and Regional Planning.<br>
   Licensed under GPL-3.0. Source repository: <a href="https://gitlab.com/geophilo1/planx_geostats" style="color:var(--gs-teal-600);">gitlab.com/geophilo1/planx_geostats</a>.<br>
   <em>All methods are documented with their primary academic references. The plugin implements its own engines for core computations; advanced models delegate to community-vetted Python packages with full version transparency.</em>

@@ -22,6 +22,37 @@ def load_module(name: str, relative_path: str):
     return module
 
 
+def load_core_package(name: str, module_names):
+    """Load a group of ``core`` modules that import each other relatively.
+
+    ``load_module`` gives a file a flat name, which is enough for the modules
+    that import nothing from their siblings.  The geostatistics engines do:
+    ``indicator_engine`` reaches for ``geostat_engines`` and
+    ``interpolation_engines`` with a relative import, and a flat load makes that
+    a ``ModuleNotFoundError``.  Giving them a synthetic package to live in keeps
+    the relative imports working without a QGIS runtime or an installed plugin.
+    """
+    package = types.ModuleType(name)
+    package.__path__ = [str(ROOT / "core")]
+    sys.modules[name] = package
+    loaded = {}
+    for module_name in module_names:
+        spec = importlib.util.spec_from_file_location(
+            f"{name}.{module_name}", ROOT / "core" / f"{module_name}.py"
+        )
+        assert spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[f"{name}.{module_name}"] = module
+        spec.loader.exec_module(module)
+        loaded[module_name] = module
+    return loaded
+
+
+indicator_engine = load_core_package(
+    "gs_engines",
+    ["geostat_engines", "interpolation_engines", "indicator_engine"],
+)["indicator_engine"]
+
 stats = load_module("stats_engines", "core/stats_engines.py")
 diagnostics = load_module("analysis_diagnostics", "core/analysis_diagnostics.py")
 sys.modules.setdefault("qgis", types.ModuleType("qgis"))
@@ -798,6 +829,80 @@ def test_apply_renderer_sets_and_repaints_or_no_ops_on_none() -> None:
     assert symbology.apply_renderer(layer, None) is False
 
 
+def test_declustered_frequencies_discount_a_crowded_cluster() -> None:
+    """The indicator report's area-versus-sample check has to actually check.
+
+    Ordinary kriging's far field converges on the declustered mean, so the
+    indicator report states the mapped area's cumulative frequency beside the
+    sample's and beside a declustered estimate.  That third number is only worth
+    printing if it moves the right way: on a scattered sample it must give back
+    the plain frequency, and on a crowded one it must discount the crowd rather
+    than restate it.
+    """
+    rng = np.random.default_rng(3)
+    scattered_c = rng.uniform(0.0, 1000.0, (300, 2))
+    scattered_z = rng.uniform(0.0, 100.0, 300)
+    thresholds = np.array([25.0, 50.0, 75.0])
+    scattered = indicator_engine.declustered_frequencies(
+        scattered_c, scattered_z, thresholds
+    )
+    plain = np.array([(scattered_z <= t).mean() for t in thresholds])
+    assert np.max(np.abs(scattered["median"] - plain)) < 0.05, (
+        f"a scattered sample declustered to {scattered['median']} against a "
+        f"plain {plain}"
+    )
+
+    # Ninety observations crowded into a one-unit square carrying the low value,
+    # ten spread across the rest of the domain carrying the high one.
+    crowded_c = np.vstack([
+        rng.uniform(0.0, 1.0, (90, 2)),
+        rng.uniform(500.0, 1000.0, (10, 2)),
+    ])
+    crowded_z = np.concatenate([np.full(90, 10.0), np.full(10, 20.0)])
+    crowded = indicator_engine.declustered_frequencies(
+        crowded_c, crowded_z, np.array([15.0])
+    )
+    assert crowded["median"][0] < 0.5 * 0.90, (
+        f"the crowd was restated rather than discounted: plain 0.9000 against "
+        f"a declustered median of {crowded['median'][0]:.4f}"
+    )
+    assert (crowded["low"][0] <= crowded["median"][0]
+            <= crowded["high"][0]), (
+        f"the sweep is not ordered: low {crowded['low'][0]}, median "
+        f"{crowded['median'][0]}, high {crowded['high'][0]}"
+    )
+
+    # Swapping which cluster holds the low value must move the answer the other
+    # way, so the measure is shown to follow the values and not the geometry.
+    flipped = indicator_engine.declustered_frequencies(
+        crowded_c,
+        np.concatenate([np.full(90, 20.0), np.full(10, 10.0)]),
+        np.array([15.0]),
+    )
+    assert flipped["median"][0] > 0.5 > crowded["median"][0], (
+        f"crowded-low gave {crowded['median'][0]:.4f} and crowded-high gave "
+        f"{flipped['median'][0]:.4f}"
+    )
+
+    # A sample with no spatial extent has no cell size to separate it, and that
+    # is a layer of stacked samples rather than a hypothetical.
+    flat = indicator_engine.declustered_frequencies(
+        np.zeros((5, 2)), np.array([1.0, 2.0, 3.0, 4.0, 5.0]),
+        np.array([2.0, 4.0]),
+    )
+    assert len(flat["cell_sizes"]) == 0
+    assert np.allclose(flat["median"], [0.4, 0.8]), flat["median"]
+
+    try:
+        indicator_engine.declustered_frequencies(
+            scattered_c, scattered_z, np.zeros(0)
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("no thresholds should be refused")
+
+
 def run_all() -> None:
     test_global_moran_finite_output()
     test_global_moran_zero_variance_is_graceful()
@@ -843,6 +948,7 @@ def run_all() -> None:
     test_categorical_field_renderer_colors_string_labels()
     test_symbology_layer_dependent_renderers_handle_none_layer()
     test_apply_renderer_sets_and_repaints_or_no_ops_on_none()
+    test_declustered_frequencies_discount_a_crowded_cluster()
     print("CORE SMOKE TESTS OK")
 
 
