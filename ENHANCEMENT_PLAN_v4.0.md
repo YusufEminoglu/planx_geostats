@@ -276,6 +276,39 @@ zero-count verdict line instead of a bare substring:
 failed_text = bool(re.search(r"\bFAIL\b", out)) and not re.search(r"\b0\s+failed?\b", out, re.I)
 ```
 
+### D12 — The `tracker` URL 404s: Issues is disabled on the GitLab project (severity: low)
+
+`metadata.txt` advertises `tracker=https://gitlab.com/geophilo1/planx_geostats/-/issues`.
+That URL returns **404**, while `repository` on the same project returns 200:
+
+```
+https://gitlab.com/geophilo1/planx_geostats/-/issues   -> 404
+https://gitlab.com/geophilo1/planx_geostats            -> 200   (visibility: public)
+```
+
+GitLab returns 404 for `/-/issues` when the Issues feature is disabled for the project, and
+the project is only 12 days old (`created_at 2026-09-06`), so it was created with Issues off.
+
+**This looked like a release blocker and is not.** `docs/TRAPS.md` 1.7 says the Hub performs an
+anonymous GET on `repository` and `tracker` and refuses a zip whose URLs "could not be reached",
+proved with a 403 from a private repo. A 404 is a different case, and the decisive evidence is
+the Hub's own live record: the published v3.8.1 carries *this exact tracker string* and was
+accepted.
+
+```
+tracker    = https://gitlab.com/geophilo1/planx_geostats/-/issues     (live, accepted)
+update_date= 2026-09-16T20:41:09Z
+```
+
+So the Hub's check does not fail on any non-2xx — it fails on an *auth wall*. Worth adding to
+`docs/TRAPS.md` 1.7 as a boundary case, since the trap as written reads as "any bad URL blocks".
+
+**What it actually is:** a dead link for users who click "Report an issue" on the plugin page.
+**Fix is a one-click GitLab setting, not a code change** — Settings → General → Visibility,
+project features, permissions → Issues ON. Until then, `tracker` is honest only if it points
+somewhere that resolves. Not changed here: the correct fix is enabling the feature, and
+redirecting `tracker` at the repository would hide that the project has no issue tracker.
+
 ---
 
 ## 2. Capability gap analysis
