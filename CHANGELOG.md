@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [3.10.1] - 2026-09-29
+
 - **Fixed: styling and field metadata were lost whenever an output was saved to
   a file.** Every styled tool looked its output up in `postProcessAlgorithm`
   with `context.getMapLayer(self.out_layer_id)`; for a GeoPackage or Shapefile
