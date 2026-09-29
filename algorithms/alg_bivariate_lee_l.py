@@ -32,6 +32,7 @@ from ..core.stats_engines import calculate_bivariate_lee_l
 from ..core.weights import build_weights_matrix
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -250,6 +251,7 @@ class BivariateLeeLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             return None
         return numeric
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}

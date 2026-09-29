@@ -35,6 +35,7 @@ from ..core.charts import chart_css, scatter_plot_svg
 from ..core.symbology import apply_renderer, diverging_std_dev_renderer
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -600,6 +601,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         with open(path, "w", encoding="utf-8") as f:
             f.write(html_content)
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}

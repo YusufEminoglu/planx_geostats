@@ -33,6 +33,7 @@ from ..core.symbology import apply_renderer, categorical_field_renderer
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -208,6 +209,7 @@ class MLPClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self._write_html(html_path, target_field, feature_fields, hidden_layers, max_iter, class_labels, results, skipped)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         layer = context.getMapLayer(self.out_layer_id) if self.out_layer_id else None
         apply_output_metadata(

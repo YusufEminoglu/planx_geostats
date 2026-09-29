@@ -29,6 +29,7 @@ from ..core.ml_engines import fit_gmm
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -204,6 +205,7 @@ class GMMClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         return {self.OUTPUT: dest_id}
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         layer = context.getMapLayer(self.out_layer_id) if self.out_layer_id else None
         apply_output_metadata(

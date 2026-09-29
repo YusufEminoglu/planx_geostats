@@ -44,6 +44,7 @@ from ..core.layer_metadata import apply_output_metadata
 from ..core.symbology import apply_renderer, diverging_residual_renderer
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -262,6 +263,7 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
         self._write_html(html_path, dep_var, indep_fields, family, results, quality, skipped, residual_spatial)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}

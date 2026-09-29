@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased]
+
+- **Fixed: styling and field metadata were lost whenever an output was saved to
+  a file.** Every styled tool looked its output up in `postProcessAlgorithm`
+  with `context.getMapLayer(self.out_layer_id)`; for a GeoPackage or Shapefile
+  path that opens a separate copy of the file, so the renderer and the field
+  aliases landed on that copy and the layer QGIS then loaded arrived as a plain
+  single symbol with raw field names - measured on 42 of 43 styled tools, on
+  QGIS 3.44 and 4.2. The v3.7.0 fix (project lookup to context lookup) only
+  ever held for temporary outputs. `algorithms/_deliver.py::style_loaded_output`
+  now runs each unchanged `postProcessAlgorithm` body from a layer
+  post-processor on the loaded layer when the output is a file; temporary
+  outputs behave as before. The runtime matrix re-runs four tools (categorized,
+  graduated, metadata-only, gradient-boosting base) through `runAndLoadResults`
+  with GeoPackage outputs; against the previous code all four fail.
+
 ## [3.10.0] - 2026-09-19
 
 - Add **Indicator Kriging (Threshold Exceedance Probability)** (`indicator_kriging`), completing group 07 with the tool that answers a probability question rather than a value one. Each threshold turns the observations into a 0/1 variable — is this location at or below the level — and that variable is kriged on its own by ordinary kriging, so the exceedance probability is produced by construction rather than by assuming the field is normal around a prediction. The tool writes one band per threshold, an E-type estimate of the field rebuilt from the repaired probabilities, and an optional E-type variance, and its report carries the per-threshold fitted family, nugget, partial sill, range and \(R^2\), the size of the order-relation repair, a Brier score with a skill score against the base rate, and a five-bin equal-count calibration table over the held-out scores.

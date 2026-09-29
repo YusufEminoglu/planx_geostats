@@ -59,6 +59,7 @@ from ..core.charts import (
 from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -801,6 +802,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         with open(path, "w", encoding="utf-8") as f:
             f.write(html_content)
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         if self.out_layer_id is None:
             return {}

@@ -45,6 +45,7 @@ from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, heatmap_table_svg, scatter_plot_svg
 from ..core.symbology import apply_renderer, categorical_field_renderer, diverging_residual_renderer
 from ..dependencies import optional_dependency_error
+from ._deliver import style_loaded_output
 
 
 class GBMRegressionBase(HelpUrlMixin, QgsProcessingAlgorithm):
@@ -178,6 +179,7 @@ class GBMRegressionBase(HelpUrlMixin, QgsProcessingAlgorithm):
         self._write_html(html_path, target_field, feature_fields, results, skipped)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         layer = context.getMapLayer(self.out_layer_id) if self.out_layer_id else None
         apply_output_metadata(
@@ -402,6 +404,7 @@ class GBMClassificationBase(HelpUrlMixin, QgsProcessingAlgorithm):
         self._write_html(html_path, target_field, feature_fields, class_labels, results, skipped)
         return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         layer = context.getMapLayer(self.out_layer_id) if self.out_layer_id else None
         apply_output_metadata(

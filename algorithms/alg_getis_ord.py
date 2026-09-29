@@ -42,6 +42,7 @@ from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
 from ..core.symbology import GI_CONFIDENCE_STYLE, apply_renderer, gi_confidence_renderer
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -466,6 +467,7 @@ class GetisOrdAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         with open(path, "w", encoding="utf-8") as f:
             f.write(html_content)
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         # Applies gorgeous hot/cold styling automatically in the QGIS GUI thread
         if self.out_layer_id is None:

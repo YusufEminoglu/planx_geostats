@@ -34,6 +34,7 @@ from ..core.symbology import apply_renderer, categorical_field_renderer
 from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
+from ._deliver import style_loaded_output
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -235,6 +236,7 @@ class RandomForestClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.MODEL_AUDIT: audit_path, self.MODEL_ID: manifest["model_id"],
         }
 
+    @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):
         layer = context.getMapLayer(self.out_layer_id) if self.out_layer_id else None
         apply_output_metadata(

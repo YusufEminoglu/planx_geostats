@@ -1846,6 +1846,60 @@ def _build_environment(root: Path, out_dir: Path) -> dict:
     return env
 
 
+
+# One case per styling path. Each runs once more the way the Processing GUI
+# runs it (runAndLoadResults) with its layer output written to a GeoPackage:
+# postProcessAlgorithm's context.getMapLayer(path) used to open a separate
+# copy of the file, so the loaded layer arrived without renderer or aliases
+# on 42 of 43 styled tools while every memory-output check stayed green.
+FILE_OUTPUT_STYLE_CASES = (
+    "getis_ord_gi",            # categorized
+    "ols_regression",          # graduated
+    "mean_center",             # metadata only (aliases)
+    "gbm_regression_sklearn",  # shared _gbm_base body
+)
+
+
+def _run_file_output_style_checks(env: dict) -> list[dict]:
+    import processing
+    from qgis.core import QgsProject
+
+    by_name = {case.algorithm: case for case in _all_cases()}
+    # Loaded GeoPackages stay locked on Windows until the layer is really
+    # deleted, which needs an event loop this harness does not run; keep them
+    # out of the TemporaryDirectory that main() removes on exit.
+    style_dir = Path(tempfile.mkdtemp(prefix="planx_geostats_style_check_"))
+    results = []
+    for name in FILE_OUTPUT_STYLE_CASES:
+        case = by_name[name]
+        label = f"{case.label} - styled when loaded from a GeoPackage"
+        try:
+            params = dict(case.params(env))
+            for key in case.layer_outputs:
+                params[key] = _path(style_dir, f"{name}_{key}.gpkg")
+            before = set(QgsProject.instance().mapLayers())
+            processing.runAndLoadResults(_case_id(name), params)
+            loaded = [QgsProject.instance().mapLayer(i)
+                      for i in set(QgsProject.instance().mapLayers()) - before]
+            layer = next((lyr for lyr in loaded if case.alias_check_field is None
+                          or lyr.fields().lookupField(case.alias_check_field) >= 0), None)
+            if layer is None:
+                raise AssertionError("no output layer was loaded")
+            if case.renderer_class and type(layer.renderer()).__name__ != case.renderer_class:
+                raise AssertionError(
+                    f"loaded GeoPackage has {type(layer.renderer()).__name__}, "
+                    f"expected {case.renderer_class}")
+            aliased = [f.name() for f in layer.fields() if f.alias()]
+            if not aliased:
+                raise AssertionError("loaded GeoPackage has no field aliases (metadata not applied)")
+            QgsProject.instance().removeMapLayers([lyr.id() for lyr in loaded])
+            results.append({"algorithm": name, "label": label, "ok": True, "status": "ok", "messages": []})
+        except Exception:
+            results.append({"algorithm": name, "label": label, "ok": False, "status": "failed",
+                            "error": traceback.format_exc(limit=6), "messages": []})
+    return results
+
+
 def _run_matrix(root: Path, runtime: str, only: set[str], out_dir: Path) -> dict:
     from qgis.core import Qgis, QgsApplication, QgsProcessingContext, QgsProject
 
@@ -1864,6 +1918,8 @@ def _run_matrix(root: Path, runtime: str, only: set[str], out_dir: Path) -> dict
     try:
         for case in cases:
             results.append(_run_case(case, env, context))
+        if not only:
+            results.extend(_run_file_output_style_checks(env))
     finally:
         try:
             context.temporaryLayerStore().removeAllMapLayers()
