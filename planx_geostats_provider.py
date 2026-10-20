@@ -97,6 +97,14 @@ from .algorithms.alg_ebk import EmpiricalBayesianKrigingAlgorithm
 from .algorithms.alg_trend_surface import TrendSurfaceAlgorithm
 from .algorithms.alg_indicator_kriging import IndicatorKrigingAlgorithm
 from .algorithms.alg_interp_compare import InterpolationComparisonAlgorithm
+from .algorithms.alg_rate_smoothing import RateSmoothingAlgorithm
+from .algorithms.alg_eb_rate_lisa import EBRateLisaAlgorithm
+from .algorithms.alg_multivariate_local_geary import MultivariateLocalGearyAlgorithm
+from .algorithms.alg_local_join_counts import LocalJoinCountsAlgorithm
+from .algorithms.alg_losh import LOSHAlgorithm
+from .algorithms.alg_local_partial_moran import LocalPartialMoranAlgorithm
+from .algorithms.alg_gamma_index import GammaIndexAlgorithm
+from .algorithms.alg_smaup import SmaupAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -127,6 +135,7 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         # 01 | Data Preparation and Neighborhoods
         self.addAlgorithm(CalculateDistanceBandAlgorithm())
         self.addAlgorithm(ExportAttributesAlgorithm())
+        self.addAlgorithm(RateSmoothingAlgorithm())
 
         # 02 | Urban Pattern Scan
         self.addAlgorithm(GlobalMoranAlgorithm())
@@ -139,6 +148,8 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(JoinCountStatisticsAlgorithm())
         self.addAlgorithm(GlobalLeesLAlgorithm())
         self.addAlgorithm(GeodetectorQAlgorithm())
+        self.addAlgorithm(GammaIndexAlgorithm())
+        self.addAlgorithm(SmaupAlgorithm())
 
         # 03 | Hot Spots and Spatial Outliers
         self.addAlgorithm(GetisOrdAlgorithm())
@@ -150,6 +161,11 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(LocalGearyCAlgorithm())
         self.addAlgorithm(ColocationQuotientAlgorithm())
         self.addAlgorithm(SkaterAlgorithm())
+        self.addAlgorithm(EBRateLisaAlgorithm())
+        self.addAlgorithm(MultivariateLocalGearyAlgorithm())
+        self.addAlgorithm(LocalJoinCountsAlgorithm())
+        self.addAlgorithm(LOSHAlgorithm())
+        self.addAlgorithm(LocalPartialMoranAlgorithm())
 
         # 04 | Centers, Direction and Dispersion
         self.addAlgorithm(MeanCenterAlgorithm())

@@ -45,7 +45,6 @@ import heapq
 
 import numpy as np
 
-from .stats_engines import calculate_bivariate_lee_l
 
 
 def calculate_geary_c(
@@ -211,59 +210,6 @@ def calculate_join_counts(
         "bb": _summary(observed_bb, perm_bb),
         "ww": _summary(observed_ww, perm_ww),
         "bw": _summary(observed_bw, perm_bw),
-    }
-
-
-def calculate_global_lee_l(
-    x_values: np.ndarray,
-    y_values: np.ndarray,
-    neighbors: dict[int, list[int]],
-    weights: dict[int, list[float]],
-    id_order: list[int],
-    permutations: int = 999,
-    seed: int = 42,
-) -> dict:
-    """Calculates the global Lee's L bivariate spatial association statistic.
-
-    Lee (2001) defines L(x,y) as a spatial smoothing of Pearson's r; under
-    row-standardized weights (this plugin's convention) it reduces to the
-    mean of the local l_i values already computed by
-    calculate_bivariate_lee_l() in stats_engines.py - the same local-to-
-    global decomposition relationship Local Moran's I has to Global
-    Moran's I. Uses permutation inference (shuffle Y, holding the spatial
-    structure and X fixed) rather than Lee's own asymptotic variance,
-    which assumes normality of both fields.
-
-    Returns:
-        A dict with observed_l, permuted_mean, permuted_std, z_score, p_value.
-    """
-    n = len(x_values)
-    if n <= 3:
-        raise ValueError("Global Lee's L requires at least 4 observations.")
-
-    def _global_l(x_arr: np.ndarray, y_arr: np.ndarray) -> float:
-        local_l, _lag, _classes = calculate_bivariate_lee_l(x_arr, y_arr, neighbors, weights, id_order)
-        return float(np.mean(local_l))
-
-    observed_l = _global_l(x_values, y_values)
-
-    rng = np.random.default_rng(seed)
-    perm_l = np.empty(permutations)
-    for p in range(permutations):
-        perm_l[p] = _global_l(x_values, rng.permutation(y_values))
-
-    perm_mean = float(np.mean(perm_l))
-    perm_std = float(np.std(perm_l))
-    z_score = (observed_l - perm_mean) / perm_std if perm_std > 0 else 0.0
-    extreme = int(np.sum(np.abs(perm_l - perm_mean) >= abs(observed_l - perm_mean)))
-    p_value = (extreme + 1) / (permutations + 1)
-
-    return {
-        "observed_l": observed_l,
-        "permuted_mean": perm_mean,
-        "permuted_std": perm_std,
-        "z_score": float(z_score),
-        "p_value": float(p_value),
     }
 
 

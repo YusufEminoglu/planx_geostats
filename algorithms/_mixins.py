@@ -4,8 +4,8 @@
 # Canonical public home of the reference manual. Served from the plugin's
 # docs/ directory by packaging/build_web_portal.py; metadata.txt's "about"
 # field links to the same URL and QGIS Hub validates it on upload. Do not
-# point this at a host that is not the one metadata.txt advertises - all 83
-# algorithms' Help buttons resolve through here.
+# point this at a host that is not the one metadata.txt advertises - every
+# algorithm's Help button resolve through here.
 DOC_BASE_URL = "https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html"
 
 # GEOSTATS_REFERENCE_MANUAL.html uses hand-picked short anchor slugs that are
@@ -103,6 +103,14 @@ HELP_SLUGS = {
     "polynomial_trend_surface": "alg-trend-surface",
     "indicator_kriging": "alg-indicator",
     "interp_compare": "alg-interp-compare",
+    "rate_smoothing": "alg-rate-smoothing",
+    "eb_rate_lisa": "alg-eb-rate-lisa",
+    "multivariate_local_geary": "alg-mv-local-geary",
+    "local_join_counts": "alg-local-join-counts",
+    "losh_heteroskedasticity": "alg-losh",
+    "local_partial_moran": "alg-partial-moran",
+    "gamma_index": "alg-gamma",
+    "smaup_test": "alg-smaup",
 }
 
 

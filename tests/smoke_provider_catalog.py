@@ -39,7 +39,7 @@ EXPECTED_GROUPS = {
     "07 | Interpolation and Geostatistics",
 }
 
-MIN_EXPECTED_ALGORITHM_COUNT = 90
+MIN_EXPECTED_ALGORITHM_COUNT = 98
 
 
 def _module_tree(path: Path) -> ast.Module:
@@ -86,6 +86,18 @@ def _algorithm_class_catalog() -> dict[str, dict[str, str]]:
                 continue
             method_values = {}
             has_icon = False
+            # Tools built on algorithms/_local_common.SpatialStatBase declare
+            # their identity as class attributes; the base class returns them
+            # from name()/displayName()/group()/groupId() and icon().
+            base_names = {getattr(base, "id", getattr(base, "attr", "")) for base in node.bases}
+            if "SpatialStatBase" in base_names:
+                has_icon = True
+            attribute_map = {"ALG_ID": "name", "DISPLAY": "displayName", "GROUP": "group", "GROUP_ID": "groupId"}
+            for child in node.body:
+                if (isinstance(child, ast.Assign) and len(child.targets) == 1
+                        and isinstance(child.targets[0], ast.Name) and child.targets[0].id in attribute_map
+                        and isinstance(child.value, ast.Constant) and isinstance(child.value.value, str)):
+                    method_values[attribute_map[child.targets[0].id]] = child.value.value
             for child in node.body:
                 if isinstance(child, ast.FunctionDef) and child.name == "icon":
                     has_icon = True
@@ -941,6 +953,23 @@ def test_manual_source_link_matches_metadata_repository() -> None:
     )
 
 
+def test_manual_is_built_from_its_sources() -> None:
+    """tools/build_manual.py derives the version strings, the algorithm count and
+    the per-group tool counts and renders the generated cards; a manual edited by
+    hand after the last build - or a card source changed without a rebuild - would
+    otherwise ship stale. This is the same comparison as `build_manual.py --check`."""
+    spec = importlib.util.spec_from_file_location("build_manual", ROOT / "tools" / "build_manual.py")
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    built = builder.build()
+    assert MANUAL.read_text(encoding="utf-8") == built, (
+        "docs/GEOSTATS_REFERENCE_MANUAL.html is not what tools/build_manual.py produces - run it."
+    )
+    assert ROOT_MANUAL.read_text(encoding="utf-8") == built, "Root manual copy is stale - run tools/build_manual.py."
+    cards = len(_manual_cards())
+    assert f'<span class="meta-chip">{cards} algorithms</span>' in built
+
+
 def run_all() -> None:
     test_provider_imports_every_registered_algorithm()
     test_every_algorithm_file_is_registered_once()
@@ -978,6 +1007,7 @@ def run_all() -> None:
     test_manual_version_matches_plugin_version()
     test_root_and_docs_manual_copies_are_identical()
     test_manual_source_link_matches_metadata_repository()
+    test_manual_is_built_from_its_sources()
     print("PROVIDER CATALOG SMOKE TESTS OK")
 
 

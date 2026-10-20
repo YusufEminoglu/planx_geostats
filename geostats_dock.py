@@ -68,6 +68,16 @@ GUIDED_WORKFLOWS = {
         "planx_geostats:getis_ord_gi",
         "planx_geostats:local_moran_lisa",
     ),
+    "Rates → smoothing → EB clusters": (
+        "planx_geostats:rate_smoothing",
+        "planx_geostats:eb_rate_lisa",
+        "planx_geostats:losh_heteroskedasticity",
+    ),
+    "Clusters → covariates → what remains": (
+        "planx_geostats:local_moran_lisa",
+        "planx_geostats:local_partial_moran",
+        "planx_geostats:multivariate_local_geary",
+    ),
     "OLS → specification → spatial models": (
         "planx_geostats:ols_regression",
         "planx_geostats:lm_diagnostics",

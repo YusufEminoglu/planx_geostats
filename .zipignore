@@ -13,3 +13,6 @@ GEOSTATS_REFERENCE_MANUAL.html
 # Repository-only content, not part of the installed plugin.
 # The CI workflows are not read by anything the plugin runs.
 .github
+
+# Development tooling (icon and manual builders); needs Pillow, never imported by the plugin.
+tools

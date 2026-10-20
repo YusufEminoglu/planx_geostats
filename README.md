@@ -14,11 +14,11 @@
 [![Documentation](https://img.shields.io/badge/📖_Reference_Manual-90_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
-**90 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
+**98 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 90 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 98 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
@@ -46,7 +46,7 @@ All tools live under **Processing Toolbox → PlanX GeoStats Lab**, organised as
 GeoStats Library Status · Install/Update GeoStats Libraries · Sample Dataset Guide · **GeoStats Workflow Advisor** · **Data Readiness Audit**
 
 ### `01` Data Preparation & Neighborhoods
-Export Attributes · Spatial Weights Workbench and Distance Band (visual node/edge graph, connectivity/islands, repair, higher order, distance decay, CSV exchange)
+Export Attributes · **Rate Smoothing (Empirical Bayes)** · Spatial Weights Workbench and Distance Band (visual node/edge graph, connectivity/islands, repair, higher order, distance decay, CSV exchange)
 
 ### `02` Urban Pattern Scan *(global statistics)*
 | Tool | Question it answers |
@@ -57,7 +57,9 @@ Export Attributes · Spatial Weights Workbench and Distance Band (visual node/ed
 | Geary's C | …and how sensitive is that to sharp local contrast rather than the global mean? |
 | Incremental Spatial Autocorrelation | At what scale does clustering peak? |
 | Getis-Ord General G | Do high or low values dominate the clustering? |
-| Bivariate Lee's L | Do two indicators co-cluster in space? |
+| Bivariate Lee's L | Do two indicators co-cluster in space? (genuine Lee's L since 3.11 - both fields smoothed) |
+| **Gamma Index** | Is the pattern robust to how attribute similarity is defined (cross-product, squared or absolute difference)? |
+| **S-maup** | If I aggregate these areas into k zones, will the result depend on how the zones are drawn? |
 | **Spatial Inequality (Gini + Spatial Gini)** | How unequal is the distribution — and how much of that inequality is *spatial*? |
 | Join Count Statistics | Does a categorical/binary field cluster or checkerboard? |
 | Geodetector Q-Statistic | Does a categorical partition explain variance in an outcome? |
@@ -71,6 +73,12 @@ Export Attributes · Spatial Weights Workbench and Distance Band (visual node/ed
 | Colocation Quotient | Does one point category attract or avoid another (asymmetric)? |
 | Multivariate Clustering | K-means feature groups across several indicators |
 | **SKATER Regionalization** | K spatially *contiguous* regions, not just attribute-similar groups |
+| **Rate Cluster & Outlier Analysis (EB Local Moran)** | LISA on rates without small-population artefacts, with a raw-vs-EB cross-table |
+| **Multivariate Local Geary** | Units similar to (or standing out from) their neighbours across several fields at once |
+| **Local Join Counts** | Where presence/absence data cluster, co-locate or sit side by side |
+| **LOSH** | How *variable* each neighbourhood is - uniform vs heterogeneous hot spots |
+| **Partial / Conditional Local Moran** | Which clusters survive once known covariates are accounted for? |
+| Bivariate Lee's L (local) | Where two fields co-cluster, now with a permutation test |
 | Similarity Search | Features most similar to your reference feature |
 
 ### `04` Centers, Direction & Dispersion
@@ -167,7 +175,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 90 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 98 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://gitlab.com/geophilo1/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -185,6 +193,8 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 
 - **Headless smoke tests** (`tests/smoke_core.py`, `smoke_sample_data.py`, `smoke_provider_catalog.py`) run without QGIS and gate every release. The report decision logic is intentionally kept in **QGIS-independent core helpers**, so **workflow advising**, **model-comparison scoring**, **Monte Carlo sensitivity interpretation**, **Global Moran's I report interpretation** and **Spatial Gini inequality decomposition** are unit-tested without launching QGIS.
 - A **full QGIS runtime matrix** executes every algorithm against the bundled sample data on **QGIS 3 LTR and QGIS 4**.
+- An **esda parity suite** (`tests/esda_parity.py`) checks every rate-smoothing and extended-LISA statistic against PySAL's esda on the same data and weights - they agree to floating-point precision - while the shipped engines themselves need nothing beyond numpy. `tests/smoke_local_stats.py` pins their mathematical properties (Lee's L symmetry, closed-form chi-square tails, a hand-computed multivariate Geary value, exact join counts) without QGIS.
+- The reference manual is **built, not hand-edited**: `py -3 tools/build_manual.py` renders the cards kept in `tools/manual_src/`, derives the version, the algorithm count and the per-group tool counts from the plugin itself, and writes the docs/ and root copies byte-identically; `--check` fails when they are stale.
 - A manual **QA test matrix** (`QA_MANUAL_TEST_MATRIX.md`) covers setup, statistics, symbology, report interpretation and release gates.
 - The release-zip verifier asserts that **developer-only paths are absent**, **algorithm icons are present**, and metadata points to a packaged icon. PlanX GeoStats Lab is packaged as a **hybrid Processing + dock-GUI plugin**, so its menu/toolbar hooks (the GeoStats Lab dock panel) are an intentional, verified part of the release rather than a packaging mistake.
 
@@ -195,10 +205,12 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 py -3 planx_geostats\tests\smoke_core.py
 py -3 planx_geostats\tests\smoke_sample_data.py
 py -3 planx_geostats\tests\smoke_provider_catalog.py
+py -3 planx_geostats\tests\smoke_local_stats.py
+py -3 planx_geostats\tools\build_manual.py --check
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.10.1
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.11.0
 ```
 
 </details>
@@ -209,7 +221,7 @@ py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --
 
 **PlanX GeoStats Lab**, QGIS İşlem Araç Kutusu (Processing) içinde çalışan, plancılar için tasarlanmış bir **mekânsal istatistik laboratuvarıdır**:
 
-- **90 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
+- **98 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
 - **Jeoistatistik ve enterpolasyon (07):** *Empirical Semivariogram & Model Fitting* benzerliğin mesafeyle nasıl azaldığını ölçer ve beş kuramsal modelden birini (küresel, üstel, Gauss, doğrusal, kararlı) Cressie ağırlıklı en küçük kareler ile uydurur; *Ordinary / Universal Kriging Interpolation* bu parametrelerden yüzey üretir ve **kriging varyansını ikinci bir raster olarak** yazar, böylece her hücre kendi belirsizliğiyle birlikte gelir. Evrensel kriging eğilimi en küçük karelerle çıkarıp variogramı artıklardan kestirir. *Empirical Bayesian Kriging Interpolation* ise variogramı kullanıcıya uydurtmaz: her yerel alt kümede dört aileyi birden dener, uydurduğu modelden yeni bir veri kümesi benzetir, aileyi bu benzetiye yeniden uydurur ve her uydurmayı gerçek verinin olabilirliğiyle ağırlıklandırıp ortalamasını alır. Bildirdiği varyans bu nedenle variogramın kendisinin belirsizliğini de içerir — sıradan krigingin veremediği, verinin desteklemediği kesinliği iddia etmeyen bir hata payıdır.
 - **Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06):** Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost), SVM, Sinir Ağı, 2025 nesli TabPFN sıfır-eğitim tablosal temel modeli, mekânsal k-katlamalı çapraz doğrulama (K-Means blok veya kNNDM), **SHAP tabanlı açıklanabilirlik** (her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**), tam ve örneklemesiz katkı üreten cam-kutu **Explainable Boosting Machine**, **DiCE Counterfactual** (bir kaydın sınıfını değiştirecek en küçük değişiklik) ve dağılımdan bağımsız kapsama garantili **Conformal Prediction Interval**.
 - **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.

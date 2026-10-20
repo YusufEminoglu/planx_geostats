@@ -1,399 +1,132 @@
 # -*- coding: utf-8 -*-
-"""Global Bivariate Lee's L Processing Algorithm."""
+"""Global Bivariate Lee's L (spatial Pearson) Processing algorithm.
+
+Until v3.11.0 this computed the mean of z_x,i times the spatial lag of z_y -
+the global bivariate Moran statistic - under Lee's name.  It now computes
+Lee's (2001) L, which smooths both variables, together with the spatial
+smoothing scalars L_XX and L_YY; the value matches esda's Spatial_Pearson.
+"""
 from __future__ import annotations
 
-import os
-import tempfile
 import html
+
 import numpy as np
 
-from ._mixins import HelpUrlMixin
-from qgis.core import (
-    NULL,
-    QgsProcessing,
-    QgsProcessingAlgorithm,
-    QgsProcessingException,
-    QgsProcessingParameterFeatureSource,
-    QgsProcessingParameterField,
-    QgsProcessingParameterEnum,
-    QgsProcessingParameterNumber,
-    QgsProcessingParameterFileDestination,
-    QgsProcessingOutputHtml,
-)
+from qgis.core import QgsProcessingParameterBoolean
 
-from ..core.weights import build_weights_matrix
-from ..core.advanced_stats_engines import calculate_global_lee_l
-from ..core.stats_engines import calculate_bivariate_lee_l
-from ..core.charts import chart_css, scatter_plot_svg
-from ..core.analysis_diagnostics import (
-    caveats_html,
-    crs_unit_warning,
-    diagnostics_html,
-    neighbor_summary,
-    numeric_quality_summary,
-    push_diagnostics,
-)
-from ..core.reporting import analyst_guidance_css, analyst_guidance_html
-
-from ._icons import algorithm_icon
+from ..core.charts import kpi_card_row_html, scatter_plot_svg
+from ..core.local_stats_engines import lee_l
+from ..core.reporting import analyst_guidance_html
+from ._local_common import SpatialStatBase, ToolResult, callout, fmt, html_table, report_page
 
 
-class GlobalLeesLAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
-    INPUT = "INPUT"
+class GlobalLeesLAlgorithm(SpatialStatBase):
     FIELD_X = "FIELD_X"
     FIELD_Y = "FIELD_Y"
-    WEIGHT_TYPE = "WEIGHT_TYPE"
-    KNN = "KNN"
-    DISTANCE_BAND = "DISTANCE_BAND"
+    INCLUDE_SELF = "INCLUDE_SELF"
     PERMUTATIONS = "PERMUTATIONS"
     RANDOM_SEED = "RANDOM_SEED"
-    HTML_REPORT = "HTML_REPORT"
 
-    def name(self) -> str:
-        return "global_bivariate_lee_l"
+    ALG_ID = "global_bivariate_lee_l"
+    DISPLAY = "Global Bivariate Lee's L"
+    GROUP = "02 | Urban Pattern Scan"
+    GROUP_ID = "planx_pattern_scan"
+    DEFAULT_KNN = 5
+    HAS_LAYER_OUTPUT = False
+    REPORT_LABEL = "Global Bivariate Lee's L diagnostic report"
+    HELP = (
+        "Lee's (2001) L for two fields over the whole study area - also called the spatial Pearson "
+        "coefficient. Each field is z-scored and spatially smoothed with the neighbourhood average "
+        "(including the unit itself, as Lee recommends); L is the average product of the two smoothed "
+        "fields. It combines two things a Pearson correlation alone cannot: whether the fields go "
+        "together, and whether each is spatially clustered. Lee shows L = sqrt(L_XX) * sqrt(L_YY) * "
+        "r(x~, y~), where L_XX and L_YY - the spatial smoothing scalars, also reported - measure how "
+        "clustered each field is on its own.\n\n"
+        "Two permutation tests are reported. Permuting the (X, Y) pairs over locations keeps their "
+        "plain correlation and asks whether the spatial co-pattern goes beyond it; shuffling Y alone "
+        "against a fixed X asks whether there is any bivariate spatial association at all.\n\n"
+        "Run Bivariate Spatial Association (Lee's L) on the same pair to see where the co-clustering "
+        "sits. Changed in 3.11.0: earlier versions computed the global bivariate Moran statistic under "
+        "this name; values are not comparable with results from 3.10 and before."
+    )
 
-    def displayName(self) -> str:
-        return "Global Bivariate Lee's L"
+    def add_parameters(self):
+        self.numeric_field(self.FIELD_X, "Field X")
+        self.numeric_field(self.FIELD_Y, "Field Y")
 
-    def group(self) -> str:
-        return "02 | Urban Pattern Scan"
+    def add_trailing_parameters(self):
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.INCLUDE_SELF, "Include each unit in its own smoothing window (Lee 2001)", defaultValue=True))
+        self.integer(self.PERMUTATIONS, "Number of permutations", 999, minimum=99, maximum=99999)
+        self.integer(self.RANDOM_SEED, "Random seed", 42, minimum=0)
 
-    def groupId(self) -> str:
-        return "planx_pattern_scan"
-
-    def icon(self):
-        return algorithm_icon("global_bivariate_lee_l")
-
-    def createInstance(self):
-        return GlobalLeesLAlgorithm()
-
-    def shortHelpString(self) -> str:
-        return (
-            "Tests whether two fields are spatially co-clustered using Lee's "
-            "(2001) global L statistic - a single study-area-wide summary "
-            "of the same spatial smoothing of Pearson's r that the "
-            "plugin's existing Local Bivariate Lee's L computes feature by "
-            "feature. This is the Global/Local pairing Global Moran's I has "
-            "to Local Moran's I, applied to a two-variable relationship "
-            "instead of one.\n\n"
-            "Global L answers a different question than a plain Pearson "
-            "correlation: it asks whether X at one location predicts Y at "
-            "NEARBY locations, not just Y at the same location. Two fields "
-            "can be spatially co-clustered (high Global L) even with a weak "
-            "or zero simple correlation, if their relationship only emerges "
-            "once neighboring values are pooled - and conversely a strong "
-            "simple correlation can coexist with a low Global L if the "
-            "co-clustering has no spatial coherence.\n\n"
-            "Under this plugin's row-standardized weights convention, "
-            "Global L is mathematically exactly the mean of the local l_i "
-            "values - run Local Bivariate Lee's L afterward on the same "
-            "field pair to see WHERE the global co-clustering concentrates. "
-            "Significance is assessed by permutation (999 shuffles by "
-            "default, seed 42), holding the spatial structure and Field X "
-            "fixed while reshuffling Field Y."
-        )
-
-    def initAlgorithm(self, config=None):
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.INPUT,
-                "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterField(
-                self.FIELD_X,
-                "Field X",
-                parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterField(
-                self.FIELD_Y,
-                "Field Y",
-                parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterEnum(
-                self.WEIGHT_TYPE,
-                "Spatial relationship / weights type",
-                options=["Queen contiguity", "Rook contiguity", "K-Nearest Neighbors (KNN)", "Distance Band"],
-                defaultValue=0,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.KNN,
-                "Number of neighbors (K value, KNN only)",
-                type=QgsProcessingParameterNumber.Integer,
-                defaultValue=5,
-                minValue=1,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.DISTANCE_BAND,
-                "Distance band threshold (map units, Distance Band only)",
-                type=QgsProcessingParameterNumber.Double,
-                defaultValue=1000.0,
-                minValue=0.0001,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.PERMUTATIONS,
-                "Number of permutations (Monte Carlo)",
-                type=QgsProcessingParameterNumber.Integer,
-                defaultValue=999,
-                minValue=99,
-                maxValue=9999,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterNumber(
-                self.RANDOM_SEED,
-                "Random seed (reproducibility)",
-                type=QgsProcessingParameterNumber.Integer,
-                defaultValue=42,
-                minValue=0,
-            )
-        )
-        self.addParameter(
-            QgsProcessingParameterFileDestination(
-                self.HTML_REPORT,
-                "Output HTML report",
-                fileFilter="HTML files (*.html)",
-                optional=True,
-            )
-        )
-        self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "Global Bivariate Lee's L diagnostic report"))
-
-    def processAlgorithm(self, parameters, context, feedback):
-        source = self.parameterAsSource(parameters, self.INPUT, context)
-        if source is None:
-            raise QgsProcessingException("Invalid input layer source.")
-
-        field_x_name = self.parameterAsString(parameters, self.FIELD_X, context)
-        field_y_name = self.parameterAsString(parameters, self.FIELD_Y, context)
-        if field_x_name == field_y_name:
-            raise QgsProcessingException("Field X and Field Y must be different fields.")
-
-        weight_type_idx = self.parameterAsEnum(parameters, self.WEIGHT_TYPE, context)
-        weight_types = ["queen", "rook", "knn", "distance"]
-        weight_type = weight_types[weight_type_idx]
-
-        k_neighbors = self.parameterAsInt(parameters, self.KNN, context)
-        distance_band = self.parameterAsDouble(parameters, self.DISTANCE_BAND, context)
+    def compute(self, source, parameters, context, feedback):
+        fx = self.parameterAsString(parameters, self.FIELD_X, context)
+        fy = self.parameterAsString(parameters, self.FIELD_Y, context)
+        self.require(fx != fy, "Field X and Field Y must be different fields.")
+        include_self = self.parameterAsBool(parameters, self.INCLUDE_SELF, context)
         permutations = self.parameterAsInt(parameters, self.PERMUTATIONS, context)
         seed = self.parameterAsInt(parameters, self.RANDOM_SEED, context)
+        fids, x, dropped = self.read_matrix(source, [fx, fy], feedback)
+        self.require(len(fids) >= 4, "At least 4 valid features with both fields populated are required.")
+        self.require(np.std(x[:, 0]) > 0 and np.std(x[:, 1]) > 0,
+                     "Both fields must have variation; a constant field cannot be spatially co-clustered.")
+        graph, weight_label = self.read_weights(source, parameters, context, feedback, fids)
+        feedback.pushInfo(f"Calculating Lee's L with {permutations} permutations...")
+        res = lee_l(x[:, 0], x[:, 1], graph, permutations, seed, include_self)
+        feedback.pushInfo(f"Lee's L = {res['L']:.4f}, z = {res['z']:.3f}, p = {res['p']:.4f}")
 
-        html_path = self.parameterAsFileOutput(parameters, self.HTML_REPORT, context)
-        if not html_path:
-            html_path = os.path.join(tempfile.gettempdir(), "global_lee_l_report.html")
-
-        feedback.pushInfo("Generating spatial weights matrix...")
-        neighbors, weights, id_order, _ = build_weights_matrix(
-            source, weight_type, k_neighbors=k_neighbors, distance_band=distance_band, feedback=feedback
-        )
-        if feedback.isCanceled():
-            return {}
-
-        feedback.pushInfo("Extracting field values...")
-        x_dict, y_dict = {}, {}
-        for f in source.getFeatures():
-            if feedback.isCanceled():
-                break
-            xv = f.attribute(field_x_name)
-            yv = f.attribute(field_y_name)
-            if xv is None or xv == NULL or str(xv) == "NULL":
-                continue
-            if yv is None or yv == NULL or str(yv) == "NULL":
-                continue
-            try:
-                x_dict[f.id()] = float(xv)
-                y_dict[f.id()] = float(yv)
-            except (ValueError, TypeError):
-                continue
-
-        valid_id_order = [fid for fid in id_order if fid in x_dict and fid in y_dict]
-        x_arr = np.array([x_dict[fid] for fid in valid_id_order])
-        y_arr = np.array([y_dict[fid] for fid in valid_id_order])
-
-        numeric_summary = numeric_quality_summary(source.featureCount(), {fid: 1 for fid in valid_id_order}, x_arr)
-        neighborhood_summary = neighbor_summary(neighbors, valid_id_order)
-        crs_warning = crs_unit_warning(source)
-        push_diagnostics(feedback, numeric_summary, neighborhood_summary, crs_warning)
-
-        if len(valid_id_order) <= 3:
-            raise QgsProcessingException("At least 4 valid features with both fields populated are required.")
-        if len(set(x_arr)) == 1 or len(set(y_arr)) == 1:
-            raise QgsProcessingException("Both fields must have variation; a constant field cannot be spatially co-clustered.")
-
-        feedback.pushInfo(f"Calculating Global Bivariate Lee's L using {permutations} permutations...")
-        result = calculate_global_lee_l(x_arr, y_arr, neighbors, weights, valid_id_order, permutations=permutations, seed=seed)
-
-        if feedback.isCanceled():
-            return {}
-
-        feedback.pushInfo(
-            f"Global L = {result['observed_l']:.4f}, z = {result['z_score']:.3f}, p = {result['p_value']:.4f}"
-        )
-
-        _local_l, spatial_lag_y, _classes = calculate_bivariate_lee_l(
-            x_arr, y_arr, neighbors, weights, valid_id_order
-        )
-        x_std = float(np.std(x_arr))
-        scatter_zx = ((x_arr - np.mean(x_arr)) / x_std).tolist() if x_std > 0 else []
-        scatter_lag_y = spatial_lag_y.tolist() if x_std > 0 else []
-
-        feedback.pushInfo("Generating HTML report...")
-        self.write_html_report(
-            html_path, field_x_name, field_y_name, len(valid_id_order), result,
-            numeric_summary, neighborhood_summary, crs_warning, weight_type, permutations,
-            scatter_zx, scatter_lag_y,
-        )
-
-        return {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
-
-    def write_html_report(
-        self, path, field_x, field_y, n, result, numeric_summary, neighborhood_summary, crs_warning, weight_type, permutations,
-        scatter_zx, scatter_lag_y,
-    ):
-        l_val = result["observed_l"]
-        z = result["z_score"]
-        p = result["p_value"]
-        is_significant = p < 0.05
-
-        if is_significant and l_val > 0:
-            pattern = "Positive Spatial Co-Clustering"
-            color = "#e31a1c"
-            desc = f"Global L = {l_val:.4f} is significantly positive (z = {z:.2f}, p = {p:.4f}): high values of one field tend to be near high values of the other (and lows near lows)."
-        elif is_significant and l_val < 0:
-            pattern = "Negative Spatial Co-Clustering"
-            color = "#1f78b4"
-            desc = f"Global L = {l_val:.4f} is significantly negative (z = {z:.2f}, p = {p:.4f}): high values of one field tend to be near low values of the other."
+        significant = res["p"] < 0.05
+        if significant and res["L"] > res["sim_mean"]:
+            verdict = ("Positive spatial co-clustering: neighbourhoods that are high on one field are high on the other, "
+                       "beyond what the plain correlation of the two fields implies.")
+        elif significant:
+            verdict = "Negative spatial co-clustering: neighbourhoods high on one field are low on the other."
         else:
-            pattern = "No Significant Spatial Co-Clustering"
-            color = "#718096"
-            desc = f"Global L = {l_val:.4f} is not distinguishable from zero (p = {p:.4f}): no evidence the two fields are spatially co-clustered."
-
-        if neighborhood_summary["isolated"] > 0:
-            next_action = "Increase the neighborhood size before interpreting Global L; isolated features are excluded from the spatial smoothing."
-        elif is_significant:
-            next_action = f"Run Local Bivariate Lee's L on the same field pair ({html.escape(field_x)} / {html.escape(field_y)}) to map where the co-clustering concentrates."
-        else:
-            next_action = "Check a plain Pearson correlation as a sanity comparison; a non-spatial relationship with no spatial coherence will show up there but not here."
-
-        guidance_html = analyst_guidance_html(
+            verdict = "No spatial co-pattern beyond the plain correlation of the two fields."
+        kpis = kpi_card_row_html([
+            {"label": "Lee's L", "value": fmt(res["L"], 4), "sublabel": f"z = {fmt(res['z'], 3)}"},
+            {"label": "p (pairs permuted)", "value": fmt(res["p"], 3), "tone": "good" if significant else "neutral"},
+            {"label": "p (Y shuffled)", "value": fmt(res["p_any"], 3)},
+            {"label": "Pearson r", "value": fmt(res["pearson_r"], 3)},
+        ])
+        table = html_table(
+            ["Quantity", "Value", "Meaning"],
+            [
+                ["Lee's L", res["L"], "Average product of the smoothed z-scores"],
+                ["L_XX", res["L_xx"], f"Spatial smoothing scalar of {fx} (1 = perfectly clustered, ~1/k = random)"],
+                ["L_YY", res["L_yy"], f"Spatial smoothing scalar of {fy}"],
+                ["r(x, y)", res["pearson_r"], "Plain Pearson correlation"],
+                ["r(x~, y~)", res["smoothed_r"], "Correlation of the smoothed fields"],
+                ["Permutation mean (pairs)", res["sim_mean"], "Expected L given the correlation, without spatial pattern"],
+                ["Permutation sd (pairs)", res["sim_sd"], ""],
+            ],
+        )
+        scatter = scatter_plot_svg(res["smoothed_x"].tolist(), res["smoothed_y"].tolist(),
+                                   x_label=f"smoothed z({fx})", y_label=f"smoothed z({fy})",
+                                   title="Smoothed X against smoothed Y", quadrant_shading=True)
+        guidance = analyst_guidance_html(
             "Global Bivariate Lee's L",
-            "Global Bivariate Lee's L tests whether two fields are spatially co-clustered across the whole study area, complementing the plugin's existing Local Bivariate Lee's L.",
-            [
-                "Both fields are measured on a scale where spatial smoothing (neighbor averaging) is meaningful.",
-                "The relationship is genuinely spatial in nature, not just a same-location correlation.",
-                "The neighborhood graph is not dominated by isolated features.",
-            ],
-            [
-                "Treating Global L as a replacement for Pearson correlation - they answer different questions and can disagree.",
-                "Interpreting a significant Global L as proof of causation between the two fields.",
-                "Skipping Local Bivariate Lee's L after a significant Global L - the global figure hides which part of the study area drives it.",
-            ],
-            [
-                "Local Bivariate Lee's L to map where co-clustering concentrates",
-                "Global Moran's I on each field individually to check they are each spatially structured to begin with",
-                "Bivariate Choropleth Map for a visual first look at the same relationship",
-            ],
-            "Run Global L before Local L as a screening step - a non-significant Global L means local co-clustering, if any, is likely too weak or scattered to interpret with confidence.",
+            "Lee's L is large when the two fields are correlated and each is spatially clustered, so that whole "
+            "neighbourhoods are high (or low) on both.",
+            ["Both fields are measured on the same units and are meaningful to average over neighbours.",
+             "Each field shows its own spatial structure (Global Moran's I).",
+             "The two p-values tell the same story, or the difference is understood."],
+            ["Do not read L as a correlation coefficient: it is bounded by sqrt(L_XX * L_YY), not by 1.",
+             "A significant 'Y shuffled' p with a non-significant 'pairs' p means the association is the plain "
+             "correlation - there is no extra spatial co-pattern.",
+             "Results from versions before 3.11 measured a different statistic."],
+            ["Bivariate Spatial Association (Lee's L) to map where the co-clustering is",
+             "Bivariate LISA for the asymmetric question", "Global Moran's I on each field"],
+            "Use Lee's L to decide whether two urban conditions coincide at the neighbourhood scale before mapping "
+            "the local co-clusters.",
         )
-
-        html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>PlanX GeoStats Lab Global Bivariate Lee's L Report</title>
-<style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #2d3748; background-color: #f7fafc; margin: 0; padding: 20px; line-height: 1.5; }}
-    .container {{ max-width: 760px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }}
-    header {{ border-bottom: 2px solid #edf2f7; padding-bottom: 20px; margin-bottom: 25px; }}
-    h1 {{ color: #1a202c; margin: 0 0 5px 0; font-size: 1.6rem; }}
-    .subtitle {{ color: #718096; margin: 0; font-size: 0.95rem; }}
-    .interpretation-box {{ background-color: #f8fafc; border-left: 5px solid {color}; padding: 20px; border-radius: 4px; margin-bottom: 30px; }}
-    .status-title {{ font-size: 1.3rem; font-weight: 800; color: {color}; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em; }}
-    .status-desc {{ color: #4a5568; font-size: 0.95rem; margin: 0; }}
-    table {{ width: 100%; border-collapse: collapse; margin-bottom: 25px; }}
-    th, td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #edf2f7; font-size: 0.9rem; }}
-    th {{ background-color: #ebf8ff; color: #2b6cb0; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }}
-    .metric-name {{ font-weight: 600; color: #2d3748; }}
-    .metric-val {{ font-family: monospace; font-size: 1rem; font-weight: 600; }}
-    footer {{ margin-top: 40px; border-top: 1px solid #edf2f7; padding-top: 15px; font-size: 0.8rem; color: #a0aec0; text-align: center; }}
-    section {{ margin: 28px 0; }}
-    h2 {{ color: #1a202c; font-size: 1.15rem; margin: 0 0 12px 0; }}
-    .next-action {{ background: #f0fff4; border-left: 5px solid #2f855a; padding: 16px 18px; border-radius: 4px; }}
-    {analyst_guidance_css()}
-    {chart_css()}
-</style>
-</head>
-<body>
-<div class="container">
-    <header>
-        <h1>Global Bivariate Lee's L</h1>
-        <p class="subtitle">Field X: <strong>{html.escape(field_x)}</strong> | Field Y: <strong>{html.escape(field_y)}</strong> | N: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong> | Permutations: <strong>{permutations}</strong></p>
-    </header>
-
-    <div class="interpretation-box">
-        <h2 class="status-title">{pattern}</h2>
-        <p class="status-desc">{desc}</p>
-    </div>
-
-    <section>
-        <h2>Executive Summary</h2>
-        <p>Global Bivariate Lee's L (Lee, 2001) is a single study-area-wide measure of spatial co-clustering between two fields - a spatial smoothing of Pearson's r. Under row-standardized weights it is mathematically the mean of the local l_i values computed by Local Bivariate Lee's L. Significance is assessed via {permutations} random permutations.</p>
-    </section>
-
-    <table>
-        <thead><tr><th>Global Lee's L Diagnostic</th><th>Statistical Value</th></tr></thead>
-        <tbody>
-            <tr><td class="metric-name">Observed Global L</td><td class="metric-val">{l_val:.6f}</td></tr>
-            <tr><td class="metric-name">Permuted Mean</td><td class="metric-val">{result['permuted_mean']:.6f}</td></tr>
-            <tr><td class="metric-name">Permuted Std. Dev.</td><td class="metric-val">{result['permuted_std']:.6f}</td></tr>
-            <tr><td class="metric-name">z-score</td><td class="metric-val">{z:.6f}</td></tr>
-            <tr><td class="metric-name">p-value</td><td class="metric-val">{p:.6f}</td></tr>
-        </tbody>
-    </table>
-
-    <section>
-        <h2>Bivariate Lee's L Scatterplot</h2>
-        {scatter_plot_svg(
-            scatter_zx,
-            scatter_lag_y,
-            x_label=f"Standardized {field_x}",
-            y_label=f"Spatial lag of standardized {field_y}",
-            trend_line=True,
-            quadrant_shading=True,
-        ) if scatter_zx else "<p>Bivariate scatterplot unavailable: Field X has zero variance.</p>"}
-        <p class="chart-caption">Each point is one feature: x is Field X's standardized value, y is the row-standardized spatial lag of Field Y's standardized value. The trend line's slope reflects the same co-clustering the Global L statistic summarizes as a single number.</p>
-    </section>
-
-    {diagnostics_html(numeric_summary, neighborhood_summary, crs_warning)}
-
-    <section>
-        <h2>Recommended Next Action</h2>
-        <div class="next-action">{html.escape(next_action)}</div>
-    </section>
-
-    {caveats_html("Global Bivariate Lee's L", neighborhood_summary, numeric_summary)}
-
-    {guidance_html}
-
-    <footer>
-        Generated by PlanX GeoStats Lab global spatial statistics engine.
-    </footer>
-</div>
-</body>
-</html>
-"""
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(html_content)
+        subtitle = (f"Field X: <strong>{html.escape(fx)}</strong> | Field Y: <strong>{html.escape(fy)}</strong> | N: "
+                    f"<strong>{len(fids)}</strong> | Weights: <strong>{html.escape(weight_label)}</strong> (binary"
+                    f"{', self included' if include_self else ''}) | Permutations: <strong>{permutations}</strong>")
+        drop = callout(f"{dropped} feature(s) with missing values were left out.") if dropped else ""
+        body = (kpis + drop + callout(html.escape(verdict), info=True)
+                + f"<section><h2>Decomposition</h2>{table}</section><section><h2>Smoothed fields</h2>{scatter}</section>"
+                + guidance)
+        return ToolResult(report_html=report_page(self.DISPLAY, subtitle, body),
+                          outputs={"LEES_L": res["L"], "P_VALUE": res["p"]})
