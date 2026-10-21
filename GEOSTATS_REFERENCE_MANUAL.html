@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.11.0</title>
+<title>PlanX GeoStats Lab — Comprehensive Reference Manual v3.12.0</title>
 <script>
 MathJax = {
   tex: {
@@ -674,7 +674,7 @@ main {
 <nav id="sidebar">
 <div class="sidebar-header">
   <div class="brand">PlanX GeoStats Lab<span>Spatial Statistics</span></div>
-  <div class="version">Reference Manual — v3.11.0</div>
+  <div class="version">Reference Manual — v3.12.0</div>
   <input type="text" id="sidebar-search" class="sidebar-search" placeholder="Search manual&hellip;" autocomplete="off">
 </div>
 <div class="sidebar-nav">
@@ -718,6 +718,10 @@ main {
   <a href="#alg-local-geary-c">Local Geary's C</a>
   <a href="#alg-colocation-quotient">Colocation Quotient</a>
   <a href="#alg-skater">SKATER Regionalization</a>
+  <a href="#alg-max-p">Max-p Regions</a>
+  <a href="#alg-azp">AZP Regionalization</a>
+  <a href="#alg-redcap">REDCAP Regionalization</a>
+  <a href="#alg-region-quality">Regionalization Quality</a>
   <a href="#alg-eb-rate-lisa">EB Rate LISA</a>
   <a href="#alg-mv-local-geary">Multivariate Local Geary</a>
   <a href="#alg-local-join-counts">Local Join Counts</a>
@@ -821,8 +825,8 @@ main {
 </div>
 
 <div class="meta-row">
-    <span class="meta-chip">v3.11.0</span>
-    <span class="meta-chip">98 algorithms</span>
+    <span class="meta-chip">v3.12.0</span>
+    <span class="meta-chip">102 algorithms</span>
     <span class="meta-chip">8 analytical groups</span>
     <span class="meta-chip">QGIS 3.28 – 4.99</span>
     <span class="meta-chip">GPL-3.0</span>
@@ -838,7 +842,7 @@ main {
 <p><strong>PlanX GeoStats Lab</strong> is a spatial statistics processing provider for QGIS that equips urban planners, geographers, and spatial analysts with a rigorous, reproducible toolkit for pattern detection, hypothesis testing, and spatial econometric modeling. It is not a point-and-click dashboard — it is an analytical laboratory built on established statistical theory, designed for users who need to <em>understand</em> spatial processes, not merely visualize them.</p>
 
 <div class="stats-grid" style="margin-top:24px;">
-  <div class="stat-tile"><div class="stat-value">98</div><div class="stat-label">Processing Algorithms</div></div>
+  <div class="stat-tile"><div class="stat-value">102</div><div class="stat-label">Processing Algorithms</div></div>
   <div class="stat-tile"><div class="stat-value">8</div><div class="stat-label">Analytical Groups</div></div>
   <div class="stat-tile"><div class="stat-value">15</div><div class="stat-label">Model &amp; Scenario Tools</div></div>
   <div class="stat-tile"><div class="stat-value">34</div><div class="stat-label">ML &amp; XAI Tools</div></div>
@@ -886,7 +890,7 @@ main {
   <div class="workflow-step">
     <div class="step-num">03</div>
     <div class="step-name">Hot Spots &amp; Outliers</div>
-    <div class="step-tools">14 tools</div>
+    <div class="step-tools">18 tools</div>
   </div>
   <div class="workflow-arrow">→</div>
   <div class="workflow-step">
@@ -2766,7 +2770,7 @@ Global spatial statistics that characterize the overall structure of a spatial v
   <strong>The decomposition.</strong> Lee shows that L factors into the spatial smoothing scalars of the two fields and the correlation of their smoothed versions, \(L = \sqrt{SSS_X}\sqrt{SSS_Y}\, r_{\tilde{X}\tilde{Y}}\). The report prints \(L_{XX}\) and \(L_{YY}\) (the SSS of each field) next to the raw and the smoothed correlation so the reader can see which factor drives L.
   </p>
   <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
-  <strong>What was wrong before 3.11.0.</strong> The tool previously averaged \(z_{x,i}\) times the spatial lag of \(z_y\) - the bivariate Moran statistic, which Bivariate LISA already reports. It was not symmetric and did not include the unit's own value in the smoothing. The correction was found by comparing the plugin with esda's <code>Spatial_Pearson</code> while building v3.11.0.
+  <strong>What was wrong before 3.11.0.</strong> The tool previously averaged \(z_{x,i}\) times the spatial lag of \(z_y\) - the bivariate Moran statistic, which Bivariate LISA already reports. It was not symmetric and did not include the unit's own value in the smoothing. The correction was found by comparing the plugin with esda's <code>Spatial_Pearson</code> while building v3.12.0.
   </p>
 
   <h5>2. Mathematical Formulation</h5>
@@ -3952,6 +3956,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
       <tr><td class="param-name">FIELDS</td><td class="param-type">Field (multi)</td><td class="param-default">—</td><td>Numeric fields defining the multivariate attribute space for clustering</td></tr>
       <tr><td class="param-name">K_CLUSTERS</td><td class="param-type">Integer</td><td class="param-default">3</td><td>Number of clusters K (minimum 2; practical range 2–30)</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Output layer with <code>cluster_id</code>, <code>clust_size</code>, and <code>clust_dist</code> fields</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">temporary</td><td>*.html; optional</td><td>Partition-quality report (since 3.12.0)</td></tr>
     </tbody>
   </table>
 
@@ -3966,6 +3971,8 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
       </tbody>
     </table>
   </div>
+
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Partition-quality report (since 3.12.0):</strong> an optional <code>HTML_REPORT</code> with R², the attribute silhouette of every cluster and size balance. K-means has no contiguity constraint, so the boundary and path silhouettes are not computed; run <a href="#alg-region-quality">Regionalization Quality Assessment</a> with a neighbourhood definition to see how fragmented the clusters are on the map.</p>
 
   <h5>Core Equations</h5>
   <div class="formula-block">
@@ -4688,6 +4695,7 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
       <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>≥ 0.0001</td><td>Distance threshold in map units (Distance Band contiguity only)</td></tr>
       <tr><td class="param-name">K_CLUSTERS</td><td class="param-type">Integer</td><td class="param-default">3</td><td>≥ 2</td><td>Number of spatially contiguous regions</td></tr>
       <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path; auto-styled by region</td><td>Output regionalized layer</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">temporary</td><td>*.html; optional</td><td>Partition-quality report (since 3.12.0)</td></tr>
     </tbody>
   </table>
 
@@ -4702,6 +4710,8 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
   </tbody>
   </table>
   </div>
+
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Partition-quality report (since 3.12.0):</strong> an optional <code>HTML_REPORT</code> with the same quality block as Max-p, AZP and REDCAP - R², attribute, boundary and path silhouettes, size balance, per-region SSD, compactness and contiguity - so a SKATER partition can be compared line by line with the other regionalisation methods. See <a href="#alg-region-quality">Regionalization Quality Assessment</a>.</p>
 
   <h5>5. Interpretation Guide</h5>
   <div class="interp-box">
@@ -4724,6 +4734,402 @@ Local spatial statistics that identify <em>where</em> patterns occur — the spe
   <p style="margin:4px 0;"><strong>Openshaw, S.</strong> (1977). "A Geographical Solution to Scale and Aggregation Problems in Region-Building, Partitioning and Spatial Modelling." <em>Transactions of the Institute of British Geographers</em> 2(4): 459–472. DOI: <a href="https://doi.org/10.2307/622300">10.2307/622300</a> — Foundational work on the general region-building problem SKATER solves.</p>
   <p style="margin:4px 0;"><strong>Guo, D.</strong> (2008). "Regionalization with Dynamically Constrained Agglomerative Clustering and Partitioning (REDCAP)." <em>International Journal of Geographical Information Science</em> 22(7): 801–823. DOI: <a href="https://doi.org/10.1080/13658810701674970">10.1080/13658810701674970</a> — A closely related family of spatially constrained clustering methods, useful comparative reading.</p>
   <p style="margin:4px 0;"><strong>Duque, J.C., Ramos, R. &amp; Suriñach, J.</strong> (2007). "Supervised Regionalization Methods: A Survey." <em>International Regional Science Review</em> 30(3): 195–220. DOI: <a href="https://doi.org/10.1177/0160017607301605">10.1177/0160017607301605</a> — Broad survey placing SKATER among the wider family of regionalization techniques.</p>
+  </div>
+</div>
+</article>
+
+<!-- Max-p Regions (Zones Meeting a Minimum Size) -->
+<article class="alg-card" id="alg-max-p">
+<div class="alg-card-header">
+  <div class="alg-icon">🗺️</div>
+  <div class="alg-info">
+    <h4>Max-p Regions (Zones Meeting a Minimum Size)</h4>
+    <div class="alg-id">max_p_regions</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-max-p" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    As many contiguous regions as possible such that every region reaches a floor - a minimum population, area or count - and, among those, the most homogeneous on the attribute fields. The number of regions is an output, not an input: the planning workhorse for 'the smallest districts that each still serve at least N people'.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Why a floor instead of k.</strong> SKATER, K-means, AZP and REDCAP all need the number of regions in advance. Many planning questions fix something else: every school catchment needs at least 1500 pupils, every reporting unit at least 5000 residents for a stable rate. Duque, Anselin &amp; Rey (2012) formalised this as the max-p-regions problem: maximise the number of contiguous regions subject to the floor, then minimise heterogeneity among the solutions with that many regions.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Heuristic.</strong> The problem is NP-hard. Following Wei, Rey &amp; Knaap (2021), a construction phase grows regions from random seeds - each growing region takes the adjacent unassigned unit closest to its attribute centroid until the floor is met - and repeats this many times, keeping the run with the most regions. Units that cannot join a region meeting the floor are attached to the neighbouring region whose heterogeneity rises least. A local search then moves units across borders (simulated annealing by default) while every region stays contiguous and above the floor.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Problem:</strong></p>
+  $$\max p \quad \text{s.t.} \quad \sum_{i \in R_r} f_i \ge T \;\; \forall r, \quad R_r \text{ contiguous}, \quad \bigcup_r R_r = \text{assignable units} \tag{1}$$
+  <p style="margin:8px 0;"><strong>Tie-break among maximum-p partitions:</strong></p>
+  $$\min \; SSD \tag{2}$$
+  <p style="margin:8px 0;"><strong>Within-region heterogeneity (objective):</strong></p>
+  $$SSD = \sum_{r} \sum_{i \in r} \lVert z_i - \bar{z}_r \rVert^2, \qquad R^2 = 1 - SSD / \sum_i \lVert z_i \rVert^2 \tag{3}$$
+  <p style="margin:8px 0;"><strong>Silhouette of unit i:</strong></p>
+  $$s_i = \frac{b_i - a_i}{\max(a_i, b_i)} \tag{4}$$
+  <p style="margin:6px 0;">\(a_i\): mean distance to the other members of its region; \(b_i\): smallest mean distance to another region.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> <code>core/regionalization_engines.py::max_p_regions</code>, numpy only - the plan had this arrive through the optional <code>spopt</code> package; writing it here keeps the tool working on a stock QGIS. Units in a connected part of the map whose total floor is below the threshold cannot form any region and are left unassigned. The report states the upper bound floor(total / T) next to the p found.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Polygons for contiguity; any geometry for KNN / distance</td><td>Units to aggregate</td></tr>
+      <tr><td class="param-name">FIELDS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1; standardised internally</td><td>Attributes the regions should be homogeneous on</td></tr>
+      <tr><td class="param-name">FLOOR_FIELD</td><td class="param-type">Numeric Field</td><td class="param-default">—</td><td>≥ 0</td><td>Spatially extensive variable summed per region</td></tr>
+      <tr><td class="param-name">THRESHOLD</td><td class="param-type">Double</td><td class="param-default">10000</td><td>> 0</td><td>Minimum floor per region</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Which units count as touching</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Neighbours (KNN only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>> 0</td><td>Distance band (Distance Band only)</td></tr>
+      <tr><td class="param-name">ITERATIONS</td><td class="param-type">Integer</td><td class="param-default">99</td><td>1–5000</td><td>Construction runs</td></tr>
+      <tr><td class="param-name">LOCAL_SEARCH</td><td class="param-type">Enum</td><td class="param-default">Simulated annealing</td><td>SA / Tabu / Greedy / None</td><td>Improvement phase</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path; styled by region</td><td>Input features with region_id and silhouettes</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">temporary</td><td>*.html</td><td>Analyst report with the partition-quality assessment</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">region_id</td><td class="param-type">Integer</td><td>Region (0-based); NULL where a unit could not be assigned</td></tr>
+      <tr><td class="param-name">sil</td><td class="param-type">Double</td><td>Attribute silhouette of the unit</td></tr>
+      <tr><td class="param-name">bnd_sil</td><td class="param-type">Double</td><td>Boundary silhouette (0 for interior units)</td></tr>
+      <tr><td class="param-name">path_sil</td><td class="param-type">Double</td><td>Silhouette on shortest-path distance through the neighbourhood graph (NULL above 3000 units)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> KPI row (p, smallest region floor, SSD before and after the local search, unassigned units), the upper bound on p, the per-region floor sums, and the shared partition-quality block: regions, R², mean attribute, boundary and path silhouettes, size balance; a per-region table (units, SSD, mean silhouette, isoperimetric compactness of the dissolved region, contiguity); the regions with the weakest silhouette as a bar chart. The layer is styled with one colour per region.</p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading a max-p solution.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>p well below floor(total/T)</td><td>Contiguity or the attribute objective costs regions</td><td>Try more construction runs; inspect large regions.</td></tr>
+      <tr><td>Unassigned units</td><td>A part of the map cannot reach the floor alone</td><td>Lower the floor or merge those units by hand.</td></tr>
+      <tr><td>Same p across seeds</td><td>The maximum is probably found</td><td>Compare SSD across seeds and keep the lowest.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-skater">SKATER Regionalization</a> &middot; <a href="#alg-azp">AZP Regionalization</a> &middot; <a href="#alg-region-quality">Regionalization Quality</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Duque, J.C., Anselin, L. &amp; Rey, S.J.</strong> (2012). "The max-p-regions problem." <em>Journal of Regional Science</em> 52(3): 397–419. DOI: <a href="https://doi.org/10.1111/j.1467-9787.2011.00743.x">10.1111/j.1467-9787.2011.00743.x</a> — Defines the problem and the first heuristic.</p>
+  <p style="margin:4px 0;"><strong>Wei, R., Rey, S. &amp; Knaap, E.</strong> (2021). "Efficient regionalization for spatially explicit neighborhood delineation." <em>International Journal of Geographical Information Science</em> 35(1): 135–151. DOI: <a href="https://doi.org/10.1080/13658816.2020.1759806">10.1080/13658816.2020.1759806</a> — The construction-plus-simulated-annealing heuristic used here.</p>
+  <p style="margin:4px 0;"><strong>Rousseeuw, P.J.</strong> (1987). "Silhouettes: A graphical aid to the interpretation and validation of cluster analysis." <em>Journal of Computational and Applied Mathematics</em> 20: 53–65. DOI: <a href="https://doi.org/10.1016/0377-0427(87)90125-7">10.1016/0377-0427(87)90125-7</a> — The silhouette.</p>
+  </div>
+</div>
+</article>
+
+<!-- AZP Regionalization (Automatic Zoning Procedure) -->
+<article class="alg-card" id="alg-azp">
+<div class="alg-card-header">
+  <div class="alg-icon">🧭</div>
+  <div class="alg-info">
+    <h4>AZP Regionalization (Automatic Zoning Procedure)</h4>
+    <div class="alg-id">azp_regionalization</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-azp" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Exactly k contiguous regions, as homogeneous as possible, by Openshaw's Automatic Zoning Procedure: start from a random contiguous partition and keep moving units across region borders while the move lowers the within-region sum of squares and leaves the donor region connected. Basic, simulated-annealing and tabu variants; several random starts, best kept.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The zone-design classic.</strong> Openshaw (1977) introduced AZP to show that the modifiable areal unit problem can be turned around: if results depend on the zoning, design the zoning for the purpose. AZP is a local search over contiguous partitions with a fixed number of regions.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Escaping local optima.</strong> Basic AZP accepts only improving moves and stops at the first local optimum. Openshaw &amp; Rao (1995) added simulated annealing (accept a worsening move with probability \(e^{-\Delta/T}\), with T cooling) and tabu search (always make the best admissible move and forbid reversing recent moves for a while). Several random starts further reduce the dependence on the start.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Objective:</strong></p>
+  $$\min_{R_1,\dots,R_k \text{ contiguous}} \; SSD \tag{1}$$
+  <p style="margin:8px 0;"><strong>Move of unit i from region A to a neighbouring region B is admissible if:</strong></p>
+  $$A \setminus \{i\} \text{ is non-empty and connected} \tag{2}$$
+  <p style="margin:8px 0;"><strong>Simulated-annealing acceptance:</strong></p>
+  $$P(\text{accept}) = \min\big(1, e^{-\Delta SSD / T}\big), \qquad T \leftarrow 0.95\,T \tag{3}$$
+  <p style="margin:8px 0;"><strong>Silhouette of unit i:</strong></p>
+  $$s_i = \frac{b_i - a_i}{\max(a_i, b_i)} \tag{4}$$
+  <p style="margin:6px 0;">\(a_i\): mean distance to the other members of its region; \(b_i\): smallest mean distance to another region.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> <code>core/regionalization_engines.py::azp</code>. The change in SSD of a move is computed from running region sums in O(p), so a full sweep costs O(n p) plus the connectivity check of the donor region. A neighbourhood graph with more disconnected parts than k is refused.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Polygons for contiguity; any geometry for KNN / distance</td><td>Units to aggregate</td></tr>
+      <tr><td class="param-name">FIELDS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1; standardised internally</td><td>Attributes the regions should be homogeneous on</td></tr>
+      <tr><td class="param-name">K_REGIONS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>1 ≤ k ≤ n</td><td>Number of regions</td></tr>
+      <tr><td class="param-name">METHOD</td><td class="param-type">Enum</td><td class="param-default">Simulated annealing</td><td>Basic / SA / Tabu</td><td>Local-search variant</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Which units count as touching</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Neighbours (KNN only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>> 0</td><td>Distance band (Distance Band only)</td></tr>
+      <tr><td class="param-name">RESTARTS</td><td class="param-type">Integer</td><td class="param-default">10</td><td>1–500</td><td>Random starts</td></tr>
+      <tr><td class="param-name">MIN_SIZE</td><td class="param-type">Integer</td><td class="param-default">1</td><td>≥ 1</td><td>Minimum units per region</td></tr>
+      <tr><td class="param-name">RANDOM_SEED</td><td class="param-type">Integer</td><td class="param-default">42</td><td>≥ 0</td><td>Seed</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path; styled by region</td><td>Input features with region_id and silhouettes</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">temporary</td><td>*.html</td><td>Analyst report with the partition-quality assessment</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">region_id</td><td class="param-type">Integer</td><td>Region (0-based); NULL where a unit could not be assigned</td></tr>
+      <tr><td class="param-name">sil</td><td class="param-type">Double</td><td>Attribute silhouette of the unit</td></tr>
+      <tr><td class="param-name">bnd_sil</td><td class="param-type">Double</td><td>Boundary silhouette (0 for interior units)</td></tr>
+      <tr><td class="param-name">path_sil</td><td class="param-type">Double</td><td>Silhouette on shortest-path distance through the neighbourhood graph (NULL above 3000 units)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> KPI row (regions, final SSD, median SSD of the random starts and the improvement) and the shared partition-quality block: regions, R², mean attribute, boundary and path silhouettes, size balance; a per-region table (units, SSD, mean silhouette, isoperimetric compactness of the dissolved region, contiguity); the regions with the weakest silhouette as a bar chart. The layer is styled with one colour per region.</p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading an AZP solution.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>Large improvement over the random starts</td><td>The search did real work</td><td>Check stability with another seed.</td></tr>
+      <tr><td>Boundaries change between seeds</td><td>Several near-equivalent zonings exist</td><td>Adopt boundaries common to most runs.</td></tr>
+      <tr><td>Single-unit regions</td><td>Outliers captured as their own region</td><td>Raise the minimum size.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-max-p">Max-p Regions</a> &middot; <a href="#alg-redcap">REDCAP Regionalization</a> &middot; <a href="#alg-region-quality">Regionalization Quality</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Openshaw, S.</strong> (1977). "A geographical solution to scale and aggregation problems in region-building, partitioning and spatial modelling." <em>Transactions of the Institute of British Geographers</em> 2(4): 459–472. DOI: <a href="https://doi.org/10.2307/622300">10.2307/622300</a> — AZP.</p>
+  <p style="margin:4px 0;"><strong>Openshaw, S. &amp; Rao, L.</strong> (1995). "Algorithms for reengineering 1991 census geography." <em>Environment and Planning A</em> 27(3): 425–446. DOI: <a href="https://doi.org/10.1068/a270425">10.1068/a270425</a> — AZP with simulated annealing and tabu search.</p>
+  <p style="margin:4px 0;"><strong>Rousseeuw, P.J.</strong> (1987). "Silhouettes: A graphical aid to the interpretation and validation of cluster analysis." <em>Journal of Computational and Applied Mathematics</em> 20: 53–65. DOI: <a href="https://doi.org/10.1016/0377-0427(87)90125-7">10.1016/0377-0427(87)90125-7</a> — The silhouette.</p>
+  </div>
+</div>
+</article>
+
+<!-- REDCAP Regionalization (Contiguity-Constrained Clustering) -->
+<article class="alg-card" id="alg-redcap">
+<div class="alg-card-header">
+  <div class="alg-icon">🌳</div>
+  <div class="alg-info">
+    <h4>REDCAP Regionalization (Contiguity-Constrained Clustering)</h4>
+    <div class="alg-id">redcap_regionalization</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-redcap" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Guo's (2008) REDCAP: a contiguity-constrained hierarchical clustering builds a spanning tree by merging the most similar touching clusters first, and the tree is then cut into k regions where cutting most reduces heterogeneity. Deterministic - the same input always gives the same regions.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Two stages.</strong> Stage 1 starts from single units and repeatedly merges the two <em>adjacent</em> clusters with the smallest linkage distance, adding to a spanning tree the shortest contiguity edge between them. Stage 2 removes k-1 tree edges, each time the one whose removal most reduces the within-region sum of squares - the same rule as SKATER.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Full-order linkage.</strong> SKATER's tree is a minimum spanning tree of the contiguity graph, built from neighbouring pairs only. REDCAP's linkage is computed over all unit pairs of the two clusters (single, average, complete or Ward), updated by the Lance–Williams formulas. Guo's experiments found full-order complete linkage the most homogeneous; it is the default.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Merge rule (stage 1):</strong></p>
+  $$(A, B) = \arg\min_{A \sim B} \; d(A, B), \qquad A \sim B \iff \exists\, i \in A, j \in B: w_{ij} = 1 \tag{1}$$
+  <p style="margin:8px 0;"><strong>Lance–Williams updates:</strong></p>
+  $$d_{\text{complete}}(A \cup B, C) = \max(d_{AC}, d_{BC}), \qquad d_{\text{average}} = \frac{n_A d_{AC} + n_B d_{BC}}{n_A + n_B} \tag{2}$$
+  <p style="margin:8px 0;"><strong>Cut rule (stage 2):</strong></p>
+  $$e^* = \arg\max_{e \in T} \big[SSD(R) - SSD(R_1^e) - SSD(R_2^e)\big] \tag{3}$$
+  <p style="margin:8px 0;"><strong>Silhouette of unit i:</strong></p>
+  $$s_i = \frac{b_i - a_i}{\max(a_i, b_i)} \tag{4}$$
+  <p style="margin:6px 0;">\(a_i\): mean distance to the other members of its region; \(b_i\): smallest mean distance to another region.</p>
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> <code>core/regionalization_engines.py::redcap</code>. Keeps an n × n distance matrix, so the tool refuses more than 4000 units (use Max-p or AZP there). The graph must be connected.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Polygons for contiguity; any geometry for KNN / distance</td><td>Units to aggregate</td></tr>
+      <tr><td class="param-name">FIELDS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1; standardised internally</td><td>Attributes the regions should be homogeneous on</td></tr>
+      <tr><td class="param-name">K_REGIONS</td><td class="param-type">Integer</td><td class="param-default">5</td><td>1 ≤ k ≤ n</td><td>Number of regions</td></tr>
+      <tr><td class="param-name">LINKAGE</td><td class="param-type">Enum</td><td class="param-default">Full-order complete</td><td>Complete / Average / Ward / Single</td><td>Cluster linkage</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Which units count as touching</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Neighbours (KNN only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>> 0</td><td>Distance band (Distance Band only)</td></tr>
+      <tr><td class="param-name">MIN_SIZE</td><td class="param-type">Integer</td><td class="param-default">1</td><td>≥ 1</td><td>Minimum units per region</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path; styled by region</td><td>Input features with region_id and silhouettes</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">temporary</td><td>*.html</td><td>Analyst report with the partition-quality assessment</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">region_id</td><td class="param-type">Integer</td><td>Region (0-based); NULL where a unit could not be assigned</td></tr>
+      <tr><td class="param-name">sil</td><td class="param-type">Double</td><td>Attribute silhouette of the unit</td></tr>
+      <tr><td class="param-name">bnd_sil</td><td class="param-type">Double</td><td>Boundary silhouette (0 for interior units)</td></tr>
+      <tr><td class="param-name">path_sil</td><td class="param-type">Double</td><td>Silhouette on shortest-path distance through the neighbourhood graph (NULL above 3000 units)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> KPI row (regions, SSD, linkage) and the shared partition-quality block: regions, R², mean attribute, boundary and path silhouettes, size balance; a per-region table (units, SSD, mean silhouette, isoperimetric compactness of the dissolved region, contiguity); the regions with the weakest silhouette as a bar chart. The layer is styled with one colour per region.</p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading a REDCAP solution.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>Long thin regions</td><td>Chaining (typical of single linkage)</td><td>Switch to complete or Ward linkage.</td></tr>
+      <tr><td>Very unequal region sizes</td><td>The tree cut isolated a distinct pocket early</td><td>Raise the minimum size.</td></tr>
+      <tr><td>Weak boundary silhouettes</td><td>Boundaries fixed early are never revisited</td><td>Refine with AZP.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-skater">SKATER Regionalization</a> &middot; <a href="#alg-azp">AZP Regionalization</a> &middot; <a href="#alg-region-quality">Regionalization Quality</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Guo, D.</strong> (2008). "Regionalization with dynamically constrained agglomerative clustering and partitioning (REDCAP)." <em>International Journal of Geographical Information Science</em> 22(7): 801–823. DOI: <a href="https://doi.org/10.1080/13658810701674970">10.1080/13658810701674970</a> — REDCAP.</p>
+  <p style="margin:4px 0;"><strong>Assunção, R.M., Neves, M.C., Câmara, G. &amp; da Costa Freitas, C.</strong> (2006). "Efficient regionalization techniques for socio-economic geographical units using minimum spanning trees." <em>International Journal of Geographical Information Science</em> 20(7): 797–811. DOI: <a href="https://doi.org/10.1080/13658810600665111">10.1080/13658810600665111</a> — SKATER, the tree-cut rule REDCAP stage 2 shares.</p>
+  <p style="margin:4px 0;"><strong>Rousseeuw, P.J.</strong> (1987). "Silhouettes: A graphical aid to the interpretation and validation of cluster analysis." <em>Journal of Computational and Applied Mathematics</em> 20: 53–65. DOI: <a href="https://doi.org/10.1016/0377-0427(87)90125-7">10.1016/0377-0427(87)90125-7</a> — The silhouette.</p>
+  </div>
+</div>
+</article>
+
+<!-- Regionalization Quality Assessment -->
+<article class="alg-card" id="alg-region-quality">
+<div class="alg-card-header">
+  <div class="alg-icon">📏</div>
+  <div class="alg-info">
+    <h4>Regionalization Quality Assessment</h4>
+    <div class="alg-id">regionalization_quality</div>
+  </div>
+  <button class="copy-anchor-btn" data-anchor="alg-region-quality" title="Copy link to this section" type="button">🔗</button>
+</div>
+<div class="alg-card-body">
+  <div class="alg-desc">
+    Judges any partition of a layer - a region_id from SKATER, Max-p, AZP or REDCAP, a K-means or DBSCAN cluster, or an existing district field - against the attributes it is supposed to group: R², attribute, boundary and path silhouettes, size balance, contiguity and compactness, and agreement with a reference partition.
+  </div>
+
+  <h5>1. Theoretical Background</h5>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>The ruler, not the cutter.</strong> A regionalisation that cannot be scored cannot be defended in a review or compared with another. These are the cluster-fit measures esda collects, applied the same way to every partition so two runs can be compared line by line.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Geographical silhouettes.</strong> The ordinary silhouette (Rousseeuw 1987) ignores space. Wolf, Knaap &amp; Rey (2021) add two geographical versions: the boundary silhouette asks the silhouette question only of units on a region edge and only against the regions they touch - the comparison that matters for a border - and the path silhouette measures distance along the neighbourhood graph, so a region scores well only if it is both alike and well connected.
+  </p>
+  <p style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;">
+  <strong>Agreement with a reference.</strong> Homogeneity (every region inside one reference zone), completeness (every reference zone inside one region) and their harmonic mean, the V-measure (Rosenberg &amp; Hirschberg 2007), optionally weighted by area as in esda's areal versions.
+  </p>
+
+  <h5>2. Mathematical Formulation</h5>
+  <div style="font-size:.88rem;line-height:1.6;margin:12px 0;padding:0 8px;">
+  <p style="margin:8px 0;"><strong>Within-region heterogeneity (objective):</strong></p>
+  $$SSD = \sum_{r} \sum_{i \in r} \lVert z_i - \bar{z}_r \rVert^2, \qquad R^2 = 1 - SSD / \sum_i \lVert z_i \rVert^2 \tag{1}$$
+  <p style="margin:8px 0;"><strong>Silhouette of unit i:</strong></p>
+  $$s_i = \frac{b_i - a_i}{\max(a_i, b_i)} \tag{2}$$
+  <p style="margin:6px 0;">\(a_i\): mean distance to the other members of its region; \(b_i\): smallest mean distance to another region.</p>
+  <p style="margin:8px 0;"><strong>Boundary silhouette (boundary units only):</strong></p>
+  $$s_i^{B} = \frac{b_i^{B} - a_i}{\max(a_i, b_i^{B})}, \quad b_i^{B} = \min_{r \in \text{touching}(i)} \bar{d}(i, r) \tag{3}$$
+  <p style="margin:8px 0;"><strong>Homogeneity, completeness, V-measure:</strong></p>
+  $$h = 1 - \frac{H(C \mid K)}{H(C)}, \quad c = 1 - \frac{H(K \mid C)}{H(K)}, \quad V = \frac{2hc}{h + c} \tag{4}$$
+  <p style="margin:8px 0;"><strong>Compactness of a region:</strong></p>
+  $$IPQ = \frac{4\pi A}{P^2} \tag{5}$$
+  </div>
+
+  <div class="acad-note">
+  <strong>Implementation note.</strong> <code>core/region_quality.py</code>, numpy only. Attribute, boundary and path silhouettes and the three entropy measures equal scikit-learn's and esda's on the same data to floating-point precision. The path silhouette needs all-pairs shortest paths and is skipped above 3000 units.
+  </div>
+
+  <h5>3. Parameters</h5>
+  <table class="params-table">
+    <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Constraints</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">INPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Polygons for contiguity; any geometry for KNN / distance</td><td>Units to aggregate</td></tr>
+      <tr><td class="param-name">LABEL_FIELD</td><td class="param-type">Field</td><td class="param-default">—</td><td>Text or number; ≥ 2 values</td><td>Partition to assess</td></tr>
+      <tr><td class="param-name">FIELDS</td><td class="param-type">Numeric Fields</td><td class="param-default">—</td><td>≥ 1</td><td>Attributes the partition should be homogeneous on</td></tr>
+      <tr><td class="param-name">REFERENCE_FIELD</td><td class="param-type">Field</td><td class="param-default">—</td><td>Optional</td><td>Reference partition to compare with</td></tr>
+      <tr><td class="param-name">WEIGHT_TYPE</td><td class="param-type">Enum</td><td class="param-default">Queen contiguity</td><td>Queen / Rook / KNN / Distance Band</td><td>Which units count as touching</td></tr>
+      <tr><td class="param-name">KNN</td><td class="param-type">Integer</td><td class="param-default">8</td><td>≥ 1</td><td>Neighbours (KNN only)</td></tr>
+      <tr><td class="param-name">DISTANCE_BAND</td><td class="param-type">Double</td><td class="param-default">1000.0</td><td>> 0</td><td>Distance band (Distance Band only)</td></tr>
+      <tr><td class="param-name">AREA_WEIGHTED</td><td class="param-type">Boolean</td><td class="param-default">False</td><td>—</td><td>Weight the reference comparison by area</td></tr>
+      <tr><td class="param-name">OUTPUT</td><td class="param-type">Vector Layer</td><td class="param-default">—</td><td>Optional path</td><td>Units with silhouette fields</td></tr>
+      <tr><td class="param-name">HTML_REPORT</td><td class="param-type">File</td><td class="param-default">temporary</td><td>*.html</td><td>Analyst report with the partition-quality assessment</td></tr>
+    </tbody>
+  </table>
+
+  <h5>4. Output Description</h5>
+  <div class="output-fields">
+  <table class="params-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="param-name">sil</td><td class="param-type">Double</td><td>Attribute silhouette of the unit</td></tr>
+      <tr><td class="param-name">bnd_sil</td><td class="param-type">Double</td><td>Boundary silhouette (0 for interior units)</td></tr>
+      <tr><td class="param-name">path_sil</td><td class="param-type">Double</td><td>Silhouette on shortest-path distance through the neighbourhood graph (NULL above 3000 units)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:.82rem;color:var(--gs-slate-700);margin-top:8px;"><strong>Report includes:</strong> The shared partition-quality block: regions, R², mean attribute, boundary and path silhouettes, size balance; a per-region table (units, SSD, mean silhouette, isoperimetric compactness of the dissolved region, contiguity); the regions with the weakest silhouette as a bar chart. With a reference field, homogeneity, completeness and V-measure. The layer is styled by attribute silhouette.</p>
+
+  <h5>5. Interpretation Guide</h5>
+  <div class="interp-box">
+  <strong>Reading the quality figures.</strong>
+  <table class="params-table" style="margin:8px 0;">
+    <thead><tr><th>Signal</th><th>Meaning</th><th>Recommended Next Step</th></tr></thead>
+    <tbody>
+      <tr><td>Higher R² and silhouette for partition A than B on the same fields</td><td>A separates the attributes better</td><td>Prefer A unless its regions are less compact or non-contiguous.</td></tr>
+      <tr><td>Negative boundary silhouettes along one border</td><td>That border puts units in the wrong region</td><td>Inspect it on the map.</td></tr>
+      <tr><td>High homogeneity, low completeness</td><td>The regions subdivide the reference zones</td><td>Expected when k is larger than the reference count.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+    <div class="see-also-box">
+    <strong>See also:</strong> <a href="#alg-skater">SKATER Regionalization</a> &middot; <a href="#alg-max-p">Max-p Regions</a> &middot; <a href="#alg-multivar-cluster">Multivariate Clustering</a>
+  </div>
+
+<h5>6. Literature</h5>
+  <div style="font-size:.78rem;color:var(--gs-slate-500);line-height:1.55;margin-top:8px;">
+  <p style="margin:4px 0;"><strong>Rousseeuw, P.J.</strong> (1987). "Silhouettes: A graphical aid to the interpretation and validation of cluster analysis." <em>Journal of Computational and Applied Mathematics</em> 20: 53–65. DOI: <a href="https://doi.org/10.1016/0377-0427(87)90125-7">10.1016/0377-0427(87)90125-7</a> — The silhouette.</p>
+  <p style="margin:4px 0;"><strong>Wolf, L.J., Knaap, E. &amp; Rey, S.</strong> (2021). "Geosilhouettes: Geographical measures of cluster fit." <em>Environment and Planning B: Urban Analytics and City Science</em> 48(3): 521–539. DOI: <a href="https://doi.org/10.1177/2399808319875752">10.1177/2399808319875752</a> — Boundary and path silhouettes.</p>
+  <p style="margin:4px 0;"><strong>Rosenberg, A. &amp; Hirschberg, J.</strong> (2007). "V-Measure: A conditional entropy-based external cluster evaluation measure." <em>Proceedings of EMNLP-CoNLL 2007</em>, pp. 410–420. — Homogeneity, completeness and the V-measure.</p>
   </div>
 </div>
 </article>
@@ -11378,7 +11784,7 @@ The classical geostatistics workflow, in the order it is meant to be run: estima
 <!--  FOOTER                                                        -->
 <!-- ════════════════════════════════════════════════════════════════ -->
 <footer class="refman-footer">
-  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.11.0.</strong><br>
+  <strong>PlanX GeoStats Lab — Comprehensive Reference Manual v3.12.0.</strong><br>
   Developed by Yusuf Eminoğlu with feedback from educational workflows at GEOPHILO.<br>
   Licensed under GPL-3.0. Source repository: <a href="https://gitlab.com/geophilo1/planx_geostats" style="color:var(--gs-teal-600);">gitlab.com/geophilo1/planx_geostats</a>.<br>
   <em>All methods are documented with their primary academic references. The plugin implements its own engines for core computations; advanced models delegate to community-vetted Python packages with full version transparency.</em>

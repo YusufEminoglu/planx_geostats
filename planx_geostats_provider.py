@@ -105,6 +105,10 @@ from .algorithms.alg_losh import LOSHAlgorithm
 from .algorithms.alg_local_partial_moran import LocalPartialMoranAlgorithm
 from .algorithms.alg_gamma_index import GammaIndexAlgorithm
 from .algorithms.alg_smaup import SmaupAlgorithm
+from .algorithms.alg_max_p import MaxPRegionsAlgorithm
+from .algorithms.alg_azp import AZPAlgorithm
+from .algorithms.alg_redcap import RedcapAlgorithm
+from .algorithms.alg_region_quality import RegionQualityAlgorithm
 
 
 class PlanXGeoStatsProvider(QgsProcessingProvider):
@@ -161,6 +165,10 @@ class PlanXGeoStatsProvider(QgsProcessingProvider):
         self.addAlgorithm(LocalGearyCAlgorithm())
         self.addAlgorithm(ColocationQuotientAlgorithm())
         self.addAlgorithm(SkaterAlgorithm())
+        self.addAlgorithm(MaxPRegionsAlgorithm())
+        self.addAlgorithm(AZPAlgorithm())
+        self.addAlgorithm(RedcapAlgorithm())
+        self.addAlgorithm(RegionQualityAlgorithm())
         self.addAlgorithm(EBRateLisaAlgorithm())
         self.addAlgorithm(MultivariateLocalGearyAlgorithm())
         self.addAlgorithm(LocalJoinCountsAlgorithm())

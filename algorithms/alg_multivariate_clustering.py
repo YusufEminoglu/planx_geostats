@@ -22,6 +22,8 @@ from qgis.core import (
     QgsProcessingParameterField,
     QgsProcessingParameterNumber,
     QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterFileDestination,
+    QgsProcessingOutputHtml,
     QgsFeatureSink
 )
 
@@ -29,6 +31,7 @@ from ..core.stats_engines import calculate_kmeans
 from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
+from ._region_common import partition_report, quality_section
 from ._deliver import style_loaded_output
 
 
@@ -40,6 +43,7 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     FIELDS = "FIELDS"
     K_CLUSTERS = "K_CLUSTERS"
     OUTPUT = "OUTPUT"
+    HTML_REPORT = "HTML_REPORT"
 
     def __init__(self):
         super().__init__()
@@ -122,6 +126,15 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Output clustered layer"
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.HTML_REPORT,
+                "Output HTML report (cluster quality)",
+                fileFilter="HTML files (*.html)",
+                optional=True,
+            )
+        )
+        self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "Multivariate clustering quality report"))
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.INPUT, context)
@@ -252,7 +265,17 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(40 + 60 * (current / total)))
 
-        return {self.OUTPUT: dest_id}
+        feedback.pushInfo("Assessing cluster quality...")
+        section, _per_unit, _summary = quality_section(data, labels, None, title="How good are these clusters?")
+        html_path = partition_report(
+            self.parameterAsFileOutput(parameters, self.HTML_REPORT, context), "multivariate_clustering",
+            "Multivariate Clustering (K-Means)",
+            f"Fields: <strong>{', '.join(compare_fields)}</strong> | K = <strong>{k_clusters}</strong> | "
+            f"WCSS: <strong>{wcss:.4f}</strong> | K-means has no contiguity constraint, so boundary and path "
+            "silhouettes are not computed",
+            section,
+        )
+        return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):

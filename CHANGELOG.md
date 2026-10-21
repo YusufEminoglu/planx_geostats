@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## [3.12.0] - 2026-10-21
+
+Regionalization (ENHANCEMENT_PLAN_v4.0 R4): the methods and, first, the
+ruler to judge them by. Four new algorithms (102 in total).
+
+- **No new dependency.** The plan introduced `spopt` as an optional package
+  for max-p, AZP and REDCAP; all three are written in numpy in
+  `core/regionalization_engines.py` instead, following SKATER's precedent, so
+  they work on a stock QGIS install and are tested without QGIS.
+- Add **Max-p Regions** (`max_p_regions`): as many contiguous regions as
+  possible such that each reaches a floor (population, area, count) - Duque,
+  Anselin & Rey (2012) with the construction-plus-local-search heuristic of
+  Wei, Rey & Knaap (2021; simulated annealing, tabu, greedy or none). The
+  report states the upper bound floor(total/threshold) next to the p found.
+- Add **AZP Regionalization** (`azp_regionalization`, Openshaw 1977;
+  Openshaw & Rao 1995): exactly k contiguous regions by border moves that keep
+  every donor region connected; basic, simulated-annealing and tabu variants
+  over several random starts.
+- Add **REDCAP Regionalization** (`redcap_regionalization`, Guo 2008):
+  contiguity-constrained full-order clustering (complete, average, Ward,
+  single; Lance-Williams updates) builds a spanning tree that is cut by the
+  SKATER rule. Deterministic; refuses more than 4000 units.
+- Add **Regionalization Quality Assessment** (`regionalization_quality`) and
+  `core/region_quality.py`: R-squared, attribute silhouette, boundary and path
+  silhouettes (Wolf, Knaap & Rey 2021), size balance, contiguity, the
+  isoperimetric compactness of each dissolved region, and homogeneity,
+  completeness and V-measure against a reference partition (optionally
+  area-weighted). The same block is written by every regionalisation tool,
+  and **SKATER** and **Multivariate Clustering** - which had no report at all -
+  gain it through a new optional `HTML_REPORT`.
+- Tests: `tests/smoke_regionalization.py` (all three methods recover a known
+  four-block partition, never break contiguity, the floor or the minimum
+  size; closed-form silhouette and compactness values); the esda parity suite
+  adds the silhouettes against esda and the entropy measures against
+  scikit-learn, all to floating-point precision.
+
 ## [3.11.0] - 2026-10-21
 
 LISA completion (ENHANCEMENT_PLAN_v4.0 R3): rate smoothing first, then the

@@ -153,6 +153,31 @@ def main() -> int:
         o = lse.smaup_statistic(n_, k_, rho)
         same(f"S-maup n={n_} k={k_} rho={rho}", [o["smaup"], o["critical"][0.05]], [s.smaup, s.critical_05])
 
+    # v3.12.0 partition-quality measures against esda and scikit-learn
+    spec = importlib.util.spec_from_file_location("region_quality", ROOT / "core" / "region_quality.py")
+    rq = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rq)
+    try:
+        from sklearn import metrics
+    except ImportError:
+        metrics = None
+    wq = libpysal.weights.lat2W(side, side, rook=True)
+    adj = [sorted(wq.neighbors[i]) for i in range(n)]
+    labels = ((col >= side // 2).astype(int) + 2 * (row >= side // 2))
+    labels[[50, 51]] = labels[[50, 51]] ^ 1
+    xq = np.column_stack([labels * 2.0 + rng.normal(size=n), rng.normal(size=n)])
+    zq = rq._z(xq)
+    if metrics is not None:
+        same("Silhouette (sklearn)", rq.silhouette_samples(xq, labels), metrics.silhouette_samples(zq, labels))
+        ref = (row >= side // 2).astype(int)
+        hc = rq.homogeneity_completeness(labels, ref)
+        same("Homogeneity / completeness / V (sklearn)",
+             [hc["homogeneity"], hc["completeness"], hc["v_measure"]],
+             [metrics.homogeneity_score(ref, labels), metrics.completeness_score(ref, labels),
+              metrics.v_measure_score(ref, labels)])
+    same("Boundary silhouette", rq.boundary_silhouette(xq, labels, adj), esda.boundary_silhouette(zq, labels, wq))
+    same("Path silhouette", rq.path_silhouette(xq, labels, adj), esda.path_silhouette(zq, labels, wq))
+
     if failures:
         print(f"ESDA PARITY: FAIL ({len(failures)} failed): {', '.join(failures)}")
         return 1

@@ -14,11 +14,11 @@
 [![Documentation](https://img.shields.io/badge/📖_Reference_Manual-90_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)
 
 From *"is this clustered?"* to *"which model explains it?"* —
-**98 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
+**102 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 98 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
+**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html)** — 102 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
 
 [Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
 
@@ -71,8 +71,12 @@ Export Attributes · **Rate Smoothing (Empirical Bayes)** · Spatial Weights Wor
 | Cluster & Outlier Analysis (Local Moran's I / LISA) | FDR/Bonferroni-controlled HH·LL clusters and HL·LH outliers |
 | Local Geary's C | Multiple-testing-controlled local contrast and outlier detection |
 | Colocation Quotient | Does one point category attract or avoid another (asymmetric)? |
-| Multivariate Clustering | K-means feature groups across several indicators |
-| **SKATER Regionalization** | K spatially *contiguous* regions, not just attribute-similar groups |
+| Multivariate Clustering | K-means feature groups across several indicators, with a cluster-quality report |
+| **SKATER Regionalization** | K spatially *contiguous* regions, not just attribute-similar groups (now with a partition-quality report) |
+| **Max-p Regions** | As many contiguous zones as possible, each meeting a minimum population/area - the number of regions is an output |
+| **AZP Regionalization** | Exactly k contiguous zones by Openshaw's Automatic Zoning Procedure (basic, simulated annealing, tabu) |
+| **REDCAP Regionalization** | Deterministic contiguity-constrained hierarchical zoning (Guo 2008, full-order linkage) |
+| **Regionalization Quality Assessment** | R², attribute/boundary/path silhouettes, compactness, contiguity and agreement with a reference zoning for *any* partition |
 | **Rate Cluster & Outlier Analysis (EB Local Moran)** | LISA on rates without small-population artefacts, with a raw-vs-EB cross-table |
 | **Multivariate Local Geary** | Units similar to (or standing out from) their neighbours across several fields at once |
 | **Local Join Counts** | Where presence/absence data cluster, co-locate or sit side by side |
@@ -175,7 +179,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 98 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 102 tools by category with search and one-click launch.
 
 **From ZIP**
 > Download the latest zip from [Releases](https://gitlab.com/geophilo1/planx_geostats/releases) → `Plugins → Install from ZIP`.
@@ -194,6 +198,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 - **Headless smoke tests** (`tests/smoke_core.py`, `smoke_sample_data.py`, `smoke_provider_catalog.py`) run without QGIS and gate every release. The report decision logic is intentionally kept in **QGIS-independent core helpers**, so **workflow advising**, **model-comparison scoring**, **Monte Carlo sensitivity interpretation**, **Global Moran's I report interpretation** and **Spatial Gini inequality decomposition** are unit-tested without launching QGIS.
 - A **full QGIS runtime matrix** executes every algorithm against the bundled sample data on **QGIS 3 LTR and QGIS 4**.
 - An **esda parity suite** (`tests/esda_parity.py`) checks every rate-smoothing and extended-LISA statistic against PySAL's esda on the same data and weights - they agree to floating-point precision - while the shipped engines themselves need nothing beyond numpy. `tests/smoke_local_stats.py` pins their mathematical properties (Lee's L symmetry, closed-form chi-square tails, a hand-computed multivariate Geary value, exact join counts) without QGIS.
+- `tests/smoke_regionalization.py` checks that max-p, AZP and REDCAP recover a known four-block partition, never break contiguity, the max-p floor or the minimum size, and that the quality measures hit closed-form values; the esda parity suite also checks the silhouettes and V-measure against esda and scikit-learn.
 - The reference manual is **built, not hand-edited**: `py -3 tools/build_manual.py` renders the cards kept in `tools/manual_src/`, derives the version, the algorithm count and the per-group tool counts from the plugin itself, and writes the docs/ and root copies byte-identically; `--check` fails when they are stale.
 - A manual **QA test matrix** (`QA_MANUAL_TEST_MATRIX.md`) covers setup, statistics, symbology, report interpretation and release gates.
 - The release-zip verifier asserts that **developer-only paths are absent**, **algorithm icons are present**, and metadata points to a packaged icon. PlanX GeoStats Lab is packaged as a **hybrid Processing + dock-GUI plugin**, so its menu/toolbar hooks (the GeoStats Lab dock panel) are an intentional, verified part of the release rather than a packaging mistake.
@@ -210,7 +215,7 @@ py -3 planx_geostats\tools\build_manual.py --check
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.11.0
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.12.0
 ```
 
 </details>
@@ -221,7 +226,7 @@ py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --
 
 **PlanX GeoStats Lab**, QGIS İşlem Araç Kutusu (Processing) içinde çalışan, plancılar için tasarlanmış bir **mekânsal istatistik laboratuvarıdır**:
 
-- **98 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
+- **102 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
 - **Jeoistatistik ve enterpolasyon (07):** *Empirical Semivariogram & Model Fitting* benzerliğin mesafeyle nasıl azaldığını ölçer ve beş kuramsal modelden birini (küresel, üstel, Gauss, doğrusal, kararlı) Cressie ağırlıklı en küçük kareler ile uydurur; *Ordinary / Universal Kriging Interpolation* bu parametrelerden yüzey üretir ve **kriging varyansını ikinci bir raster olarak** yazar, böylece her hücre kendi belirsizliğiyle birlikte gelir. Evrensel kriging eğilimi en küçük karelerle çıkarıp variogramı artıklardan kestirir. *Empirical Bayesian Kriging Interpolation* ise variogramı kullanıcıya uydurtmaz: her yerel alt kümede dört aileyi birden dener, uydurduğu modelden yeni bir veri kümesi benzetir, aileyi bu benzetiye yeniden uydurur ve her uydurmayı gerçek verinin olabilirliğiyle ağırlıklandırıp ortalamasını alır. Bildirdiği varyans bu nedenle variogramın kendisinin belirsizliğini de içerir — sıradan krigingin veremediği, verinin desteklemediği kesinliği iddia etmeyen bir hata payıdır.
 - **Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06):** Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost), SVM, Sinir Ağı, 2025 nesli TabPFN sıfır-eğitim tablosal temel modeli, mekânsal k-katlamalı çapraz doğrulama (K-Means blok veya kNNDM), **SHAP tabanlı açıklanabilirlik** (her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**), tam ve örneklemesiz katkı üreten cam-kutu **Explainable Boosting Machine**, **DiCE Counterfactual** (bir kaydın sınıfını değiştirecek en küçük değişiklik) ve dağılımdan bağımsız kapsama garantili **Conformal Prediction Interval**.
 - **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.

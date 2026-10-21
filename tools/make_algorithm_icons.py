@@ -127,6 +127,42 @@ def g_smaup(d, c, t):
     d.rectangle(_box(32, 29, 47, 44), outline=c, width=3 * S)
 
 
+def g_max_p(d, c, t):
+    regions = [((15, 14, 31, 29), t), ((32, 14, 49, 25), "white"), ((15, 30, 27, 45), "white"), ((28, 26, 49, 45), t)]
+    for box, fill in regions:
+        d.rectangle(_box(*box), fill=fill, outline=c, width=2 * S)
+    d.text(_p(23, 21.5), "≥", fill=c, font=_font(9 * S), anchor="mm")
+
+
+def g_azp(d, c, t):
+    d.polygon([_p(15, 15), _p(33, 13), _p(30, 30), _p(14, 28)], fill=t, outline=c)
+    d.polygon([_p(33, 13), _p(49, 17), _p(47, 32), _p(30, 30)], fill="white", outline=c)
+    d.polygon([_p(14, 28), _p(30, 30), _p(29, 44), _p(15, 43)], fill="white", outline=c)
+    d.polygon([_p(30, 30), _p(47, 32), _p(48, 44), _p(29, 44)], fill=t, outline=c)
+    for poly in ([(15, 15), (33, 13), (30, 30), (14, 28)], [(33, 13), (49, 17), (47, 32), (30, 30)],
+                 [(14, 28), (30, 30), (29, 44), (15, 43)], [(30, 30), (47, 32), (48, 44), (29, 44)]):
+        d.line([_p(*q) for q in poly + [poly[0]]], fill=c, width=2 * S)
+    d.line([_p(36, 23), _p(24, 37)], fill=c, width=2 * S)
+    d.polygon([_p(24, 37), _p(24, 32), _p(28, 35)], fill=c)
+
+
+def g_redcap(d, c, t):
+    pts = {"r": (32, 14), "a": (21, 25), "b": (43, 25), "c": (15, 38), "d": (27, 38), "e": (39, 38), "f": (49, 38)}
+    for u, v in (("r", "a"), ("r", "b"), ("a", "c"), ("a", "d"), ("b", "e"), ("b", "f")):
+        d.line([_p(*pts[u]), _p(*pts[v])], fill=c, width=2 * S)
+    for k, (x, y) in pts.items():
+        d.ellipse(_box(x - 3.5, y - 3.5, x + 3.5, y + 3.5), fill=c if k in "acd" else "white", outline=c, width=2 * S)
+    d.line([_p(30, 19), _p(36, 15)], fill="white", width=3 * S)
+
+
+def g_region_quality(d, c, t):
+    d.rectangle(_box(14, 14, 50, 44), fill="white", outline=c, width=2 * S)
+    for k, h in enumerate((24, 18, 27, 12)):
+        x = 18 + k * 8
+        d.rectangle(_box(x, 44 - h, x + 5, 44), fill=c if k % 2 == 0 else t, outline=c, width=S)
+    d.line([_p(14, 30), _p(50, 30)], fill=c, width=S)
+
+
 ICONS = {
     "rate_smoothing": ("01", "EB", g_rate_smoothing),
     "eb_rate_lisa": ("03", "EBL", g_eb_rate_lisa),
@@ -136,6 +172,10 @@ ICONS = {
     "local_partial_moran": ("03", "PLM", g_partial_moran),
     "gamma_index": ("02", "GAM", g_gamma),
     "smaup_test": ("02", "MAUP", g_smaup),
+    "max_p_regions": ("03", "MAXP", g_max_p),
+    "azp_regionalization": ("03", "AZP", g_azp),
+    "redcap_regionalization": ("03", "RDCP", g_redcap),
+    "regionalization_quality": ("03", "RQA", g_region_quality),
 }
 
 

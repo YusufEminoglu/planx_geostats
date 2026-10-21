@@ -19,6 +19,8 @@ from qgis.core import (
     QgsProcessingParameterEnum,
     QgsProcessingParameterNumber,
     QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterFileDestination,
+    QgsProcessingOutputHtml,
     QgsFeatureSink,
 )
 
@@ -27,7 +29,10 @@ from ..core.advanced_stats_engines import calculate_skater
 from ..core.layer_metadata import apply_output_metadata
 from ..core.symbology import apply_renderer, categorical_id_renderer
 
+from ..core.local_stats_engines import SpatialGraph
+
 from ._icons import algorithm_icon
+from ._region_common import partition_report, quality_section, region_compactness
 from ._deliver import style_loaded_output
 
 
@@ -42,6 +47,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
     DISTANCE_BAND = "DISTANCE_BAND"
     K_CLUSTERS = "K_CLUSTERS"
     OUTPUT = "OUTPUT"
+    HTML_REPORT = "HTML_REPORT"
 
     def __init__(self):
         super().__init__()
@@ -155,6 +161,15 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "Output regionalized layer",
             )
         )
+        self.addParameter(
+            QgsProcessingParameterFileDestination(
+                self.HTML_REPORT,
+                "Output HTML report (partition quality)",
+                fileFilter="HTML files (*.html)",
+                optional=True,
+            )
+        )
+        self.addOutput(QgsProcessingOutputHtml("HTML_REPORT_OUT", "SKATER partition-quality report"))
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.INPUT, context)
@@ -285,7 +300,18 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
-        return {self.OUTPUT: dest_id}
+        feedback.pushInfo("Assessing partition quality...")
+        graph = SpatialGraph.from_dicts(neighbors, _weights, valid_id_order)
+        section, _per_unit, _summary = quality_section(
+            data, labels, graph, compactness=region_compactness(source, valid_id_order, labels))
+        html_path = partition_report(
+            self.parameterAsFileOutput(parameters, self.HTML_REPORT, context), "skater",
+            "SKATER Regionalization",
+            f"Fields: <strong>{', '.join(compare_fields)}</strong> | K = <strong>{k_clusters}</strong> | "
+            f"Total SSD: <strong>{total_ssd:.4f}</strong>",
+            section,
+        )
+        return {self.OUTPUT: dest_id, self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
     @style_loaded_output
     def postProcessAlgorithm(self, context, feedback):

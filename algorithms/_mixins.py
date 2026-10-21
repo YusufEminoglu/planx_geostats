@@ -111,6 +111,10 @@ HELP_SLUGS = {
     "local_partial_moran": "alg-partial-moran",
     "gamma_index": "alg-gamma",
     "smaup_test": "alg-smaup",
+    "max_p_regions": "alg-max-p",
+    "azp_regionalization": "alg-azp",
+    "redcap_regionalization": "alg-redcap",
+    "regionalization_quality": "alg-region-quality",
 }
 
 
