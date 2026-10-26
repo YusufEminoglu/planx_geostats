@@ -7,7 +7,7 @@
 **Spatial statistics for planners — inside the QGIS Processing Toolbox.**
 
 [![Release](https://img.shields.io/github/v/release/YusufEminoglu/planx_geostats?color=2c6e6a&label=release)](https://gitlab.com/geophilo1/planx_geostats/releases)
-[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![License: GPL v3 or later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
 [![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
 [![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://gitlab.com/geophilo1/planx_geostats)
@@ -189,7 +189,7 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 | QGIS | **3.28 LTR → 4.x** (validated on both runtimes) |
 | Hard dependencies | None — pure QGIS for core tools |
 | Optional | PySAL stack + scikit-learn via the built-in guided installer |
-| License | [GPL-3.0](LICENSE) |
+| License | [GPL-3.0-or-later](LICENSE) |
 
 ---
 
