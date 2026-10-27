@@ -834,7 +834,7 @@ def test_help_url_and_metadata_agree_on_documentation_host() -> None:
     yusufeminoglu.github.io and only metadata.txt was updated: metadata.txt
     resolved, every Help button returned a 404."""
     documented_url = _doc_base_url()
-    metadata_url = re.search(r"https?://\S*GEOSTATS_REFERENCE_MANUAL\.html", METADATA.read_text(encoding="utf-8"))
+    metadata_url = re.search(r"https?://\S*/planx_geostats/manual\.html", METADATA.read_text(encoding="utf-8"))
     assert metadata_url, "metadata.txt should link to the reference manual"
     assert documented_url == metadata_url.group(0), (
         "algorithms/_mixins.py DOC_BASE_URL "

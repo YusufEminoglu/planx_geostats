@@ -3,7 +3,7 @@ VISUALIZATION_PATHWAY.md
 QA_MANUAL_TEST_MATRIX.md
 # The reference manual is read online - every algorithm's Help button and the
 # metadata homepage both open DOC_BASE_URL
-# (https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html), and no
+# (https://geophilo.com/planx_geostats/manual.html), and no
 # code path opens a local copy. Shipping it put the same 1.2 MB file in the zip
 # twice, once at the root and once under docs/. Same convention as planx, which
 # already ignores docs/.

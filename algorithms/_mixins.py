@@ -6,7 +6,7 @@
 # field links to the same URL and QGIS Hub validates it on upload. Do not
 # point this at a host that is not the one metadata.txt advertises - every
 # algorithm's Help button resolve through here.
-DOC_BASE_URL = "https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html"
+DOC_BASE_URL = "https://geophilo.com/planx_geostats/manual.html"
 
 # GEOSTATS_REFERENCE_MANUAL.html uses hand-picked short anchor slugs that are
 # not derivable from name() (e.g. "getis_ord_gi" -> "alg-getis-ord", not
