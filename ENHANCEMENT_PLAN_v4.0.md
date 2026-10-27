@@ -114,8 +114,8 @@ again after every release until it is derived rather than typed.
 
 `https://geophilo.com/planx_geostats/GEOSTATS_REFERENCE_MANUAL.html` resolves (308 → 200) but
 serves a manual that differs from `docs/GEOSTATS_REFERENCE_MANUAL.html` — the footer credits
-"Yusuf Eminoğlu with feedback from educational workflows at **GEOPHILO**" where the repo says
-"**Dokuz Eylül University, Department of City and Regional Planning**".
+"Geophilo with feedback from educational workflows at **GEOPHILO**" where the repo says
+"**the university department named in the old metadata**".
 
 I first filed this as an open branding question for the maintainer. It is not one — three
 independent facts settle it:
