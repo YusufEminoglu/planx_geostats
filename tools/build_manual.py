@@ -25,13 +25,16 @@ from __future__ import annotations
 import argparse
 import html
 import importlib.util
+import os
 import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MANUAL = ROOT / "docs" / "GEOSTATS_REFERENCE_MANUAL.html"
-ROOT_MANUAL = ROOT / "GEOSTATS_REFERENCE_MANUAL.html"
+# The public manual lives in the portal repository (geophilo_project), not
+# in this plugin repository or its Hub zip. GEOPHILO_MANUALS overrides it.
+MANUALS = Path(os.environ.get("GEOPHILO_MANUALS") or ROOT.parents[1] / "geophilo_project" / "_manual_sources") / "planx_geostats"
+MANUAL = MANUALS / "GEOSTATS_REFERENCE_MANUAL.html"
 SOURCES = ROOT / "tools" / "manual_src"
 
 P_STYLE = 'style="font-size:.84rem;color:var(--gs-slate-700);line-height:1.7;margin:8px 0 14px;"'
@@ -295,18 +298,15 @@ def main() -> int:
     args = parser.parse_args()
     built = build()
     current = MANUAL.read_text(encoding="utf-8")
-    root = ROOT_MANUAL.read_text(encoding="utf-8") if ROOT_MANUAL.exists() else ""
     if args.check:
-        stale = [p.name for p, t in ((MANUAL, current), (ROOT_MANUAL, root)) if t != built]
-        if stale:
-            print("MANUAL BUILD: FAIL (stale: " + ", ".join(stale) + ") - run py -3 tools/build_manual.py")
+        if current != built:
+            print("MANUAL BUILD: FAIL (stale: " + MANUAL.name + ") - run py -3 tools/build_manual.py")
             return 1
         print("MANUAL BUILD: OK")
         return 0
-    for path in (MANUAL, ROOT_MANUAL):
-        path.write_text(built, encoding="utf-8", newline="")
+    MANUAL.write_text(built, encoding="utf-8", newline="")
     cards = built.count('<article class="alg-card"')
-    print(f"wrote {MANUAL.relative_to(ROOT)} and {ROOT_MANUAL.name} ({cards} cards, v{metadata_version()})")
+    print(f"wrote {MANUAL} ({cards} cards, v{metadata_version()})")
     return 0
 
 

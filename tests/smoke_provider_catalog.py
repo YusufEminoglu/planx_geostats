@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import os
 import re
 import struct
 import zlib
@@ -25,8 +26,8 @@ GEOSTATS_DOCK = ROOT / "geostats_dock.py"
 CHARTS_MODULE = ROOT / "core" / "charts.py"
 CHARTS_ALLOWED_IMPORTS = {"html", "math", "typing", "__future__"}
 DOC_MIXINS = ROOT / "algorithms" / "_mixins.py"
-MANUAL = ROOT / "docs" / "GEOSTATS_REFERENCE_MANUAL.html"
-ROOT_MANUAL = ROOT / "GEOSTATS_REFERENCE_MANUAL.html"
+# The manual is kept in the portal repository (geophilo_project/_manual_sources).
+MANUAL = Path(os.environ.get("GEOPHILO_MANUALS") or ROOT.parents[1] / "geophilo_project" / "_manual_sources") / "planx_geostats" / "GEOSTATS_REFERENCE_MANUAL.html"
 
 EXPECTED_GROUPS = {
     "00 | Setup and Diagnostics",
@@ -925,15 +926,12 @@ def test_manual_version_matches_plugin_version() -> None:
     )
 
 
-def test_root_and_docs_manual_copies_are_identical() -> None:
-    """packaging/build_web_portal.py publishes both docs/ and a root-level copy
-    whose name contains "manual", so the same file ships from two paths. They
-    have already drifted once (commit 3b04407). docs/ is the source of truth."""
-    assert ROOT_MANUAL.exists(), "Root-level manual copy should exist for the web portal packaging step"
-    assert ROOT_MANUAL.read_bytes() == MANUAL.read_bytes(), (
-        "The root-level manual copy has drifted from docs/GEOSTATS_REFERENCE_MANUAL.html. "
-        "docs/ is the source of truth - re-copy it after editing."
-    )
+def test_manual_lives_outside_the_plugin_repository() -> None:
+    """The public manual is kept once, in the portal repository. A copy back in
+    this repository (docs/ or the root) would ship in a zip or drift from it."""
+    assert MANUAL.is_file(), f"Manual not found at {MANUAL} (set GEOPHILO_MANUALS)"
+    stray = [p for p in (ROOT / "docs" / MANUAL.name, ROOT / MANUAL.name) if p.exists()]
+    assert not stray, "Manual copies inside the plugin repository: " + ", ".join(map(str, stray))
 
 
 def test_manual_source_link_matches_metadata_repository() -> None:
@@ -963,9 +961,8 @@ def test_manual_is_built_from_its_sources() -> None:
     spec.loader.exec_module(builder)
     built = builder.build()
     assert MANUAL.read_text(encoding="utf-8") == built, (
-        "docs/GEOSTATS_REFERENCE_MANUAL.html is not what tools/build_manual.py produces - run it."
+        f"{MANUAL} is not what tools/build_manual.py produces - run it."
     )
-    assert ROOT_MANUAL.read_text(encoding="utf-8") == built, "Root manual copy is stale - run tools/build_manual.py."
     cards = len(_manual_cards())
     assert f'<span class="meta-chip">{cards} algorithms</span>' in built
 
@@ -1005,7 +1002,7 @@ def run_all() -> None:
     test_manual_cards_have_balanced_div_tags()
     test_manual_has_no_angle_brackets_the_parser_would_read_as_tags()
     test_manual_version_matches_plugin_version()
-    test_root_and_docs_manual_copies_are_identical()
+    test_manual_lives_outside_the_plugin_repository()
     test_manual_source_link_matches_metadata_repository()
     test_manual_is_built_from_its_sources()
     print("PROVIDER CATALOG SMOKE TESTS OK")
