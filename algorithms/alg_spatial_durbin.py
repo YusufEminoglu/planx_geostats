@@ -40,6 +40,7 @@ from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import check_weight_choice, engine_errors, require_neighbours, restrict_weights, set_fields_keeping_values, stop_if_cancelled, strict_float
 
 
 class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
@@ -220,7 +221,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     has_null = True
                     break
                 try:
-                    f_indeps.append(float(x_val))
+                    f_indeps.append(strict_float(x_val))
                 except (ValueError, TypeError):
                     has_null = True
                     break
@@ -228,7 +229,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 skipped += 1
                 continue
             try:
-                dep_vals.append(float(y_val))
+                dep_vals.append(strict_float(y_val))
                 indep_vals.append(f_indeps)
                 valid_fids.append(f.id())
             except (ValueError, TypeError):
@@ -256,14 +257,19 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.pushWarning(risk)
 
         feedback.pushInfo("Generating spatial weights matrix...")
+        check_weight_choice(source, weight_type, distance_band)
         neighbors, weights, id_order, _ = build_weights_matrix(
             source, weight_type, k_neighbors=k_neighbors, distance_band=distance_band, feedback=feedback
         )
+        # Rebuild the graph on the complete records only (re-standardised rows).
+        neighbors, weights, _ = restrict_weights(neighbors, weights, valid_fids)
+        require_neighbours(neighbors, valid_fids)
         if feedback.isCanceled():
             return {}
 
         feedback.pushInfo("Estimating Spatial Durbin Model via Spatial 2SLS...")
-        result = calculate_spatial_durbin(y, X_data, neighbors, weights, valid_fids, indep_fields)
+        with engine_errors():
+            result = calculate_spatial_durbin(y, X_data, neighbors, weights, valid_fids, indep_fields)
         feedback.pushInfo(f"Model R2={result['r2']:.4f}, rho={result['rho']:.4f} (p={result['rho_p']:.4f})")
 
         if feedback.isCanceled():
@@ -284,10 +290,9 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         feedback.pushInfo("Writing residual attributes...")
         for current, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feat = QgsFeature(f)
-            out_feat.setFields(out_fields)
+            set_fields_keeping_values(out_feat, out_fields)
             fid = f.id()
             if fid in results_map:
                 res, fit = results_map[fid]

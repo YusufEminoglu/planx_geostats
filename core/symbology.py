@@ -53,6 +53,23 @@ GI_CONFIDENCE_STYLE = [
     (3, "#b2182b", "Hot Spot - 99% Confidence"),
 ]
 
+# Contract C2: features where nothing was computed are drawn, never hidden.
+MISSING_CLASS_STYLE = [
+    ("No data", "#d9d9d9", "No data"),
+    ("No neighbours", "#8c8c8c", "No neighbours"),
+]
+
+# Gi* class labels (the gi_class field) - same colours as the gi_conf bins.
+GI_CLASS_STYLE = [(label, color, label) for _value, color, label in GI_CONFIDENCE_STYLE]
+
+# Stability consensus is a vote across neighbourhood definitions, not a
+# confidence level, so its legend says so.
+GI_CONSENSUS_STYLE = [
+    ("Stable cold spot", "#2166ac", "Stable cold spot"),
+    ("Not stable", "#f7f7f7", "Not stable"),
+    ("Stable hot spot", "#b2182b", "Stable hot spot"),
+]
+
 _SIGMA_BREAKS = [-9999.0, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 9999.0]
 _SIGMA_LABELS = [
     "< -2.5 Std Dev (Underprediction)",
@@ -107,17 +124,35 @@ def categorized_renderer(geometry_type, field_name: str, category_defs):
     return QgsCategorizedSymbolRenderer(field_name, categories)
 
 
-def lisa_quadrant_renderer(geometry_type, field_name: str = "quadrant"):
+def lisa_quadrant_renderer(geometry_type, field_name: str = "quadrant", include_missing: bool = False):
     """The HH/LL/HL/LH/Not Significant categorized renderer every LISA-family
     tool (Local Moran's I, Getis-Ord Gi*, Local Geary's C, Bivariate LISA,
-    Bivariate Lee's L) already applies."""
-    return categorized_renderer(geometry_type, field_name, LISA_QUADRANT_STYLE)
+    Bivariate Lee's L) already applies.  ``include_missing`` adds the
+    "No data" and "No neighbours" categories so those features stay visible."""
+    style = LISA_QUADRANT_STYLE + (MISSING_CLASS_STYLE if include_missing else [])
+    return categorized_renderer(geometry_type, field_name, style)
+
+
+def with_missing_classes(category_defs):
+    """``category_defs`` plus "No data" / "No neighbours" unless already there."""
+    defs = list(category_defs)
+    present = {str(value) for value, _c, _l in defs}
+    return defs + [item for item in MISSING_CLASS_STYLE if item[0] not in present]
 
 
 def gi_confidence_renderer(geometry_type, field_name: str = "gi_conf"):
     """The -3..+3 cold/hot confidence-class categorized renderer Getis-Ord
     Gi* applies to its gi_conf field."""
     return categorized_renderer(geometry_type, field_name, GI_CONFIDENCE_STYLE)
+
+
+def gi_class_renderer(geometry_type, field_name: str = "gi_class", consensus: bool = False):
+    """Categorized renderer on the Gi* class-label field: the seven confidence
+    classes, or - when the stability consensus drives the map - "Stable hot
+    spot / Stable cold spot / Not stable"; both with "No data" and
+    "No neighbours" so no feature is hidden."""
+    style = GI_CONSENSUS_STYLE if consensus else GI_CLASS_STYLE
+    return categorized_renderer(geometry_type, field_name, style + MISSING_CLASS_STYLE)
 
 
 def diverging_std_dev_renderer(geometry_type, field_name: str):

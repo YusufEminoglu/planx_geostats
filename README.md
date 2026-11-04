@@ -1,28 +1,30 @@
 <div align="center">
 
-![PlanX GeoStats Lab](media/banner.png)
+![GeoStats Lab](media/banner.png)
 
-# PlanX GeoStats Lab
+# GeoStats Lab
 
-**Spatial statistics for planners — inside the QGIS Processing Toolbox.**
+**Hot spots, clusters and outliers, spatial autocorrelation, regions, regression and interpolation, inside the QGIS Processing Toolbox.**
 
-[![Release](https://img.shields.io/github/v/release/YusufEminoglu/planx_geostats?color=2c6e6a&label=release)](https://gitlab.com/geophilo1/planx_geostats/releases)
+[![Release](https://img.shields.io/github/v/release/YusufEminoglu/planx_geostats?color=2c6e6a&label=release)](https://github.com/YusufEminoglu/planx_geostats/releases)
 [![License: GPL v3 or later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-102_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/manual.html)
 [![QGIS](https://img.shields.io/badge/QGIS-3.28%20LTR%20%E2%86%92%204.x-589632?logo=qgis&logoColor=white)](https://qgis.org)
-[![Processing](https://img.shields.io/badge/type-Processing%20provider-7a5cd6)](https://docs.qgis.org/latest/en/docs/user_manual/processing/index.html)
-[![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://gitlab.com/geophilo1/planx_geostats)
-[![Documentation](https://img.shields.io/badge/📖_Reference_Manual-90_algorithms-2c6e6a)](https://geophilo.com/planx_geostats/manual.html)
+[![Plugin Hub](https://img.shields.io/badge/QGIS-Plugin%20Hub-589632)](https://plugins.qgis.org/plugins/planx_geostats/)
+[![Part of PlanX](https://img.shields.io/badge/suite-PlanX-ff8a3d)](https://github.com/YusufEminoglu/PlanX)
 
-From *"is this clustered?"* to *"which model explains it?"* —
-**102 Processing algorithms covering the full spatial-statistics workflow, with guidance built in at every step.**
+From *"is this clustered?"* to *"which model explains it?"*:
+**102 Processing algorithms in eight groups, each with documented output fields and, for most, a plain-language HTML report.**
+
+[Install](#-installation) · [Tool catalog](#-tool-catalog) · [Reading the results](#-reading-the-results) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data)
+
+</div>
+
+---
 
 ## 📖 Documentation
 
-**[Comprehensive Academic Reference Manual](https://geophilo.com/planx_geostats/manual.html)** — 102 algorithms, 8 groups, 300+ DOI-verified academic references. Every algorithm documented with theoretical background, mathematical formulation (numbered display equations), complete parameter and output tables, interpretation guides, and literature. Hosted on Web Documentation with deep-link per-algorithm anchors accessible directly from the QGIS Processing dialog (Help button).
-
-[Install](#-installation) · [Tool catalog](#-tool-catalog) · [Guided workflow](#-a-lab-not-a-toolbox-dump) · [Optional libraries](#-optional-libraries) · [Sample data](#-bundled-sample-data) · [Türkçe](#-türkçe-özet)
-
-</div>
+The **[reference manual](https://geophilo.com/planx_geostats/manual.html)** documents all 102 algorithms in eight groups: the method, its formulas, every parameter and output field, how to read the result, and the literature. Each tool's Help button in the Processing dialog opens its own section of the manual. Bugs and requests go to [GitHub issues](https://github.com/YusufEminoglu/planx_geostats/issues).
 
 ---
 
@@ -64,11 +66,12 @@ Export Attributes · **Rate Smoothing (Empirical Bayes)** · Spatial Weights Wor
 | Join Count Statistics | Does a categorical/binary field cluster or checkerboard? |
 | Geodetector Q-Statistic | Does a categorical partition explain variance in an outcome? |
 
-### `03` Hot Spots & Spatial Outliers *(local statistics)*
+### `03` Hot Spots, Spatial Outliers & Regions *(local statistics and regionalization)*
 | Tool | Output |
 |---|---|
-| Hot Spot Analysis (Getis-Ord Gi\*) | FDR/Bonferroni-controlled hot/cold spots plus seven-definition stability consensus |
+| Hot Spot Analysis (Getis-Ord Gi\*) | FDR/Bonferroni-controlled hot/cold spots plus a stability consensus over neighbouring definitions of the chosen weights (up to five runs) |
 | Cluster & Outlier Analysis (Local Moran's I / LISA) | FDR/Bonferroni-controlled HH·LL clusters and HL·LH outliers |
+| Bivariate LISA | Where high values of one field sit next to high (or low) values of another |
 | Local Geary's C | Multiple-testing-controlled local contrast and outlier detection |
 | Colocation Quotient | Does one point category attract or avoid another (asymmetric)? |
 | Multivariate Clustering | K-means feature groups across several indicators, with a cluster-quality report |
@@ -138,6 +141,17 @@ Mean Center · Median Center · Central Feature · Standard Distance · Standard
 
 ---
 
+## 🔎 Reading the results
+
+- **Use a projected CRS for distance bands.** A distance band is measured in the layer's CRS units. On a geographic CRS such as EPSG:4326 that unit is degrees, so the tools refuse a distance band there and ask you to reproject the layer to a metric CRS first.
+- **Points need distance-based neighbours.** Queen and rook contiguity only work for polygons that share edges or corners; on points no feature would have a neighbour. Use K nearest neighbours or a distance band.
+- **Missing values are left out, not guessed.** Features with a NULL (or NaN) value in an analysed field are skipped, the spatial weights are rebuilt on the features that remain (row-standardised weights are standardised again), and the report says how many were skipped. In the hot spot and cluster maps (Gi\*, Local Moran's I, Local Geary's C, Bivariate LISA, LOSH) these features get the class "No data".
+- **Islands have no local result.** A feature with no neighbours under the weights you chose (an island) cannot be compared with its surroundings, so the local statistics give it no value and no p-value and map it as "No neighbours" (Gi\* also writes `gi_conf` 0). If many features are islands, widen the distance band or raise K. A run in which no feature has a neighbour, every value is missing or the field has no variance stops with a message.
+- **Multiple testing.** A local statistic runs one test per feature, so with 1,000 features about 50 would pass p < 0.05 by chance alone. The false discovery rate (FDR, Benjamini-Hochberg) option keeps the expected share of false finds among the features called significant at the chosen level; Bonferroni is stricter and controls the chance of even one false find. The class on the map is based on the corrected p-value, and the report names the correction in words (for example "Benjamini-Hochberg false discovery rate").
+- **Permutation p-values have a floor.** With 999 permutations the smallest possible pseudo p-value is 0.001; use more permutations when you correct for many tests.
+
+---
+
 ## 🧭 A lab, not a toolbox dump
 
 The intended session is itself a method:
@@ -179,10 +193,10 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 ## 📦 Installation
 
 **From QGIS Plugin Hub** *(recommended)*
-> `Plugins → Manage and Install Plugins…` → search **PlanX GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 102 tools by category with search and one-click launch.
+> `Plugins → Manage and Install Plugins…` → search **GeoStats Lab** → Install. Tools appear in the **Processing Toolbox**, and a dockable **GeoStats Lab panel** — opened via its toolbar icon or the Plugins menu — groups all 102 tools by category with search and one-click launch.
 
 **From ZIP**
-> Download the latest zip from [Releases](https://gitlab.com/geophilo1/planx_geostats/releases) → `Plugins → Install from ZIP`.
+> Download the latest zip from [Releases](https://github.com/YusufEminoglu/planx_geostats/releases) → `Plugins → Install from ZIP`.
 
 | Requirement | Value |
 |---|---|
@@ -197,11 +211,12 @@ Load any combination via `00 → Sample Dataset Guide`, then run `Data Readiness
 
 - **Headless smoke tests** (`tests/smoke_core.py`, `smoke_sample_data.py`, `smoke_provider_catalog.py`) run without QGIS and gate every release. The report decision logic is intentionally kept in **QGIS-independent core helpers**, so **workflow advising**, **model-comparison scoring**, **Monte Carlo sensitivity interpretation**, **Global Moran's I report interpretation** and **Spatial Gini inequality decomposition** are unit-tested without launching QGIS.
 - A **full QGIS runtime matrix** executes every algorithm against the bundled sample data on **QGIS 3 LTR and QGIS 4**.
-- An **esda parity suite** (`tests/esda_parity.py`) checks every rate-smoothing and extended-LISA statistic against PySAL's esda on the same data and weights - they agree to floating-point precision - while the shipped engines themselves need nothing beyond numpy. `tests/smoke_local_stats.py` pins their mathematical properties (Lee's L symmetry, closed-form chi-square tails, a hand-computed multivariate Geary value, exact join counts) without QGIS.
+- An **esda parity suite** (`tests/esda_parity.py`) checks every rate-smoothing and extended-LISA statistic, and Global Moran's I, General G, Geary's C, Gi\*, Gi, local Moran's I with its quadrants, OLS p-values and the rook and queen neighbour sets, against PySAL's esda and libpysal on the same data and weights - they agree to floating-point precision - while the shipped engines themselves need nothing beyond numpy. `tests/smoke_local_stats.py` pins their mathematical properties (Lee's L symmetry, closed-form chi-square tails, a hand-computed multivariate Geary value, exact join counts) without QGIS.
+- `tests/test_numeric_truth.py` checks Global Moran's I, General G, Geary's C, Gi\*, local Moran's I and OLS against independent dense-matrix formulas and exact permutation distributions. `tests/test_robustness_qgis.py` runs islands, missing values, points with contiguity weights, a geographic CRS, cancelling and attribute preservation through the real algorithms, and `tests/test_dock_qgis.py` checks dock contrast, double-click defaults and search.
 - `tests/smoke_regionalization.py` checks that max-p, AZP and REDCAP recover a known four-block partition, never break contiguity, the max-p floor or the minimum size, and that the quality measures hit closed-form values; the esda parity suite also checks the silhouettes and V-measure against esda and scikit-learn.
 - The reference manual is **built, not hand-edited**: `py -3 tools/build_manual.py` renders the cards kept in `tools/manual_src/`, derives the version, the algorithm count and the per-group tool counts from the plugin itself, and writes the docs/ and root copies byte-identically; `--check` fails when they are stale.
 - A manual **QA test matrix** (`QA_MANUAL_TEST_MATRIX.md`) covers setup, statistics, symbology, report interpretation and release gates.
-- The release-zip verifier asserts that **developer-only paths are absent**, **algorithm icons are present**, and metadata points to a packaged icon. PlanX GeoStats Lab is packaged as a **hybrid Processing + dock-GUI plugin**, so its menu/toolbar hooks (the GeoStats Lab dock panel) are an intentional, verified part of the release rather than a packaging mistake.
+- The release-zip verifier asserts that **developer-only paths are absent**, **algorithm icons are present**, and metadata points to a packaged icon. GeoStats Lab is packaged as a **hybrid Processing + dock-GUI plugin**, so its menu/toolbar hooks (the GeoStats Lab dock panel) are an intentional, verified part of the release rather than a packaging mistake.
 
 <details>
 <summary><b>Developer validation commands</b></summary>
@@ -215,45 +230,30 @@ py -3 planx_geostats\tools\build_manual.py --check
 py -3 packaging\test_verify_release_zip.py
 py -3 packaging\validate_plugin.py planx_geostats --strict
 powershell -NoProfile -ExecutionPolicy Bypass -File .\packaging\Build-PluginZip.ps1 -PluginDir planx_geostats
-py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.12.1
+py -3 packaging\verify_release_zip.py QGIS_Plugin_Releases\planx_geostats.zip --root planx_geostats --version 3.13.0
 ```
 
 </details>
 
 ---
 
-## 🇹🇷 Türkçe Özet
-
-**PlanX GeoStats Lab**, QGIS İşlem Araç Kutusu (Processing) içinde çalışan, plancılar için tasarlanmış bir **mekânsal istatistik laboratuvarıdır**:
-
-- **102 araç, numaralı iş akışı:** veri hazırlık ve denetim (00–01) → küresel desen taraması: Ortalama En Yakın Komşu, Ripley K, Global Moran I, General G, İki Değişkenli Lee L, **Mekânsal Gini eşitsizliği** (02) → sıcak nokta (Getis-Ord Gi*) ve **LISA** küme/aykırı analiz, çok değişkenli kümeleme, benzerlik araması (03) → merkez/yön/dağılım araçları (04) → EKK, GLR, mekânsal gecikme/hata/rejim modelleri, keşifsel/kantil regresyon, **GWR/MGWR**, model karşılaştırma ve Monte Carlo duyarlılık testi (05).
-- **Jeoistatistik ve enterpolasyon (07):** *Empirical Semivariogram & Model Fitting* benzerliğin mesafeyle nasıl azaldığını ölçer ve beş kuramsal modelden birini (küresel, üstel, Gauss, doğrusal, kararlı) Cressie ağırlıklı en küçük kareler ile uydurur; *Ordinary / Universal Kriging Interpolation* bu parametrelerden yüzey üretir ve **kriging varyansını ikinci bir raster olarak** yazar, böylece her hücre kendi belirsizliğiyle birlikte gelir. Evrensel kriging eğilimi en küçük karelerle çıkarıp variogramı artıklardan kestirir. *Empirical Bayesian Kriging Interpolation* ise variogramı kullanıcıya uydurtmaz: her yerel alt kümede dört aileyi birden dener, uydurduğu modelden yeni bir veri kümesi benzetir, aileyi bu benzetiye yeniden uydurur ve her uydurmayı gerçek verinin olabilirliğiyle ağırlıklandırıp ortalamasını alır. Bildirdiği varyans bu nedenle variogramın kendisinin belirsizliğini de içerir — sıradan krigingin veremediği, verinin desteklemediği kesinliği iddia etmeyen bir hata payıdır.
-- **Makine Öğrenmesi ve Açıklanabilir Yapay Zeka (06):** Random Forest, Gradient Boosting (scikit-learn/XGBoost/LightGBM/CatBoost), SVM, Sinir Ağı, 2025 nesli TabPFN sıfır-eğitim tablosal temel modeli, mekânsal k-katlamalı çapraz doğrulama (K-Means blok veya kNNDM), **SHAP tabanlı açıklanabilirlik** (her özniteliğin katkısını doğrudan haritaya yazan **SHAP Mekânsal Katkı Haritası**), tam ve örneklemesiz katkı üreten cam-kutu **Explainable Boosting Machine**, **DiCE Counterfactual** (bir kaydın sınıfını değiştirecek en küçük değişiklik) ve dağılımdan bağımsız kapsama garantili **Conformal Prediction Interval**.
-- **Yol gösteren laboratuvar:** *Workflow Advisor* analiz hedefinize göre araç sırası önerir; *Data Readiness Audit* modellemeden önce geometri, CRS, aykırı değer ve çoklu doğrusallık risklerini raporlar. Her raporun sonunda varsayımlar, sık hatalar ve "bundan sonra ne çalıştırmalı" rehberi vardır.
-- **Örnek veri dahildir:** 391 poligonluk **İzmir İşlevsel Kentsel Bölgesi (FUR)** sokak ağı veri seti (yol yoğunluğu, erişilebilirlik, space-syntax ve ağ topolojisi göstergeleri), sentetik QA veri seti ve yeni sınıflandırma QA veri seti — her araç tek tıkla denenebilir.
-- **Dürüst bağımlılık yönetimi:** Çekirdek araçlar saf QGIS ile çalışır; gelişmiş yöntemler için PySAL/MGWR/scikit-learn kurulumunu, çalıştırmadan önce pip komutunu aynen gösteren şeffaf bir kurulum aracı üstlenir.
-
-Kurulum: QGIS → *Eklentiler → Eklentileri Yönet ve Kur* → **PlanX GeoStats Lab** aratın; araçlar İşlem Araç Kutusu'nda görünür.
-
----
-
 ## 🧩 Part of the PlanX ecosystem
 
-This plugin is one of 15 open-source QGIS plugins for urban planning by the same author:
+This plugin belongs to an open-source QGIS ecosystem for urban planning by the same author:
 
 | Planning & analysis | CAD & production | 3D & visualization |
 |---|---|---|
-| [PlanX](https://gitlab.com/geophilo1/planx_geostats) — spatial-planning suite | [PlanX CAD Toolset](https://gitlab.com/geophilo1/planx_geostats) — drafting-grade CAD | [PlanX 3D City](https://gitlab.com/geophilo1/planx_geostats) — Three.js city viewer |
-| [GeoStats Lab](https://gitlab.com/geophilo1/planx_geostats) — spatial statistics | [EasyFillet](https://gitlab.com/geophilo1/planx_geostats) — tangent-arc fillet | [3D OSM Model](https://gitlab.com/geophilo1/planx_geostats) — OSM → 3D city in browser |
-| [Suitability Lab](https://gitlab.com/geophilo1/planx_geostats) — raster MCDA | [Settlement Toolset](https://gitlab.com/geophilo1/planx_geostats) — 9-stage settlement plans | [OSM Quick 3D](https://gitlab.com/geophilo1/planx_geostats) — OSM → native QGIS 3D |
-| [DataCube Lab](https://gitlab.com/geophilo1/planx_geostats) — spatiotemporal cubes | [UIP Toolset](https://gitlab.com/geophilo1/planx_geostats) — Turkish master-plan automation | [Urban Procedural 3D](https://gitlab.com/geophilo1/planx_geostats) — parametric zoning lab |
-| [Urban Resilience](https://gitlab.com/geophilo1/planx_geostats) — 28 resilience tools | [ParcelFlux](https://gitlab.com/geophilo1/planx_geostats) — parcel subdivision | [CartoLab](https://gitlab.com/geophilo1/planx_geostats) — publication cartography |
+| [PlanX](https://github.com/YusufEminoglu/PlanX) — urban analytics studio | [CAD Drafting Toolset](https://github.com/YusufEminoglu/PlanX-CAD) — drafting, measurement, road platforms | [3D City Studio](https://github.com/YusufEminoglu/planx_3d_city) — QGIS to Three.js city viewer |
+| [GeoStats Lab](https://github.com/YusufEminoglu/planx_geostats) — spatial statistics | [EasyFillet](https://github.com/YusufEminoglu/EasyFillet) — tangent-arc fillet | [3D OSM Model](https://github.com/YusufEminoglu/osm_3d_model) — OSM to a 3D city in the browser |
+| [MCDA Suitability Lab](https://github.com/YusufEminoglu/planx_suitability_lab) — raster MCDA | [Settlement Planning Toolset](https://github.com/YusufEminoglu/PlanX-Settlement) — block-to-parcel settlement plans | [OSM Quick 3D](https://github.com/YusufEminoglu/osm_quick_3d) — OSM to native QGIS 3D |
+| [DataCube Lab](https://github.com/YusufEminoglu/planx_datacube) — space-time data cubes | [UIP Zoning Plan Toolset](https://github.com/YusufEminoglu/PlanX-UIP) — Turkish implementation plans | [Urban Procedural 3D Studio](https://github.com/YusufEminoglu/planx_urban_procedural_3d) — parametric zoning lab |
+| [Urban Resilience Lab](https://github.com/YusufEminoglu/planx_urban_resilience) — seismic, flood, heat and social vulnerability | [ParcelFlux](https://github.com/YusufEminoglu/parcelflux) — parcel subdivision | [02CartoLab](https://github.com/YusufEminoglu/zero2cartolab) — thematic maps and print layouts |
 
 ---
 
 ## 🤝 Contributing & Support
 
-- 🐛 **Bugs / requests** → [Issues](https://gitlab.com/geophilo1/planx_geostats/-/issues)
+- 🐛 **Bugs / requests** → [GitHub issues](https://github.com/YusufEminoglu/planx_geostats/issues)
 - 📜 **Changelog** → [CHANGELOG.md](CHANGELOG.md) follows *Keep a Changelog*
 - ✅ Before a PR: `py -3 tests/smoke_core.py && py -3 tests/smoke_sample_data.py && py -3 tests/smoke_provider_catalog.py` (headless, no QGIS required)
 

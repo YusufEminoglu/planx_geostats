@@ -29,6 +29,7 @@ from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, stop_if_cancelled
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -171,10 +172,9 @@ class HDBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.out_layer_id = dest_id
         label_map = {fid: (int(label), float(prob)) for fid, label, prob in zip(fids, results["labels"], results["probabilities"])}
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             fid = feature.id()
             if fid in label_map:
                 label, prob = label_map[fid]

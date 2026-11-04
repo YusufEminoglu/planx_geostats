@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 
 from ..core.charts import bar_chart_svg, donut_chart_svg, kpi_card_row_html
-from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values
+from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values, correction_words
 from ..core.local_stats_engines import multivariate_local_geary
 from ..core.reporting import analyst_guidance_html
 from ._local_common import permutation_resolution_warning, with_notes, DOUBLE, INT, STRING, SpatialStatBase, ToolResult, callout, fmt, html_table, report_page
@@ -87,7 +87,7 @@ class MultivariateLocalGearyAlgorithm(SpatialStatBase):
         docs = {
             "mlg_c": "Multivariate local Geary statistic (mean over fields of weighted squared z-differences)",
             "mlg_p": "Two-sided conditional-permutation p-value",
-            "mlg_padj": f"p-value after {correction} correction",
+            "mlg_padj": f"p-value after the {correction_words(correction)} correction",
             "mlg_class": "Positive / Negative association or Not Significant",
             "mlg_nbrs": "Neighbours used",
         }
@@ -155,7 +155,7 @@ class MultivariateLocalGearyAlgorithm(SpatialStatBase):
             "places whose combination of conditions breaks from the surroundings.",
         )
         subtitle = (f"Fields: <strong>{html.escape(', '.join(names))}</strong> | Weights: <strong>{html.escape(weight_label)}</strong> | "
-                    f"Permutations: <strong>{permutations}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong>")
+                    f"Permutations: <strong>{permutations}</strong> | Multiple testing: <strong>{html.escape(correction_words(correction))}</strong>")
         body = (kpis + corr_note + f"<section><h2>Classes</h2>{donut}</section>"
                 + f"<section><h2>What the clusters share</h2>{chart}{profile}</section>" + guidance)
         return report_page(self.DISPLAY, subtitle, body)

@@ -32,6 +32,7 @@ from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, stop_if_cancelled
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -175,10 +176,9 @@ class EBMClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         result_map = {fid: idx for idx, fid in enumerate(valid_fids)}
         total = source.featureCount() or 1
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             fid = feature.id()
             if fid in result_map:
                 row_idx = result_map[fid]

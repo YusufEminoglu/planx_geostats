@@ -26,6 +26,12 @@ import math
 
 import numpy as np
 
+if __package__:
+    from .stats_engines import InputError
+else:  # loaded as a flat file by a test: same contract, local class
+    class InputError(ValueError):
+        """The input cannot support the statistic; the text is a sentence for the user."""
+
 
 # ---------------------------------------------------------------------------
 # Graph
@@ -610,15 +616,29 @@ def getis_ord_star(y, graph: SpatialGraph) -> dict:
     """
     x = np.asarray(y, dtype=float)
     n = len(x)
-    g = graph.binary().with_self(1.0)
+    if n < 3 or not np.all(np.isfinite(x)) or float(np.ptp(x)) == 0.0:
+        raise InputError(
+            "Gi* needs at least three features with a value, no missing values and a field "
+            "whose values differ between features."
+        )
+    real = graph.binary()
+    keep = real.focal != real.neighbor
+    has_neighbour = np.bincount(real.focal[keep], minlength=n) > 0
+    if not has_neighbour.any():
+        raise InputError(
+            "No feature has a neighbour under the chosen spatial weights, so Gi* cannot be computed. "
+            "Use K nearest neighbours, or a distance band that is larger than the gap between features."
+        )
+    g = real.with_self(1.0)
     w_i = g.rowsum
     s1 = np.bincount(g.focal, weights=g.weight ** 2, minlength=n)
     xbar = x.mean()
     s = math.sqrt(float(np.mean(x ** 2) - xbar ** 2))
     den = s * np.sqrt(np.maximum(n * s1 - w_i ** 2, 0.0) / (n - 1))
     with np.errstate(invalid="ignore", divide="ignore"):
-        z = np.where(den > 0, (g.lag(x) - xbar * w_i) / den, 0.0)
-    p = np.array([2.0 * normal_sf(abs(v)) for v in z])
+        # An island (no neighbour besides itself) has no local sum to test.
+        z = np.where(has_neighbour & (den > 0), (g.lag(x) - xbar * w_i) / den, np.nan)
+    p = np.array([2.0 * normal_sf(abs(v)) if np.isfinite(v) else np.nan for v in z])
     return {"z": z, "p": p}
 
 

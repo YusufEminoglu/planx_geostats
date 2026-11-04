@@ -1,5 +1,126 @@
 # Changelog
 
+## [3.13.0] - 2026-11-04
+
+Correct numbers first, then results that never read as complete when nothing
+was computed, and maps that show every feature. Results from 3.12.1 and
+earlier for General G, Global Moran's I with K nearest neighbour weights, OLS
+p-values, Gi* on features without neighbours, and every output layer that
+copied the input attributes are not comparable with this release.
+
+### Input attributes kept in output layers
+- **3.12.1 wrote every input attribute as NULL.** Every tool that copies the
+  input features into its output layer called `QgsFeature.setFields`, which
+  clears the attribute values in PyQGIS, so only the new result fields kept
+  their values. All 47 affected files now put the input values back. The
+  input's own `fid` values are copied too, as QGIS's native tools do, so
+  writing to a GeoPackage fails if the source has duplicate or non-integer
+  `fid` values.
+
+### Corrected numbers
+- **General G z was understated.** High/Low Clustering (Getis-Ord General G)
+  used a variance about seven times too large, so its z-score was about 2.7
+  times too small and real clustering of high or low values could be reported
+  as random. The variance now follows Getis and Ord (1992) and is checked
+  against esda. The statistic is also computed from sparse weights instead of
+  an n-by-n matrix, so large layers no longer need gigabytes of memory
+  (20,000 points take well under a second).
+- **Global Moran's I with asymmetric weights.** The variance was wrong when
+  the weights are not symmetric, as with K nearest neighbours; it now matches
+  esda.
+- **OLS p-values use Student's t.** OLS Regression took coefficient p-values
+  from the normal distribution, which makes small samples look more
+  significant than they are (with 12 observations a p of 0.028 should have
+  been 0.055). They now come from the t distribution with n - k - 1 degrees
+  of freedom. The Moran's I of the OLS residuals now includes the n / S0
+  factor it was missing, and when the residual weights have no neighbours the
+  report says "Not computed (no neighbours)" instead of a number.
+- **Gi\* on a feature with no neighbours.** A feature whose only neighbour is
+  itself got a z-score from its own value, so an isolated polygon far from the
+  rest could be mapped as a hot spot at the highest confidence level under
+  every multiple-testing option. Such features now get no z-score and no p-value,
+  `gi_conf` 0, and are mapped as "No neighbours".
+- The non-star Gi engine formula (not used by any tool) now follows Ord and
+  Getis (1995), and cancelling a run while the output is written no longer
+  returns a partial layer.
+
+### No silent "Random"
+- A run where no feature has a neighbour (for example queen weights on a
+  point layer), where every value is missing, where the field has no
+  variance, or where too few features remain now stops with a plain message.
+  General G also refuses negative values, which the statistic does not
+  define.
+  Before, Global Moran's I reported "I 0, p 1, Random" and Local Moran's I and
+  Gi\* marked every feature "Not Significant"; Geary's C stopped with a
+  traceback.
+- Missing (NULL or NaN) values are skipped and counted in the report. In the
+  hot spot, cluster, global autocorrelation and spatial regression tools the
+  spatial weights are rebuilt on the remaining features, and row-standardised
+  weights are standardised again. Before, NaN passed through: Moran's I came out "nan, Random",
+  Gi\* wrote z = 0, and twelve tools kept the old row weights after dropping
+  rows, which moved local Moran's I values by up to 0.147.
+- Contiguity weights (queen, rook) on a point layer are refused with a hint
+  to use K nearest neighbours or a distance band.
+- A distance band on a geographic CRS is refused with a hint to reproject,
+  in every tool that offers distance-band weights and in General G: the band
+  would be in degrees, and the default of 1000 made every feature a neighbour
+  of every other. The Gi\* neighbourhood-stability variants now scale the
+  band only when distance-band weights were chosen; a variant that leaves
+  every feature without neighbours is skipped with a note in the report.
+
+### Maps that show every feature
+- Gi\*, Local Moran's I, Local Geary's C, Bivariate LISA and LOSH map two
+  extra classes, "No data" (value missing) and "No neighbours" (island), and
+  the report counts match the layer. Before, Local Moran's I wrote missing
+  features as "Not Significant" (292 features on the map against 288 in the
+  report) and Gi\* left `gi_conf` empty, so the renderer hid those features.
+  Gi\* writes `gi_conf` 0 for both classes and a new `gi_class` field that
+  drives its renderer.
+- When the neighbourhood-stability consensus styles the Gi\* map, the legend
+  reads "Stable hot spot" / "Stable cold spot" / "Not stable" instead of the
+  confidence-level labels. Double-clicking a tool in the dock no longer turns
+  stability on.
+
+### Legibility and findability
+- The dock tool list has a text contrast of at least 4.5:1 under the default,
+  Night Mapping and Blend of Gray themes (it was 1.36:1 under Night Mapping).
+- Double-clicking a tool in the dock opens it with the same defaults as the
+  Processing Toolbox. Presets are applied only from the right-click menu, and
+  the menu entry says what the preset changes.
+- Reports name the multiple-testing correction in words (for example
+  "Benjamini-Hochberg false discovery rate" instead of `fdr_bh`), show counts
+  as whole numbers, and workflow messages use tool names instead of internal
+  ids. The help text names the field the class is based on (`lisa_padj`).
+- Every tool has search tags. Searching "hotspot", "hot spot", "LISA" or
+  "moran" finds the matching tools in the Processing Toolbox and in the dock.
+  The dock manual button tooltip points to geophilo.com.
+
+### Documentation
+- Plugin listing leads with what the plugin does (hot spots, LISA, spatial
+  autocorrelation, regionalization, regression, interpolation) and gains the
+  tags people search for (hot spot, spatial autocorrelation, local moran,
+  LISA, pysal, esda, spatial weights, regionalization, max-p, skater).
+- The issue tracker link points at the GitHub issues page; the GitLab one
+  returned 404.
+- README: 102 algorithms everywhere, sibling plugins link to their own
+  repositories, a short "Reading the results" section, consistent badges;
+  the Turkish summary is removed.
+- `docs/index.html` redirects to the hosted manual. CITATION.cff updated.
+
+### Tests
+- `tests/esda_parity.py` now also compares Global Moran's I, General G,
+  Geary's C, Gi\*, Gi, local Moran's I and its quadrants, OLS p-values and
+  the rook and queen neighbour sets built in QGIS with PySAL esda and
+  libpysal.
+- New `tests/test_numeric_truth.py` checks the same engines against
+  independent dense-matrix formulas and exact permutation distributions;
+  new `tests/test_robustness_qgis.py` runs islands, missing values, points
+  with contiguity weights, a geographic CRS, cancelling and attribute
+  preservation through the real algorithms; new `tests/test_dock_qgis.py`
+  checks dock contrast, double-click defaults and search.
+- All nine harmful code changes used to audit the suites are now caught;
+  before, seven of the nine passed.
+
 ## [3.12.1] - 2026-10-27
 
 - Hub listing text rewritten; author Geophilo; university affiliation removed; documentation links use the standard geophilo.com pages (manual.html, guide/); manual HTML no longer ships in the plugin package.

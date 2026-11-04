@@ -15,6 +15,128 @@ logger = logging.getLogger("PlanX GeoStats Lab")
 HAS_PYQ = all(importlib.util.find_spec(name) is not None for name in ("esda", "libpysal"))
 
 
+class InputError(ValueError):
+    """The input cannot support the statistic; the text is a sentence for the user.
+
+    Raised for weights without a single neighbour pair (S0 = 0), weights in
+    which every feature is an island, and an analysis field without variation.
+    Algorithms turn it into a ``QgsProcessingException`` with the same text.
+    """
+
+
+MSG_NO_NEIGHBOURS = (
+    "No feature has a neighbour under the chosen spatial weights, so {stat} cannot be computed. "
+    "Use K nearest neighbours, or a distance band that is larger than the gap between features."
+)
+MSG_NO_VARIATION = (
+    "Every value of the analysis field is the same, so {stat} has no variation to test. "
+    "Choose a field whose values differ between features."
+)
+
+
+def _no_neighbours(stat: str) -> InputError:
+    return InputError(MSG_NO_NEIGHBOURS.format(stat=stat))
+
+
+def _no_variation(stat: str) -> InputError:
+    return InputError(MSG_NO_VARIATION.format(stat=stat))
+
+
+def _too_few(stat: str, minimum: int, n: int) -> InputError:
+    return InputError(
+        f"{stat} needs at least {minimum} features with a value; only {n} were found."
+    )
+
+
+def weights_to_arrays(
+    neighbors: dict,
+    weights: Optional[dict],
+    id_order: list,
+    binary: bool = False,
+    drop_self: bool = True,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Neighbour dictionaries as sparse (row, col, weight) arrays over ``id_order``.
+
+    Neighbours outside ``id_order`` are skipped, a repeated pair keeps its last
+    weight (as a dense matrix assignment would) and, with ``drop_self``, the
+    diagonal is removed. ``binary`` sets every kept weight to 1.
+    """
+    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+    rows: list[int] = []
+    cols: list[int] = []
+    vals: list[float] = []
+    weights = weights or {}
+    for i, fid in enumerate(id_order):
+        neighs = neighbors.get(fid, []) or []
+        w_list = weights.get(fid, []) or []
+        for k, j_fid in enumerate(neighs):
+            j = id_to_idx.get(j_fid)
+            if j is None or (drop_self and j == i):
+                continue
+            rows.append(i)
+            cols.append(j)
+            vals.append(1.0 if binary or k >= len(w_list) else float(w_list[k]))
+    r = np.asarray(rows, dtype=np.int64)
+    c = np.asarray(cols, dtype=np.int64)
+    v = np.asarray(vals, dtype=float)
+    if r.size:
+        n = len(id_order)
+        keys = r * n + c
+        # Last occurrence of each pair wins: unique() on the reversed keys.
+        _, first_rev = np.unique(keys[::-1], return_index=True)
+        keep = np.sort(r.size - 1 - first_rev)
+        r, c, v = r[keep], c[keep], v[keep]
+    return r, c, v
+
+
+def _require_finite(x, stat: str) -> None:
+    if not np.all(np.isfinite(np.asarray(x, dtype=float))):
+        raise InputError(
+            f"The analysis field contains missing or non-numeric values; remove them before running {stat}."
+        )
+
+
+def _require_neighbours(neighbors, weights, id_order, stat: str) -> None:
+    """InputError unless at least one pair of distinct features has a non-zero weight."""
+    _, _, vals = weights_to_arrays(neighbors, weights, id_order)
+    if vals.size == 0 or not np.any(vals != 0):
+        raise _no_neighbours(stat)
+
+
+def _normal_two_sided(z):
+    """Two-sided standard normal p-value, element-wise; NaN stays NaN."""
+    z = np.asarray(z, dtype=float)
+    out = np.full(z.shape, np.nan)
+    ok = np.isfinite(z)
+    out[ok] = [math.erfc(abs(v) / math.sqrt(2.0)) for v in z[ok]]
+    return out
+
+
+def _sparse_weight_sums(rows, cols, vals, n: int):
+    """S0, A1 = sum w_ij^2, A2 = sum w_ij w_ji, row sums and column sums of sparse weights.
+
+    Pairs must be unique (``weights_to_arrays`` guarantees it). A2 matches each
+    (i, j) with its transpose through sorted integer keys: O(nnz log nnz).
+    """
+    rows = np.asarray(rows, dtype=np.int64)
+    cols = np.asarray(cols, dtype=np.int64)
+    vals = np.asarray(vals, dtype=float)
+    s0 = float(np.sum(vals))
+    a1 = float(np.sum(vals ** 2))
+    a2 = 0.0
+    if vals.size:
+        keys = rows * n + cols
+        order = np.argsort(keys, kind="mergesort")
+        sorted_keys = keys[order]
+        rev = cols * n + rows
+        pos = np.minimum(np.searchsorted(sorted_keys, rev), sorted_keys.size - 1)
+        hit = sorted_keys[pos] == rev
+        a2 = float(np.sum(vals[hit] * vals[order[pos[hit]]]))
+    row_sums = np.bincount(rows, weights=vals, minlength=n)
+    col_sums = np.bincount(cols, weights=vals, minlength=n)
+    return s0, a1, a2, row_sums, col_sums
+
+
 def calculate_getis_ord(
     y: np.ndarray,
     neighbors: dict[int, list[int]],
@@ -22,63 +144,55 @@ def calculate_getis_ord(
     id_order: list[int],
     star: bool = True
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Calculates the Getis-Ord Gi or Gi* statistics."""
-    n = len(y)
-    z_scores = np.zeros(n)
-    p_values = np.ones(n)
-    conf_bins = np.zeros(n, dtype=int)
+    """Getis-Ord local statistic as a z-score, with binary weights (Ord & Getis 1995).
 
-    if n <= 1:
-        return z_scores, p_values, conf_bins
+    ``star=True`` (Gi*) counts the feature itself:
+        G*_i = (sum_j w_ij x_j - xbar W_i) / (S sqrt((n S1_i - W_i^2) / (n - 1)))
+    ``star=False`` (Gi) leaves feature i out of the sums, the mean and the
+    standard deviation, and uses n - 1 features:
+        G_i = (sum_{j!=i} w_ij x_j - xbar(i) W_i) / (S(i) sqrt(((n-1) S1_i - W_i^2) / (n - 2)))
+    Supplied weights only decide who is a neighbour; the statistic is binary,
+    so row standardisation cannot change it.
 
-    y_mean = np.mean(y)
-    y_std = np.std(y)
+    A feature with no neighbour besides itself gets NaN z and p and bin 0.
+    Raises InputError when every feature is an island or the field is constant.
+    """
+    x = np.asarray(y, dtype=float)
+    n = len(x)
+    if n < 3:
+        raise _too_few("Getis-Ord Gi*" if star else "Getis-Ord Gi", 3, n)
+    _require_finite(x, "Getis-Ord Gi*" if star else "Getis-Ord Gi")
+    if float(np.std(x)) == 0.0:
+        raise _no_variation("Getis-Ord Gi*" if star else "Getis-Ord Gi")
 
-    if y_std == 0:
-        logger.warning("Standard deviation of the target field is zero. Gi* cannot be calculated.")
-        return z_scores, p_values, conf_bins
+    rows, cols, _ = weights_to_arrays(neighbors, weights, id_order, binary=True)
+    w_i = np.bincount(rows, minlength=n).astype(float)  # neighbours other than i
+    if not np.any(w_i > 0):
+        raise _no_neighbours("Getis-Ord Gi*" if star else "Getis-Ord Gi")
+    lag = np.bincount(rows, weights=x[cols], minlength=n)
 
-    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
-
-    for idx, fid in enumerate(id_order):
-        f_neighs = neighbors.get(fid, [])
-        valid_neigh_indices = [id_to_idx[nid] for nid in f_neighs if nid in id_to_idx]
-
+    with np.errstate(invalid="ignore", divide="ignore"):
         if star:
-            if idx not in valid_neigh_indices:
-                valid_neigh_indices.append(idx)
+            w_star = w_i + 1.0
+            xbar = float(np.mean(x))
+            s = math.sqrt(max(float(np.mean(x ** 2)) - xbar ** 2, 0.0))
+            den = s * np.sqrt((n * w_star - w_star ** 2) / (n - 1))
+            num = lag + x - xbar * w_star
+        else:
+            sx, sx2 = float(np.sum(x)), float(np.sum(x ** 2))
+            xbar_i = (sx - x) / (n - 1)
+            s_i = np.sqrt(np.maximum((sx2 - x ** 2) / (n - 1) - xbar_i ** 2, 0.0))
+            den = s_i * np.sqrt(((n - 1) * w_i - w_i ** 2) / (n - 2))
+            num = lag - xbar_i * w_i
+        z_scores = np.where((w_i > 0) & (den > 0), num / den, np.nan)
 
-        num_neighbors = len(valid_neigh_indices)
-        if num_neighbors == 0:
-            continue
-
-        w_row = np.ones(num_neighbors) / num_neighbors
-        y_neigh = y[valid_neigh_indices]
-        sum_w_x = np.sum(w_row * y_neigh)
-        sum_w = np.sum(w_row)
-        sum_w2 = np.sum(w_row ** 2)
-
-        numerator = sum_w_x - y_mean * sum_w
-        denom_term = (n * sum_w2 - (sum_w ** 2)) / (n - 1)
-        if denom_term < 0:
-            denom_term = 0.0
-        denominator = y_std * math.sqrt(denom_term)
-
-        if denominator > 0:
-            z = numerator / denominator
-            z_scores[idx] = z
-            p = 1.0 - math.erf(abs(z) / math.sqrt(2.0))
-            p_values[idx] = p
-
-            if p < 0.01:
-                conf_bins[idx] = 3 if z > 0 else -3
-            elif p < 0.05:
-                conf_bins[idx] = 2 if z > 0 else -2
-            elif p < 0.10:
-                conf_bins[idx] = 1 if z > 0 else -1
-            else:
-                conf_bins[idx] = 0
-
+    p_values = _normal_two_sided(z_scores)
+    conf_bins = np.zeros(n, dtype=int)
+    ok = np.isfinite(z_scores)
+    sign = np.where(z_scores > 0, 1, -1)
+    for level, cut in ((3, 0.01), (2, 0.05), (1, 0.10)):
+        hit = ok & (conf_bins == 0) & (p_values < cut)
+        conf_bins[hit] = level * sign[hit]
     return z_scores, p_values, conf_bins
 
 
@@ -196,6 +310,7 @@ def calculate_local_moran(
           - p_values: NumPy array of p-values (floats)
           - quadrants: List of strings ('HH', 'LL', 'HL', 'LH', 'Not Significant')
     """
+    y = np.asarray(y, dtype=float)
     n = len(y)
     I_values = np.zeros(n)
     z_scores = np.zeros(n)
@@ -203,14 +318,16 @@ def calculate_local_moran(
     quadrants = ["Not Significant"] * n
 
     if n <= 2:
-        return I_values, z_scores, p_values, quadrants
+        raise _too_few("Local Moran's I", 3, n)
+    _require_finite(y, "Local Moran's I")
 
     y_mean = np.mean(y)
     z = y - y_mean
     m2 = np.sum(z ** 2) / n
 
     if m2 == 0:
-        return I_values, z_scores, p_values, quadrants
+        raise _no_variation("Local Moran's I")
+    _require_neighbours(neighbors, weights, id_order, "Local Moran's I")
 
     id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
     b2 = (n * np.sum(z ** 4)) / (np.sum(z ** 2) ** 2)  # Kurtosis
@@ -296,6 +413,58 @@ def _chi2_sf_approx(x: float, df: int) -> float:
     return float(max(0.0, min(1.0, p_val)))
 
 
+def _betacf(a: float, b: float, x: float) -> float:
+    """Continued fraction for the incomplete beta function (Numerical Recipes 6.4)."""
+    tiny = 1e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c, d = 1.0, 1.0 - qab * x / qap
+    d = 1.0 / (d if abs(d) > tiny else tiny)
+    h = d
+    for m in range(1, 1000):
+        m2 = 2 * m
+        aa = m * (b - m) * x / ((qam + m2) * (a + m2))
+        d = 1.0 + aa * d
+        d = 1.0 / (d if abs(d) > tiny else tiny)
+        c = 1.0 + aa / c
+        c = c if abs(c) > tiny else tiny
+        h *= d * c
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2))
+        d = 1.0 + aa * d
+        d = 1.0 / (d if abs(d) > tiny else tiny)
+        c = 1.0 + aa / c
+        c = c if abs(c) > tiny else tiny
+        delta = d * c
+        h *= delta
+        if abs(delta - 1.0) < 1e-15:
+            break
+    return h
+
+
+def _betai(a: float, b: float, x: float) -> float:
+    """Regularised incomplete beta I_x(a, b) without scipy."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    log_bt = (math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+              + a * math.log(x) + b * math.log1p(-x))
+    bt = math.exp(log_bt)
+    if x < (a + 1.0) / (a + b + 2.0):
+        return bt * _betacf(a, b, x) / a
+    return 1.0 - bt * _betacf(b, a, 1.0 - x) / b
+
+
+def student_t_two_sided_p(t: float, df: float) -> float:
+    """Two-sided p-value of Student's t with ``df`` degrees of freedom.
+
+    P(|T| >= |t|) = I_{df / (df + t^2)}(df / 2, 1 / 2).
+    """
+    if not (math.isfinite(t) and df > 0):
+        return float("nan")
+    x = df / (df + t * t)
+    return float(max(0.0, min(1.0, _betai(0.5 * df, 0.5, x))))
+
+
 def calculate_ols(
     y: np.ndarray,
     X_data: np.ndarray,
@@ -355,8 +524,8 @@ def calculate_ols(
     for j in range(p + 1):
         if se_beta[j] > 0:
             t_stats[j] = beta[j] / se_beta[j]
-            # Normal approximation for t-dist (very accurate for large df)
-            p_vals[j] = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(t_stats[j]) / math.sqrt(2.0))))
+            # Student t with the residual degrees of freedom (exact, not normal).
+            p_vals[j] = student_t_two_sided_p(float(t_stats[j]), float(df_err))
         else:
             t_stats[j] = 0.0
             p_vals[j] = 1.0
@@ -395,22 +564,16 @@ def calculate_ols(
         except (np.linalg.LinAlgError, ValueError, FloatingPointError):
             bp_stat, bp_p = 0.0, 1.0
 
-    # --- DIAGNOSTIC 3: Moran's I on Residuals ---
-    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
-    spatial_lag_e = np.zeros(n)
-    for idx, fid in enumerate(id_order):
-        f_neighs = neighbors.get(fid, [])
-        f_weights = weights.get(fid, [])
-        lag_sum = 0.0
-        for j, nid in enumerate(f_neighs):
-            if nid in id_to_idx:
-                lag_sum += f_weights[j] * residuals[id_to_idx[nid]]
-        spatial_lag_e[idx] = lag_sum
-
-    if ss_res > 0:
-        moran_i = np.sum(residuals * spatial_lag_e) / ss_res
+    # --- DIAGNOSTIC 3: Moran's I on Residuals, I = (n / S0) e'We / e'e ---
+    # NaN when the weights have no neighbour pair or the fit is exact: there
+    # is nothing to measure, and 0 would read as "no autocorrelation".
+    w_rows, w_cols, w_vals = weights_to_arrays(neighbors, weights, id_order)
+    s0_res = float(np.sum(w_vals))
+    if ss_res > 0 and s0_res != 0:
+        cross = float(np.sum(w_vals * residuals[w_rows] * residuals[w_cols]))
+        moran_i = (n / s0_res) * cross / ss_res
     else:
-        moran_i = 0.0
+        moran_i = float("nan")
 
     # Return OLS results dictionary
     return {
@@ -444,11 +607,11 @@ def calculate_global_moran(
     Returns:
         A tuple of (moran_i, expected_i, variance, z_score, p_value)
     """
+    y = np.asarray(y, dtype=float)
     n = len(y)
     if n <= 3:
-        raise ValueError("Global Moran's I requires at least 4 observations.")
-
-    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+        raise _too_few("Global Moran's I", 4, n)
+    _require_finite(y, "Global Moran's I")
 
     y_mean = np.mean(y)
     z = y - y_mean
@@ -456,54 +619,18 @@ def calculate_global_moran(
     sum_z4 = np.sum(z ** 4)
 
     if sum_z2 == 0:
-        return 0.0, -1.0 / (n - 1), 0.0, 0.0, 1.0
+        raise _no_variation("Global Moran's I")
 
-    S0 = 0.0
-    w_row_sums = np.zeros(n)
-    w_col_sums = np.zeros(n)
-
-    # First pass: compute S0, row sums, and column sums
-    for i, fid in enumerate(id_order):
-        neighs = neighbors.get(fid, [])
-        w_list = weights.get(fid, [])
-        for j_fid, w in zip(neighs, w_list):
-            if j_fid in id_to_idx:
-                j = id_to_idx[j_fid]
-                S0 += w
-                w_row_sums[i] += w
-                w_col_sums[j] += w
-
+    rows, cols, vals = weights_to_arrays(neighbors, weights, id_order)
+    S0, A1, A2, w_row_sums, w_col_sums = _sparse_weight_sums(rows, cols, vals, n)
     if S0 == 0:
-        return 0.0, -1.0 / (n - 1), 0.0, 0.0, 1.0
+        raise _no_neighbours("Global Moran's I")
 
-    # Second pass: compute S1
-    S1 = 0.0
-    for i, fid in enumerate(id_order):
-        neighs = neighbors.get(fid, [])
-        w_list = weights.get(fid, [])
-        for j_fid, w_ij in zip(neighs, w_list):
-            if j_fid in id_to_idx:
-                j = id_to_idx[j_fid]
-                w_ji = 0.0
-                j_neighs = neighbors.get(j_fid, [])
-                j_w_list = weights.get(j_fid, [])
-                if fid in j_neighs:
-                    w_ji = j_w_list[j_neighs.index(fid)]
-                S1 += (w_ij + w_ji) ** 2
-    S1 = 0.5 * S1
-
-    # Compute S2
+    # S1 = 1/2 sum_ij (w_ij + w_ji)^2 over every pair, including pairs where
+    # only w_ji is non-zero (asymmetric KNN weights): it equals A1 + A2.
+    S1 = A1 + A2
     S2 = np.sum((w_row_sums + w_col_sums) ** 2)
-
-    # Calculate Moran's I
-    numerator = 0.0
-    for i, fid in enumerate(id_order):
-        neighs = neighbors.get(fid, [])
-        w_list = weights.get(fid, [])
-        for j_fid, w in zip(neighs, w_list):
-            if j_fid in id_to_idx:
-                j = id_to_idx[j_fid]
-                numerator += w * z[i] * z[j]
+    numerator = float(np.sum(vals * z[rows] * z[cols]))
 
     moran_i = (n / S0) * (numerator / sum_z2)
 
@@ -518,13 +645,13 @@ def calculate_global_moran(
     den_var = (n - 1) * (n - 2) * (n - 3) * S0 ** 2
 
     variance = num_var / den_var - (expected_i ** 2) if den_var > 0 else 0.0
-    if variance > 0:
-        z_score = (moran_i - expected_i) / math.sqrt(variance)
-        p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
-    else:
-        variance = 0.0
-        z_score = 0.0
-        p_value = 1.0
+    if not variance > 1e-12 * expected_i ** 2:
+        raise InputError(
+            "Every feature is a neighbour of every other feature, so Moran's I cannot differ "
+            "from its expected value. Use fewer neighbours or a smaller distance band."
+        )
+    z_score = (moran_i - expected_i) / math.sqrt(variance)
+    p_value = math.erfc(abs(z_score) / math.sqrt(2.0))
 
     return float(moran_i), float(expected_i), float(variance), float(z_score), float(p_value)
 
@@ -1028,6 +1155,140 @@ def calculate_median_center(
     return float(cx), float(cy), total_dist
 
 
+def general_g_from_arrays(x, rows, cols, vals) -> tuple[float, float, float, float, float]:
+    """Getis-Ord General G under randomisation from sparse weights (Getis & Ord 1992).
+
+    ``rows``/``cols``/``vals`` list the non-zero w_ij (i != j, each pair once)
+    over the positions of ``x``. Memory and time are O(n + nnz log nnz); no
+    n x n matrix is built. With A1 = sum w_ij^2, A2 = sum w_ij w_ji,
+    A3 = sum_i r_i^2 + sum_j c_j^2, A4 = sum_i r_i c_i, A5 = S0^2 and the
+    distinct-index moment sums S22, S211, S1111 of x,
+        E[(sum w_ij x_i x_j)^2] = (A1 + A2) S22 / n(2)
+                                + (A3 + 2 A4 - 2 A1 - 2 A2) S211 / n(3)
+                                + (A5 - A3 - 2 A4 + A1 + A2) S1111 / n(4)
+    where n(k) = n (n - 1) ... (n - k + 1); this equals esda.G's VG for binary
+    weights and the exact permutation variance for any weights.
+
+    Returns (observed_g, expected_g, variance, z_score, p_value).
+    Raises InputError for fewer than 4 features, missing values, a constant
+    field, a field with a single non-zero value, or weights with S0 = 0.
+    """
+    x = np.asarray(x, dtype=float)
+    n = len(x)
+    if n < 4:
+        raise _too_few("General G", 4, n)
+    _require_finite(x, "General G")
+    if float(np.ptp(x)) == 0.0:
+        raise _no_variation("General G")
+    rows = np.asarray(rows, dtype=np.int64)
+    cols = np.asarray(cols, dtype=np.int64)
+    vals = np.asarray(vals, dtype=float)
+    off = rows != cols
+    rows, cols, vals = rows[off], cols[off], vals[off]
+    s0 = float(np.sum(vals))
+    if vals.size == 0 or s0 == 0.0:
+        raise _no_neighbours("General G")
+
+    s1, s2 = float(np.sum(x)), float(np.sum(x ** 2))
+    s3, s4 = float(np.sum(x ** 3)), float(np.sum(x ** 4))
+    denominator = s1 ** 2 - s2
+    if denominator == 0.0:
+        raise InputError(
+            "General G needs at least two features with a non-zero value; "
+            "the analysis field has fewer."
+        )
+
+    _, a1, a2, row_sums, col_sums = _sparse_weight_sums(rows, cols, vals, n)
+    a3 = float(np.sum(row_sums ** 2) + np.sum(col_sums ** 2))
+    a4 = float(np.sum(row_sums * col_sums))
+    a5 = s0 ** 2
+
+    observed_g = float(np.sum(vals * x[rows] * x[cols])) / denominator
+    expected_g = s0 / (n * (n - 1))
+
+    s22 = s2 ** 2 - s4
+    s211 = s2 * (s1 ** 2 - s2) - 2.0 * s1 * s3 + 2.0 * s4
+    s1111 = s1 ** 4 - 6.0 * s1 ** 2 * s2 + 8.0 * s1 * s3 + 3.0 * s2 ** 2 - 6.0 * s4
+
+    term1 = (a1 + a2) * s22 / (n * (n - 1))
+    term2 = (a3 + 2.0 * a4 - 2.0 * a1 - 2.0 * a2) * s211 / (n * (n - 1) * (n - 2))
+    term3 = (a5 - a3 - 2.0 * a4 + a1 + a2) * s1111 / (n * (n - 1) * (n - 2) * (n - 3))
+    variance = (term1 + term2 + term3) / denominator ** 2 - expected_g ** 2
+
+    if not variance > 1e-12 * expected_g ** 2:
+        # Every permutation gives the same G: typically every feature is a
+        # neighbour of every other one (a band wider than the study area).
+        raise InputError(
+            "Every feature is a neighbour of every other feature, so General G cannot differ "
+            "from its expected value. Use a smaller distance band or fewer neighbours."
+        )
+    z_score = (observed_g - expected_g) / math.sqrt(variance)
+    p_value = math.erfc(abs(z_score) / math.sqrt(2.0))
+    return float(observed_g), float(expected_g), float(variance), float(z_score), float(p_value)
+
+
+def distance_band_pairs(coords, distance_band: float) -> tuple[np.ndarray, np.ndarray]:
+    """All ordered pairs (i, j), i != j, with Euclidean distance <= ``distance_band``.
+
+    A uniform grid of cell size ``distance_band`` limits each point's search to
+    its own and the eight surrounding cells, so the cost is O(n + pairs)
+    instead of O(n^2). Returns (rows, cols) index arrays, sorted by row.
+    """
+    pts = np.asarray(coords, dtype=float).reshape(-1, 2)
+    n = pts.shape[0]
+    empty = (np.zeros(0, dtype=np.int64), np.zeros(0, dtype=np.int64))
+    if n < 2 or not (distance_band > 0) or not math.isfinite(distance_band):
+        return empty
+    if not np.all(np.isfinite(pts)):
+        raise InputError("Some feature centroids have no finite coordinates; repair the geometries first.")
+    cell = np.floor((pts - pts.min(axis=0)) / float(distance_band)).astype(np.int64)
+    # Cell key with a one-cell margin so that +/-1 offsets never wrap.
+    width = int(cell[:, 1].max()) + 3
+    key = (cell[:, 0] + 1) * width + (cell[:, 1] + 1)
+    order = np.argsort(key, kind="mergesort")
+    skey = key[order]
+    band2 = float(distance_band) ** 2
+    out_r = []
+    out_c = []
+    # Points are handled in chunks so the candidate arrays stay bounded.
+    chunk = 200000
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            target = key + dx * width + dy
+            lo = np.searchsorted(skey, target, side="left")
+            hi = np.searchsorted(skey, target, side="right")
+            counts = hi - lo
+            for s in range(0, n, chunk):
+                cnt = counts[s:s + chunk]
+                total = int(cnt.sum())
+                if total == 0:
+                    continue
+                src = np.repeat(np.arange(s, min(s + chunk, n)), cnt)
+                offs = np.arange(total) - np.repeat(np.cumsum(cnt) - cnt, cnt)
+                dst = order[np.repeat(lo[s:s + chunk], cnt) + offs]
+                d2 = ((pts[src] - pts[dst]) ** 2).sum(axis=1)
+                keep = (d2 <= band2) & (src != dst)
+                out_r.append(src[keep])
+                out_c.append(dst[keep])
+    if not out_r:
+        return empty
+    rows = np.concatenate(out_r).astype(np.int64)
+    cols = np.concatenate(out_c).astype(np.int64)
+    srt = np.lexsort((cols, rows))
+    return rows[srt], cols[srt]
+
+
+def calculate_general_g_distance_band(values, coords, distance_band: float) -> tuple[float, float, float, float, float]:
+    """General G with binary distance-band weights from point coordinates, sparse end to end.
+
+    ``values`` and ``coords`` (n x 2, projected units) share one order.
+    Same return value and errors as ``general_g_from_arrays``.
+    """
+    x = np.asarray(values, dtype=float)
+    rows, cols = distance_band_pairs(coords, distance_band)
+    return general_g_from_arrays(x, rows, cols, np.ones(rows.size))
+
+
 def calculate_general_g(
     values,
     neighbors: dict[int, list[int]],
@@ -1036,82 +1297,22 @@ def calculate_general_g(
 ) -> tuple[float, float, float, float, float]:
     """Calculates Getis-Ord General G statistics under randomization.
 
+    ``values`` is a dict keyed by feature id or a sequence in ``id_order``.
+    Weights are used as given (binary in the General G tool). See
+    ``general_g_from_arrays`` for the formula and the errors raised.
+
     Returns:
         A tuple of (observed_g, expected_g, variance, z_score, p_value)
     """
     n = len(id_order)
     if n < 4:
-        raise ValueError("General G requires at least 4 features.")
-
-    id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
+        raise _too_few("General G", 4, n)
     if isinstance(values, dict):
         x = np.array([float(values[fid]) for fid in id_order])
     else:
         x = np.array([float(values[i]) for i in range(n)])
-
-    x_sum = np.sum(x)
-    x_sum2 = np.sum(x ** 2)
-    x_sum3 = np.sum(x ** 3)
-    x_sum4 = np.sum(x ** 4)
-
-    # Build dense weight matrix
-    W = np.zeros((n, n))
-    for i, fid in enumerate(id_order):
-        neighs = neighbors.get(fid, [])
-        w_list = weights.get(fid, [])
-        for j_fid, w in zip(neighs, w_list):
-            if j_fid in id_to_idx:
-                j = id_to_idx[j_fid]
-                W[i, j] = w
-
-    np.fill_diagonal(W, 0.0)
-
-    S0 = np.sum(W)
-    A1 = np.sum(W ** 2)
-    A2 = np.sum(W * W.T)
-
-    row_sums = np.sum(W, axis=1)
-    col_sums = np.sum(W, axis=0)
-
-    A3 = np.sum(row_sums ** 2) + np.sum(col_sums ** 2)
-    A4 = np.sum(row_sums * col_sums)
-    A5 = S0 ** 2
-
-    # Observed G
-    numerator = 0.0
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                numerator += W[i, j] * x[i] * x[j]
-
-    denominator = x_sum ** 2 - x_sum2
-    if denominator == 0:
-        return 0.0, 0.0, 0.0, 0.0, 1.0
-
-    observed_g = numerator / denominator
-    expected_g = S0 / (n * (n - 1))
-
-    # Permutations of x values
-    S_22 = x_sum2 ** 2 - x_sum4
-    S_211 = x_sum2 * (x_sum ** 2 - x_sum2) - 2.0 * x_sum * x_sum3 + 2.0 * x_sum4
-    S_1111 = (x_sum ** 4) - 6.0 * (x_sum ** 2) * x_sum2 + 8.0 * x_sum * x_sum3 + 3.0 * (x_sum2 ** 2) - 6.0 * x_sum4
-
-    term1 = (A1 + A2) * S_22 / (n * (n - 1))
-    term2 = (2.0 * A3 + 4.0 * A4 - 4.0 * A1 - 4.0 * A2) * S_211 / (n * (n - 1) * (n - 2))
-    term3 = (A5 - 2.0 * A3 - 4.0 * A4 + 3.0 * A1 + 3.0 * A2) * S_1111 / (n * (n - 1) * (n - 2) * (n - 3))
-
-    E_A2 = term1 + term2 + term3
-    E_G2 = E_A2 / (denominator ** 2)
-
-    variance = E_G2 - (expected_g ** 2)
-    if variance > 0:
-        z_score = (observed_g - expected_g) / math.sqrt(variance)
-        p_value = 2.0 * (1.0 - 0.5 * (1.0 + math.erf(abs(z_score) / math.sqrt(2.0))))
-    else:
-        z_score = 0.0
-        p_value = 1.0
-
-    return float(observed_g), float(expected_g), float(variance), float(z_score), float(p_value)
+    rows, cols, vals = weights_to_arrays(neighbors, weights, id_order)
+    return general_g_from_arrays(x, rows, cols, vals)
 
 
 def calculate_similarity_search(

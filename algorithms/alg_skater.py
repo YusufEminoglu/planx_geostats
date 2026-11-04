@@ -34,6 +34,7 @@ from ..core.local_stats_engines import SpatialGraph
 from ._icons import algorithm_icon
 from ._region_common import partition_report, quality_section, region_compactness
 from ._deliver import style_loaded_output
+from ._guards import check_weight_choice, set_fields_keeping_values, stop_if_cancelled, strict_float
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -192,6 +193,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             if idx < 0:
                 raise QgsProcessingException(f"Selected analysis field '{name}' not found.")
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo("Generating spatial contiguity graph...")
         neighbors, _weights, id_order, _ = build_weights_matrix(
             source, weight_type, k_neighbors=k_neighbors_param, distance_band=distance_band, feedback=feedback
@@ -214,7 +216,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     has_null = True
                     break
                 try:
-                    vals.append(float(val))
+                    vals.append(strict_float(val))
                 except (ValueError, TypeError):
                     has_null = True
                     break
@@ -280,12 +282,10 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         feedback.pushInfo("Writing regionalized features to destination layer...")
         for current, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
 
             out_feat = QgsFeature(f)
-            out_feat.setFields(out_fields)
-
+            set_fields_keeping_values(out_feat, out_fields)
             fid = f.id()
             if fid in results_map:
                 region, size, ssd = results_map[fid]

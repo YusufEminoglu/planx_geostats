@@ -35,6 +35,7 @@ from ..core.weights import geometry_centroid_point
 from ..core.charts import chart_css, histogram_svg
 
 from ._icons import algorithm_icon
+from ._guards import check_distance_crs, strict_float
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -160,6 +161,8 @@ class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if field_idx < 0:
             raise QgsProcessingException(f"Field '{field_name}' not found.")
 
+        check_distance_crs(source, distance_band)
+
         # Extract features
         centroids = {}
         id_order = []
@@ -182,7 +185,7 @@ class SensitivityTestAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 skipped += 1
                 continue
             try:
-                val_f = float(val)
+                val_f = strict_float(val)
             except (ValueError, TypeError):
                 skipped += 1
                 continue

@@ -40,6 +40,7 @@ from ..core.weights import (
 )
 
 from ._icons import algorithm_icon
+from ._guards import check_weight_choice, restrict_weights, set_fields_keeping_values
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -232,6 +233,7 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             id_order = feature_ids
             graph_source = "imported CSV"
         else:
+            check_weight_choice(source, weight_type, distance_band)
             neighbors, weights, id_order, _ = build_weights_matrix(
                 source,
                 weight_type,
@@ -243,6 +245,8 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 feedback=feedback,
             )
             graph_source = weight_type
+            # Only features with a usable centroid take part; rows re-standardised.
+            neighbors, weights, id_order = restrict_weights(neighbors, weights, feature_ids)
 
         diagnostics = weights_diagnostics(neighbors)
         export_path = self.parameterAsFileOutput(parameters, self.EXPORT_CSV, context)
@@ -260,7 +264,7 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if node_sink is not None:
             for feature in source.getFeatures():
                 output = QgsFeature(feature)
-                output.setFields(node_fields)
+                set_fields_keeping_values(output, node_fields)
                 count = len(neighbors.get(feature.id(), []))
                 output.setAttribute("w_nbrs", count)
                 output.setAttribute("w_island", int(count == 0))

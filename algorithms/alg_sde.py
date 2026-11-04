@@ -31,6 +31,7 @@ from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, strict_float
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -172,7 +173,7 @@ class SDEAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 val = f.attribute(weight_field)
                 if val is not None and val != NULL and str(val) != 'NULL':
                     try:
-                        w_val = float(val)
+                        w_val = strict_float(val)
                         if w_val < 0:
                             negative_weights += 1
                     except (ValueError, TypeError):
@@ -249,7 +250,7 @@ class SDEAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         out_feat = QgsFeature()
         out_feat.setGeometry(QgsGeometry.fromPolygonXY([points]))
-        out_feat.setFields(out_fields)
+        set_fields_keeping_values(out_feat, out_fields)
         out_feat.setAttribute("mean_x", mean_x)
         out_feat.setAttribute("mean_y", mean_y)
         # Convert rotation to degrees for presentation

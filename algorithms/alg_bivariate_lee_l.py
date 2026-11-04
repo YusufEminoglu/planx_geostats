@@ -18,7 +18,7 @@ import numpy as np
 from qgis.core import QgsProcessingParameterBoolean
 
 from ..core.charts import donut_chart_svg, kpi_card_row_html, scatter_plot_svg
-from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values
+from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values, correction_words
 from ..core.local_stats_engines import lee_l
 from ..core.reporting import analyst_guidance_html
 from ..core.symbology import LISA_QUADRANT_STYLE
@@ -96,7 +96,7 @@ class BivariateLeeLAlgorithm(SpatialStatBase):
             "x_smooth": f"Spatially smoothed z-score of {x_field}",
             "y_smooth": f"Spatially smoothed z-score of {y_field}",
             "lee_p": "Two-sided conditional-permutation p-value",
-            "lee_padj": f"p-value after {correction} correction",
+            "lee_padj": f"p-value after the {correction_words(correction)} correction",
             "lee_class": "HH/LL/HL/LH by the signs of the smoothed values (significant units only)",
             "lee_nbrs": "Neighbours used",
         }
@@ -141,7 +141,7 @@ class BivariateLeeLAlgorithm(SpatialStatBase):
         )
         subtitle = (f"X: <strong>{html.escape(x_field)}</strong> | Y: <strong>{html.escape(y_field)}</strong> | Weights: "
                     f"<strong>{html.escape(weight_label)}</strong> (binary{', self included' if include_self else ''}, row-standardised) | "
-                    f"Permutations: <strong>{permutations}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong>")
+                    f"Permutations: <strong>{permutations}</strong> | Multiple testing: <strong>{html.escape(correction_words(correction))}</strong>")
         drop = callout(f"{dropped} feature(s) with missing values were left out.") if dropped else ""
         body = (kpis + drop + f"<section><h2>Classes</h2>{donut}</section><section><h2>Smoothed values</h2>{scatter}</section>"
                 + guidance)

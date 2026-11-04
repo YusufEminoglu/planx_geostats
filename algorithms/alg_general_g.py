@@ -21,6 +21,10 @@ from qgis.core import (
     QgsProcessingOutputHtml
 )
 
+try:  # GS-NUM's sparse General G (3.13); the dense engine is O(n^2) in memory
+    from ..core.stats_engines import distance_band_pairs, general_g_from_arrays
+except ImportError:  # pragma: no cover - only before that change lands
+    distance_band_pairs = general_g_from_arrays = None
 from ..core.stats_engines import calculate_general_g
 from ..core.analysis_diagnostics import (
     caveats_html,
@@ -33,6 +37,7 @@ from ..core.analysis_diagnostics import (
 from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
+from ._guards import check_distance_crs, engine_errors, finite_value, push_skips, skip_message, stop_if_cancelled
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -71,7 +76,9 @@ class GeneralGAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "clustering. Requires non-negative values, since the statistic is a "
             "ratio of weighted cross-products (x_i times x_j) and is undefined when "
             "values can be negative; a negative value in the field raises an error "
-            "before computation starts.\n\n"
+            "before computation starts. NULL, NaN and infinite values are skipped "
+            "and counted in the report. A geographic CRS is refused, because the "
+            "band would be read in degrees: reproject the layer first.\n\n"
             "Report fields: observed_g, expected_g (= S0 / [N(N-1)] under CSR), "
             "variance (computed from exact permutation moments, not a normal "
             "approximation), z_score, p_value, and a directional pattern label. z "
@@ -149,102 +156,84 @@ class GeneralGAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if field_idx < 0:
             raise QgsProcessingException(f"Field '{field_name}' not found.")
 
+        check_distance_crs(source, distance_band)
+
         # Extract features and coordinates
-        centroids = {}
+        coords = []
         id_order = []
         values = {}
+        skip_counts = {"missing": 0, "non_numeric": 0, "non_finite": 0}
+        negative = 0
 
         feedback.pushInfo("Extracting attributes and geometries...")
         total = source.featureCount() or 1
         for idx, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
-
-            geom = f.geometry()
-            if geom is None or geom.isEmpty():
+            stop_if_cancelled(feedback)
+            val_f, reason = finite_value(f.attribute(field_idx))
+            if reason:
+                skip_counts[reason] += 1
                 continue
-
-            val = f.attribute(field_idx)
-            if val is None or val == NULL or str(val) == 'NULL':
-                continue
-
-            try:
-                val_f = float(val)
-                if val_f < 0:
-                    feedback.pushWarning(
-                        "General G calculations require non-negative values. "
-                        "A negative value was encountered."
-                    )
-            except (ValueError, TypeError):
-                continue
-
-            fid = f.id()
-            centroid = geometry_centroid_point(geom)
+            centroid = geometry_centroid_point(f.geometry())
             if centroid is None:
                 continue
-            centroids[fid] = centroid
+            if val_f < 0:
+                negative += 1
+            fid = f.id()
+            coords.append((centroid.x(), centroid.y()))
             id_order.append(fid)
             values[fid] = val_f
-
             feedback.setProgress(int(20 * (idx / total)))
+        push_skips(feedback, skip_counts)
+        if negative:
+            raise QgsProcessingException(
+                f"General G requires non-negative values; {negative} feature(s) have a negative value. "
+                "Shift or transform the field (for example add a constant) before running it."
+            )
 
         n_feats = len(id_order)
-        val_array = np.array([values[fid] for fid in id_order])
-        numeric_summary = numeric_quality_summary(source.featureCount(), values, val_array)
+        val_array = np.array([values[fid] for fid in id_order], dtype=float)
+        numeric_summary = numeric_quality_summary(source.featureCount(), values, val_array, skip_counts)
         if n_feats < 4:
             raise QgsProcessingException(
-                f"Insufficient features ({n_feats}) with valid numeric values. "
-                "At least 4 are required for General G analysis."
+                f"Insufficient features ({n_feats}) with a finite numeric value. "
+                "At least 4 are required for General G analysis. " + skip_message(skip_counts)
             )
         if numeric_summary["is_constant"]:
             raise QgsProcessingException("General G requires variation in the target field; all valid values are identical.")
 
-        # Construct spatial weights matrix (Binary weights within distance band)
-        feedback.pushInfo("Constructing spatial weights matrix...")
-        neighbors = {}
-        weights = {}
+        # Binary distance-band weights, built sparsely: no n x n matrix.
+        feedback.pushInfo("Constructing spatial weights (distance band)...")
+        coord_array = np.asarray(coords, dtype=float).reshape(-1, 2)
+        if distance_band_pairs is not None:
+            with engine_errors():
+                rows, cols = distance_band_pairs(coord_array, distance_band)
+        else:  # pragma: no cover - dense fallback before GS-NUM's helper
+            d2 = ((coord_array[:, None, :] - coord_array[None, :, :]) ** 2).sum(axis=2)
+            rows, cols = np.nonzero((d2 <= distance_band ** 2) & ~np.eye(n_feats, dtype=bool))
+        stop_if_cancelled(feedback)
+        feedback.setProgress(50)
+        neighbors = {fid: [] for fid in id_order}
+        for i, j in zip(rows.tolist(), cols.tolist()):
+            neighbors[id_order[i]].append(id_order[j])
 
-        for i in range(n_feats):
-            if feedback.isCanceled():
-                break
-
-            fid_i = id_order[i]
-            pt_i = centroids[fid_i]
-            neighbors[fid_i] = []
-            weights[fid_i] = []
-
-            for j in range(n_feats):
-                if i == j:
-                    continue
-
-                fid_j = id_order[j]
-                pt_j = centroids[fid_j]
-                dist = pt_i.distance(pt_j)
-
-                if dist <= distance_band:
-                    neighbors[fid_i].append(fid_j)
-                    weights[fid_i].append(1.0)  # Binary spatial weights
-
-            feedback.setProgress(int(20 + 30 * (i / n_feats)))
-
-        # Verify weights sum > 0
-        total_w = sum(sum(w_list) for w_list in weights.values())
         neighborhood_summary = neighbor_summary(neighbors, id_order)
         crs_warning = crs_unit_warning(source)
         push_diagnostics(feedback, numeric_summary, neighborhood_summary, crs_warning)
-        if total_w == 0:
+        if len(rows) == 0:
             raise QgsProcessingException(
                 "No neighbors found within the specified distance band. "
                 "Please increase the distance band value."
             )
 
         feedback.pushInfo("Calculating Getis-Ord General G statistics...")
-        obs_g, exp_g, var_g, z, p = calculate_general_g(
-            values, neighbors, weights, id_order
-        )
+        with engine_errors():
+            if general_g_from_arrays is not None:
+                obs_g, exp_g, var_g, z, p = general_g_from_arrays(val_array, rows, cols, np.ones(len(rows)))
+            else:  # pragma: no cover
+                weights = {fid: [1.0] * len(nb) for fid, nb in neighbors.items()}
+                obs_g, exp_g, var_g, z, p = calculate_general_g(values, neighbors, weights, id_order)
 
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(

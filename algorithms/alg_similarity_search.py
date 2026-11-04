@@ -34,6 +34,7 @@ from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, stop_if_cancelled
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -280,12 +281,10 @@ class SimilaritySearchAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         feedback.pushInfo("Writing ranked candidates to destination layer...")
         for current, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
 
             out_feat = QgsFeature(f)
-            out_feat.setFields(out_fields)
-
+            set_fields_keeping_values(out_feat, out_fields)
             fid = f.id()
             if fid in results_map:
                 idx = results_map[fid]

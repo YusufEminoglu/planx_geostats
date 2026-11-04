@@ -42,6 +42,7 @@ from ..core.stats_engines import calculate_spatial_gini
 from ..core.weights import build_weights_matrix
 
 from ._icons import algorithm_icon
+from ._guards import check_weight_choice
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -222,6 +223,7 @@ class SpatialGiniAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if not field.isNumeric():
             raise QgsProcessingException(f"Field '{field_name}' must be numeric.")
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo("Building spatial weights for Gini decomposition...")
         neighbors, _, id_order, _ = build_weights_matrix(
             source,

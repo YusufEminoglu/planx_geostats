@@ -63,6 +63,30 @@ def _fmt(value: float) -> str:
     return f"{value:.4f}"
 
 
+def _fmt_count(value) -> str:
+    """A count as an integer ("28", not "28.00"); other values as _fmt."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return _esc(value)
+    if number == number and number.is_integer():
+        return f"{int(number):,}"
+    return _fmt(number)
+
+
+def _finite_values(values) -> list:
+    """Finite floats only: one NaN in a histogram used to crash the report."""
+    out = []
+    for value in values or []:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(number):
+            out.append(number)
+    return out
+
+
 def _svg_open(width: float, height: float, title: str = "") -> str:
     label = _esc(title) if title else "Chart"
     return (
@@ -409,8 +433,16 @@ def histogram_svg(
     width: int = CHART_WIDTH,
     height: int = CHART_HEIGHT,
 ) -> str:
+    values = _finite_values(values)
     if not values:
         return _wrap_chart(title, no_data_svg(width, height))
+    if observed is not None:
+        try:
+            observed = float(observed)
+        except (TypeError, ValueError):
+            observed = None
+        if observed is not None and not math.isfinite(observed):
+            observed = None
 
     v_min, v_max = min(values), max(values)
     if v_max == v_min:
@@ -979,12 +1011,12 @@ def donut_chart_svg(
         legend_rows.append(
             f'<rect x="{legend_x}" y="{legend_y - 10}" width="11" height="11" fill="{color}" rx="2"/>'
             f'<text x="{legend_x + 16}" y="{legend_y}" font-size="11" fill="{COLOR_AXIS_TEXT}">'
-            f"{_esc(label)[:26]}: {_fmt(value)} ({frac * 100:.1f}%)</text>"
+            f"{_esc(label)[:26]}: {_fmt_count(value)} ({frac * 100:.1f}%)</text>"
         )
         start_deg = end_deg
     parts.append(
         f'<text x="{cx:.1f}" y="{cy + 4:.1f}" text-anchor="middle" font-size="13" '
-        f'fill="{COLOR_AXIS_TEXT}" font-weight="600">{_fmt(total)}</text>'
+        f'fill="{COLOR_AXIS_TEXT}" font-weight="600">{_fmt_count(total)}</text>'
     )
     parts.extend(legend_rows)
     parts.append("</svg>")

@@ -10,7 +10,7 @@ import numpy as np
 from qgis.core import QgsProcessingParameterBoolean
 
 from ..core.charts import donut_chart_svg, kpi_card_row_html
-from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values
+from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values, correction_words
 from ..core.local_stats_engines import assuncao_reis_rate, moran_global_perm, moran_local_perm
 from ..core.reporting import analyst_guidance_html
 from ..core.symbology import LISA_QUADRANT_STYLE
@@ -114,7 +114,7 @@ class EBRateLisaAlgorithm(SpatialStatBase):
             "eb_z": "Assuncao-Reis EB-standardised rate",
             "lisa_i": "Local Moran's I of the EB-standardised rate",
             "lisa_p": "Two-sided conditional-permutation p-value",
-            "lisa_padj": f"p-value after {correction} correction (used for the class)",
+            "lisa_padj": f"p-value after the {correction_words(correction)} correction (used for the class)",
             "quadrant": "LISA class of the EB-standardised rate",
             "raw_quad": "LISA class the raw rate would have produced",
             "lisa_nbrs": "Neighbours used",
@@ -185,6 +185,6 @@ class EBRateLisaAlgorithm(SpatialStatBase):
         )
         subtitle = (f"Events: <strong>{html.escape(events_field)}</strong> | Base: <strong>{html.escape(base_field)}</strong> | "
                     f"Units: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_label)}</strong> | "
-                    f"Permutations: <strong>{permutations}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong>")
+                    f"Permutations: <strong>{permutations}</strong> | Multiple testing: <strong>{html.escape(correction_words(correction))}</strong>")
         body = kpis + drop_note + f"<section><h2>Class breakdown</h2>{donut}</section>" + compare_html + guidance
         return report_page(self.DISPLAY, subtitle, body)

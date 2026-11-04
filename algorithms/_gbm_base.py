@@ -46,6 +46,7 @@ from ..core.charts import chart_css, heatmap_table_svg, scatter_plot_svg
 from ..core.symbology import apply_renderer, categorical_field_renderer, diverging_residual_renderer
 from ..dependencies import optional_dependency_error
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, stop_if_cancelled
 
 
 class GBMRegressionBase(HelpUrlMixin, QgsProcessingAlgorithm):
@@ -159,10 +160,9 @@ class GBMRegressionBase(HelpUrlMixin, QgsProcessingAlgorithm):
         result_map = {fid: idx for idx, fid in enumerate(valid_fids)}
         total = source.featureCount() or 1
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             fid = feature.id()
             if fid in result_map:
                 row_idx = result_map[fid]
@@ -383,10 +383,9 @@ class GBMClassificationBase(HelpUrlMixin, QgsProcessingAlgorithm):
         result_map = {fid: idx for idx, fid in enumerate(valid_fids)}
         total = source.featureCount() or 1
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             fid = feature.id()
             if fid in result_map:
                 row_idx = result_map[fid]

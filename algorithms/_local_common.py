@@ -53,10 +53,19 @@ from ..core.symbology import (
     diverging_residual_renderer,
     lisa_quadrant_renderer,
     sequential_quantile_renderer,
+    with_missing_classes,
 )
 from ._deliver import style_loaded_output
 from ._icons import algorithm_icon
 from ._mixins import HelpUrlMixin
+from ._guards import (
+    NO_DATA,
+    NO_NEIGHBOURS,
+    check_weight_choice,
+    restrict_weights,
+    set_fields_keeping_values,
+    stop_if_cancelled,
+)
 
 WEIGHT_OPTIONS = ["Queen contiguity", "Rook contiguity", "K-Nearest Neighbors (KNN)", "Distance Band"]
 WEIGHT_CODES = ["queen", "rook", "knn", "distance"]
@@ -183,6 +192,7 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         super().__init__()
         self.out_layer_id = None
         self._result: ToolResult | None = None
+        self._island_fids = set()
 
     # -- identity ----------------------------------------------------------
     def name(self) -> str:
@@ -326,11 +336,16 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         code = WEIGHT_CODES[self.parameterAsEnum(parameters, self.WEIGHT_TYPE, context)]
         k = self.parameterAsInt(parameters, self.KNN, context)
         band = self.parameterAsDouble(parameters, self.DISTANCE_BAND, context)
+        check_weight_choice(source, code, band)
         feedback.pushInfo("Building the spatial weights graph...")
         neighbors, weights, _ids, _w = build_weights_matrix(
             source, code, k_neighbors=k, distance_band=band, feedback=feedback
         )
+        stop_if_cancelled(feedback)
+        # Re-standardise rows over the usable features before building the graph.
+        neighbors, weights, _ = restrict_weights(neighbors, weights, fids)
         graph = SpatialGraph.from_dicts(neighbors, weights, fids)
+        self._island_fids = {fids[int(i)] for i in graph.islands}
         label = WEIGHT_OPTIONS[WEIGHT_CODES.index(code)]
         if code == "knn":
             label += f" (k = {k})"
@@ -340,7 +355,7 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         if islands:
             feedback.pushWarning(
                 f"{islands} feature(s) have no neighbour among the usable features; their local "
-                "statistic is undefined and is written as NULL. Widen the neighbourhood if this is unexpected."
+                "statistic is undefined, its values are NULL and its class is 'No neighbours'. Widen the neighbourhood if this is unexpected."
             )
         if graph.n and graph.cardinality.max() == 0:
             raise QgsProcessingException(
@@ -370,9 +385,9 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
             html_path = os.path.join(tempfile.gettempdir(), f"planx_{self.ALG_ID}_report.html")
 
         result = self.compute(source, parameters, context, feedback)
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
         self._result = result
+        class_field = self._class_field(result)
         outputs = {self.HTML_REPORT: html_path, "HTML_REPORT_OUT": html_path}
 
         if self.HAS_LAYER_OUTPUT:
@@ -393,15 +408,22 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
             )
             if sink is None:
                 raise QgsProcessingException("Could not create the output layer.")
-            self.out_layer_id = dest_id
             names = [name for name, _ in result.fields]
             total = max(source.featureCount(), 1)
+            missing = {NO_DATA: 0, NO_NEIGHBOURS: 0}
             for current, feature in enumerate(source.getFeatures()):
-                if feedback.isCanceled():
-                    break
+                stop_if_cancelled(feedback)
                 out = QgsFeature(feature)
-                out.setFields(out_fields)
+                set_fields_keeping_values(out, out_fields)
                 values = result.rows.get(feature.id(), {})
+                if class_field:
+                    # Contract C2: never leave a class empty (the renderer hid it).
+                    if feature.id() not in result.rows:
+                        values = dict(values, **{class_field: NO_DATA})
+                        missing[NO_DATA] += 1
+                    elif feature.id() in self._island_fids:
+                        values = dict(values, **{class_field: NO_NEIGHBOURS})
+                        missing[NO_NEIGHBOURS] += 1
                 for name in names:
                     value = values.get(name)
                     if isinstance(value, (float, np.floating)):
@@ -413,12 +435,38 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
                     out.setAttribute(name, value)
                 sink.addFeature(out, QgsFeatureSink.FastInsert)
                 feedback.setProgress(int(80 + 20 * current / total))
+            self.out_layer_id = dest_id
             outputs[self.OUTPUT] = dest_id
+            note = self._missing_note(missing)
+            if note:
+                result.report_html = with_notes(result.report_html, [note])
 
         with open(html_path, "w", encoding="utf-8") as handle:
             handle.write(result.report_html)
         outputs.update(result.outputs)
         return outputs
+
+    @staticmethod
+    def _class_field(result):
+        """The string class field a categorized/LISA map is drawn from, if any."""
+        spec = result.style
+        if spec and spec[0] in ("lisa", "categorized"):
+            kinds = dict(result.fields)
+            if kinds.get(spec[1]) == STRING:
+                return spec[1]
+        return None
+
+    @staticmethod
+    def _missing_note(missing):
+        parts = []
+        if missing.get(NO_DATA):
+            parts.append(f"{int(missing[NO_DATA])} feature(s) had no usable value and are mapped as 'No data'")
+        if missing.get(NO_NEIGHBOURS):
+            parts.append(f"{int(missing[NO_NEIGHBOURS])} feature(s) had no neighbour with data and are mapped as "
+                         "'No neighbours'")
+        if not parts:
+            return ""
+        return "Not tested: " + "; ".join(parts) + ". They are drawn in grey on the map with those labels."
 
     # -- styling -------------------------------------------------------------
     @staticmethod
@@ -428,9 +476,9 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         kind, field_name = spec[0], spec[1]
         geometry = layer.geometryType()
         if kind == "lisa":
-            return lisa_quadrant_renderer(geometry, field_name)
+            return lisa_quadrant_renderer(geometry, field_name, include_missing=True)
         if kind == "categorized":
-            return categorized_renderer(geometry, field_name, spec[2])
+            return categorized_renderer(geometry, field_name, with_missing_classes(spec[2]))
         if kind == "quantile":
             return sequential_quantile_renderer(layer, geometry, field_name, *spec[2:])
         if kind == "diverging":

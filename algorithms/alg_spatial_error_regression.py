@@ -54,6 +54,7 @@ from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import check_weight_choice, set_fields_keeping_values, stop_if_cancelled
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -247,6 +248,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if float(np.std(y)) <= 1e-12:
             raise QgsProcessingException("The dependent variable is constant across complete records.")
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo(f"Building {weight_label} spatial weights...")
         neighbors, _, _, _ = build_weights_matrix(
             source,
@@ -357,10 +359,9 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         feedback.pushInfo("Writing spatial error regression audit fields...")
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             row = result_map.get(int(feature.id()))
             if row is None:
                 out_feature.setAttribute("sem_pred", None)

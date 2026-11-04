@@ -29,6 +29,7 @@ from ..dependencies import optional_dependency_error
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, stop_if_cancelled
 
 logger = logging.getLogger("PlanX GeoStats Lab")
 
@@ -172,10 +173,9 @@ class DBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.out_layer_id = dest_id
         label_map = {fid: int(label) for fid, label in zip(fids, results["labels"])}
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             out_feature.setAttribute("cluster_id", label_map.get(feature.id()))
             sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))

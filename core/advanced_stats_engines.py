@@ -45,6 +45,20 @@ import heapq
 
 import numpy as np
 
+if __package__:
+    from .stats_engines import InputError, MSG_NO_NEIGHBOURS, MSG_NO_VARIATION
+else:  # loaded as a flat file by a test: same contract, local class
+    class InputError(ValueError):
+        """The input cannot support the statistic; the text is a sentence for the user."""
+
+    MSG_NO_NEIGHBOURS = (
+        "No feature has a neighbour under the chosen spatial weights, so {stat} cannot be computed. "
+        "Use K nearest neighbours, or a distance band that is larger than the gap between features."
+    )
+    MSG_NO_VARIATION = (
+        "Every value of the analysis field is the same, so {stat} has no variation to test. "
+        "Choose a field whose values differ between features."
+    )
 
 
 def calculate_geary_c(
@@ -68,9 +82,16 @@ def calculate_geary_c(
         A dict with observed_c, expected_c (= 1.0 under CSR), permuted_mean,
         permuted_std, z_score, p_value.
     """
+    y = np.asarray(y, dtype=float)
     n = len(y)
     if n <= 3:
-        raise ValueError("Geary's C requires at least 4 observations.")
+        raise InputError(f"Geary's C needs at least 4 features with a value; only {n} were found.")
+    if not np.all(np.isfinite(y)):
+        raise InputError(
+            "The analysis field contains missing or non-numeric values; remove them before running Geary's C."
+        )
+    if float(np.ptp(y)) == 0.0:
+        raise InputError(MSG_NO_VARIATION.format(stat="Geary's C"))
 
     id_to_idx = {fid: idx for idx, fid in enumerate(id_order)}
     i_idx: list[int] = []
@@ -78,18 +99,18 @@ def calculate_geary_c(
     w_list: list[float] = []
     for i, fid in enumerate(id_order):
         for j_fid, w in zip(neighbors.get(fid, []), weights.get(fid, [])):
-            if j_fid in id_to_idx:
+            if j_fid in id_to_idx and id_to_idx[j_fid] != i:
                 i_idx.append(i)
                 j_idx.append(id_to_idx[j_fid])
                 w_list.append(w)
 
-    if not i_idx:
-        raise ValueError("No spatial neighbors found. Cannot compute Geary's C.")
+    s0 = float(np.sum(w_list)) if w_list else 0.0
+    if not i_idx or s0 == 0.0:
+        raise InputError(MSG_NO_NEIGHBOURS.format(stat="Geary's C"))
 
     i_arr = np.array(i_idx)
     j_arr = np.array(j_idx)
     w_arr = np.array(w_list)
-    s0 = float(np.sum(w_arr))
 
     def _geary_c(values: np.ndarray) -> float:
         y_mean = np.mean(values)

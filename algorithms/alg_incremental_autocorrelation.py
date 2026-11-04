@@ -27,6 +27,7 @@ from ..core.weights import geometry_centroid_point
 from ..core.charts import chart_css, line_chart_svg
 
 from ._icons import algorithm_icon
+from ._guards import check_distance_crs, strict_float
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -168,6 +169,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         value_dict = {}
         skipped = 0
 
+        check_distance_crs(source, start_dist)
         feedback.pushInfo("Extracting features...")
         total = source.featureCount() or 1
         for idx, f in enumerate(source.getFeatures()):
@@ -182,7 +184,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 skipped += 1
                 continue
             try:
-                val_f = float(val)
+                val_f = strict_float(val)
             except (ValueError, TypeError):
                 skipped += 1
                 continue

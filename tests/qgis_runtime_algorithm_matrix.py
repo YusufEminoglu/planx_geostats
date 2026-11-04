@@ -26,6 +26,64 @@ INSTALL_PREVIEW_TEXT = "Preview only: installation was not started"
 # out-of-band step is an environment-configuration gap, not a plugin bug -
 # tolerate it the same way a genuinely missing optional package is tolerated.
 TABPFN_AUTH_TEXT = "one-time license"
+# The setup tools' own wording: "<tool> requires optional Python package(s): a, b. Run ..."
+_OPTIONAL_PACKAGES_PREFIX = OPTIONAL_DEPENDENCY_TEXT + ": "
+
+
+def _module_for_package(package: str) -> str:
+    try:
+        from planx_geostats.dependencies import MODULES
+    except ImportError:
+        MODULES = {}
+    return MODULES.get(package, package.replace("-", "_"))
+
+
+def _missing_packages(packages) -> list:
+    """Packages from ``packages`` that this QGIS Python really cannot import.
+
+    find_spec is enough (and is what the tools themselves consult); a package
+    that is installed but broken surfaces as an import error the tool reports
+    in the same sentence, which is still an optional-dependency outcome.
+    """
+    import importlib.util
+
+    missing = []
+    for package in packages:
+        module = _module_for_package(package.strip())
+        try:
+            found = importlib.util.find_spec(module) is not None
+        except (ImportError, ValueError):
+            found = False
+        if not found:
+            missing.append(package.strip())
+    return missing
+
+
+def _packages_named_in(message: str) -> list:
+    """Package names from an optional-dependency error, or [] when absent."""
+    if _OPTIONAL_PACKAGES_PREFIX not in message:
+        return []
+    tail = message.split(_OPTIONAL_PACKAGES_PREFIX, 1)[1]
+    names = tail.split(". ", 1)[0]
+    return [name.strip() for name in names.split(",") if name.strip()]
+
+
+def _optional_dependency_outcome(case, message: str) -> bool:
+    """True when a failure is an honest "optional package missing" outcome.
+
+    3.12 trusted ``optional_dependency_ok`` alone, so with scikit-learn
+    blocked 21 cases that never set it failed although they reported the
+    missing package exactly as designed.  Now the message is checked against
+    the runtime: it counts as optional only if a package it names (or that
+    the case declares in ``requires``) really cannot be imported here.  A tool
+    that blames a package which is installed still fails.
+    """
+    named = _packages_named_in(message)
+    if named and _missing_packages(named):
+        return True
+    if case.requires and _missing_packages(case.requires):
+        return True
+    return False
 
 
 @dataclass
@@ -50,6 +108,10 @@ class RuntimeCase:
     # actually ran) - used for tools with metadata but no custom renderer.
     renderer_class: str | None = None
     alias_check_field: str | None = None
+    # Optional packages without which the case cannot succeed although the
+    # tool's message does not name them (e.g. a leaderboard that reports "no
+    # model could be evaluated" when scikit-learn is absent).
+    requires: tuple = ()
 
 
 def _add_root_to_path(root: Path) -> None:
@@ -1160,6 +1222,7 @@ def _all_cases() -> list[RuntimeCase]:
                 "HTML_REPORT": _path(env["out"], "06_ml_model_comparison.html"),
             },
             html_outputs=("HTML_REPORT",),
+            requires=("scikit-learn",),
         ),
         RuntimeCase(
             "shap_global_importance",
@@ -2029,7 +2092,7 @@ def _run_case(case: RuntimeCase, env: dict, context) -> dict:
                 "error": message,
                 "messages": feedback_capture.tail(),
             }
-        if case.optional_dependency_ok and OPTIONAL_DEPENDENCY_TEXT in message:
+        if (case.optional_dependency_ok and OPTIONAL_DEPENDENCY_TEXT in message) or _optional_dependency_outcome(case, message):
             return {
                 "algorithm": case.algorithm,
                 "label": case.label,
@@ -2104,6 +2167,9 @@ FILE_OUTPUT_STYLE_CASES = (
     "mean_center",             # metadata only (aliases)
     "gbm_regression_sklearn",  # shared _gbm_base body
 )
+# Packages a style-check case cannot run without; it is skipped (as an
+# optional-dependency outcome) when one of them is missing.
+FILE_OUTPUT_STYLE_REQUIRES = {"gbm_regression_sklearn": ("scikit-learn",)}
 
 
 def _run_file_output_style_checks(env: dict) -> list[dict]:
@@ -2119,6 +2185,11 @@ def _run_file_output_style_checks(env: dict) -> list[dict]:
     for name in FILE_OUTPUT_STYLE_CASES:
         case = by_name[name]
         label = f"{case.label} - styled when loaded from a GeoPackage"
+        requires = tuple(case.requires) + FILE_OUTPUT_STYLE_REQUIRES.get(name, ())
+        if requires and _missing_packages(requires):
+            results.append({"algorithm": name, "label": label, "ok": True,
+                            "status": "optional_dependency_missing", "messages": []})
+            continue
         try:
             params = dict(case.params(env))
             for key in case.layer_outputs:

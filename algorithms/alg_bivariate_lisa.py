@@ -33,10 +33,23 @@ from ..core.layer_metadata import apply_output_metadata
 from ..core.local_pattern_audit import local_moran_class_summary
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
-from ..core.symbology import LISA_QUADRANT_STYLE, apply_renderer, lisa_quadrant_renderer
+from ..core.symbology import LISA_QUADRANT_STYLE, MISSING_CLASS_STYLE, apply_renderer, lisa_quadrant_renderer
+from ..core.local_pattern_audit import NO_DATA, NO_NEIGHBOURS
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import (
+    check_weight_choice,
+    engine_errors,
+    neighbour_counts,
+    push_skips,
+    read_finite_values,
+    require_neighbours,
+    restrict_weights,
+    skip_message,
+    set_fields_keeping_values,
+    stop_if_cancelled,
+)
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -216,6 +229,7 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if not field_y.isNumeric():
             raise QgsProcessingException(f"Variable Y field '{field_y_name}' must be numeric.")
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo("Generating spatial weights matrix...")
         neighbors, weights, id_order, _ = build_weights_matrix(
             source,
@@ -225,47 +239,49 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback=feedback
         )
 
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         feedback.pushInfo("Extracting target field values...")
-        x_dict = {}
-        y_dict = {}
-        for f in source.getFeatures():
-            if feedback.isCanceled():
-                break
-            val_x = f.attribute(field_x_name)
-            val_y = f.attribute(field_y_name)
-            if val_x in (None, NULL) or val_y in (None, NULL):
-                continue
-            try:
-                x_dict[f.id()] = float(val_x)
-                y_dict[f.id()] = float(val_y)
-            except (ValueError, TypeError):
-                continue
+        xy_dict, skip_counts = read_finite_values(source, [field_x_name, field_y_name], feedback)
+        stop_if_cancelled(feedback)
+        push_skips(feedback, skip_counts)
 
         # Filter id_order and construct x, y arrays
-        valid_id_order = [fid for fid in id_order if fid in x_dict and fid in y_dict]
-        x_arr = np.array([x_dict[fid] for fid in valid_id_order])
-        y_arr = np.array([y_dict[fid] for fid in valid_id_order])
+        valid_id_order = [fid for fid in id_order if fid in xy_dict]
+        no_data_count = len(id_order) - len(valid_id_order)
+        x_arr = np.array([xy_dict[fid][0] for fid in valid_id_order], dtype=float)
+        y_arr = np.array([xy_dict[fid][1] for fid in valid_id_order], dtype=float)
 
         if len(x_arr) <= 2:
-            raise QgsProcessingException("At least 3 valid features with numeric values are required for LISA analysis.")
+            raise QgsProcessingException(
+                "At least 3 features with finite values in both fields are required for LISA analysis "
+                f"({len(x_arr)} found). " + skip_message(skip_counts)
+            )
+        neighbors, weights, _ = restrict_weights(neighbors, weights, valid_id_order)
+        require_neighbours(neighbors, valid_id_order)
+        counts_by_fid = neighbour_counts(neighbors, valid_id_order)
 
         feedback.pushInfo(f"Calculating Bivariate Local Moran's I statistics using {perms} permutations...")
-        i_vals, z_scores, p_values, quadrants = calculate_bivariate_local_moran(
+        with engine_errors():
+            i_vals, z_scores, p_values, quadrants = calculate_bivariate_local_moran(
             x_arr,
             y_arr,
             neighbors,
             weights,
             valid_id_order,
             permutations=perms
-        )
-        class_summary = local_moran_class_summary(quadrants)
+            )
+        i_vals = np.array(i_vals, dtype=float)
+        z_scores = np.array(z_scores, dtype=float)
+        p_values = np.array(p_values, dtype=float)
+        quadrants = list(quadrants)
+        for idx, fid in enumerate(valid_id_order):
+            if counts_by_fid[fid] == 0:
+                i_vals[idx] = z_scores[idx] = p_values[idx] = np.nan
+                quadrants[idx] = NO_NEIGHBOURS
+        class_summary = local_moran_class_summary(quadrants + [NO_DATA] * no_data_count)
         feedback.pushInfo(class_summary["message"])
-
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         # Prepare output fields
         out_fields = source.fields()
@@ -284,17 +300,20 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             source.wkbType(),
             source.sourceCrs()
         )
-        self.out_layer_id = dest_id
+        if sink is None:
+            raise QgsProcessingException("Could not create the output layer.")
+
+        def _num(value):
+            return float(value) if np.isfinite(value) else None
 
         # Map results to feature IDs
         results_map = {}
-        valid_ids = set(valid_id_order)
         isolated_count = 0
         for idx, fid in enumerate(valid_id_order):
-            neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
+            neighbor_count = counts_by_fid[fid]
             if neighbor_count == 0:
                 isolated_count += 1
-            results_map[fid] = (i_vals[idx], z_scores[idx], p_values[idx], quadrants[idx], neighbor_count)
+            results_map[fid] = (_num(i_vals[idx]), _num(z_scores[idx]), _num(p_values[idx]), quadrants[idx], neighbor_count)
         if isolated_count:
             feedback.pushWarning(
                 f"{isolated_count} feature(s) had no valid neighbors. Consider a larger distance band or K value."
@@ -303,29 +322,28 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         feedback.pushInfo("Writing results to output layer...")
         total = source.featureCount() or 1
         for current, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
 
             out_feat = QgsFeature(f)
-            out_feat.setFields(out_fields)
-
+            set_fields_keeping_values(out_feat, out_fields)
             fid = f.id()
             if fid in results_map:
                 i_val, z, p, quad, neighbor_count = results_map[fid]
-                out_feat.setAttribute("bilisa_i", float(i_val))
-                out_feat.setAttribute("bilisa_z", float(z))
-                out_feat.setAttribute("bilisa_p", float(p))
+                out_feat.setAttribute("bilisa_i", i_val)
+                out_feat.setAttribute("bilisa_z", z)
+                out_feat.setAttribute("bilisa_p", p)
                 out_feat.setAttribute("quadrant", str(quad))
                 out_feat.setAttribute("bilisa_nb", int(neighbor_count))
             else:
                 out_feat.setAttribute("bilisa_i", None)
                 out_feat.setAttribute("bilisa_z", None)
                 out_feat.setAttribute("bilisa_p", None)
-                out_feat.setAttribute("quadrant", "Not Significant")
+                out_feat.setAttribute("quadrant", NO_DATA)
                 out_feat.setAttribute("bilisa_nb", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
+        self.out_layer_id = dest_id
 
         feedback.pushInfo("Generating HTML report...")
         self._write_html(html_path, field_x_name, field_y_name, len(valid_id_order), weight_type, class_summary, isolated_count)
@@ -334,14 +352,15 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def _write_html(self, path, field_x_name, field_y_name, n, weight_type, class_summary, isolated_count):
         counts = class_summary["counts"]
-        donut_labels = [label for _, _, label in LISA_QUADRANT_STYLE]
-        donut_values = [counts.get(code, 0) for code, _, _ in LISA_QUADRANT_STYLE]
-        donut_colors = {label: color for code, color, label in LISA_QUADRANT_STYLE}
+        style = LISA_QUADRANT_STYLE + MISSING_CLASS_STYLE
+        donut_labels = [label for _, _, label in style]
+        donut_values = [int(counts.get(code, 0)) for code, _, _ in style]
+        donut_colors = {label: color for code, color, label in style}
 
         kpi_row = kpi_card_row_html([
             {"label": "Cluster features", "value": str(class_summary["cluster_count"]), "sublabel": "HH + LL", "tone": "good" if class_summary["cluster_count"] else "neutral"},
             {"label": "Outlier features", "value": str(class_summary["outlier_count"]), "sublabel": "HL + LH", "tone": "warn" if class_summary["outlier_count"] else "neutral"},
-            {"label": "Significant total", "value": f"{class_summary['significant_count']} / {n}", "sublabel": f"Dominant: {class_summary['dominant_label']}"},
+            {"label": "Significant total", "value": f"{class_summary['significant_count']} / {class_summary['tested_count']}", "sublabel": f"Dominant: {class_summary['dominant_label']}"},
         ])
 
         guidance_html = analyst_guidance_html(
@@ -429,11 +448,11 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "bilisa_i": "Bivariate Local Moran's I statistic",
                 "bilisa_z": "Bivariate Local Moran z-score",
                 "bilisa_p": "Bivariate Local Moran p-value",
-                "quadrant": "Bivariate LISA class: HH, LL, HL, LH, or Not Significant",
+                "quadrant": "Bivariate LISA class: HH, LL, HL, LH, Not Significant, No data or No neighbours",
                 "bilisa_nb": "Valid neighbors used for the local statistic",
             },
             self.displayName(),
         )
-        apply_renderer(layer, lisa_quadrant_renderer(layer.geometryType(), "quadrant"))
+        apply_renderer(layer, lisa_quadrant_renderer(layer.geometryType(), "quadrant", include_missing=True))
 
         return {}

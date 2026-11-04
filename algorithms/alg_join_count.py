@@ -32,6 +32,15 @@ from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, bar_chart_svg
 
 from ._icons import algorithm_icon
+from ._guards import (
+    check_weight_choice,
+    engine_errors,
+    finite_value,
+    push_skips,
+    require_neighbours,
+    restrict_weights,
+    stop_if_cancelled,
+)
 
 
 class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
@@ -198,26 +207,34 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         field_type = source.fields().field(field_idx).type()
         is_numeric_field = field_type in (2, 4, 6)  # Int, LongLong, Double
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo("Generating spatial adjacency graph...")
         neighbors, _weights, id_order, _ = build_weights_matrix(
             source, weight_type, k_neighbors=k_neighbors, distance_band=distance_band, feedback=feedback
         )
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         feedback.pushInfo("Reading and binarizing target field...")
         raw_values = {}
+        skip_counts = {"missing": 0, "non_numeric": 0, "non_finite": 0}
         for f in source.getFeatures():
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             val = f.attribute(field_name)
-            if val is None or val == NULL or str(val) == "NULL":
+            if is_numeric_field:
+                val, reason = finite_value(val)
+            else:
+                reason = "missing" if (val is None or val == NULL or str(val) == "NULL") else None
+            if reason:
+                skip_counts[reason] += 1
                 continue
             raw_values[f.id()] = val
+        push_skips(feedback, skip_counts)
 
         valid_id_order = [fid for fid in id_order if fid in raw_values]
         if len(valid_id_order) <= 3:
-            raise QgsProcessingException("At least 4 valid features are required for Join Count analysis.")
+            raise QgsProcessingException("At least 4 features with a usable value are required for Join Count analysis.")
+        neighbors, _weights, _ = restrict_weights(neighbors, _weights, valid_id_order)
+        require_neighbours(neighbors, valid_id_order)
 
         if is_numeric_field:
             numeric_vals = [float(raw_values[fid]) for fid in valid_id_order]
@@ -240,7 +257,8 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         feedback.pushInfo(f"Calculating Join Counts using {permutations} permutations...")
         x_array = [x_binary[fid] for fid in valid_id_order]
-        result = calculate_join_counts(x_array, neighbors, valid_id_order, permutations=permutations, seed=seed)
+        with engine_errors():
+            result = calculate_join_counts(x_array, neighbors, valid_id_order, permutations=permutations, seed=seed)
 
         if feedback.isCanceled():
             return {}

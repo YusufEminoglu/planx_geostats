@@ -54,6 +54,7 @@ indicator_engine = load_core_package(
 )["indicator_engine"]
 
 stats = load_module("stats_engines", "core/stats_engines.py")
+advanced = load_module("advanced_stats_engines", "core/advanced_stats_engines.py")
 diagnostics = load_module("analysis_diagnostics", "core/analysis_diagnostics.py")
 sys.modules.setdefault("qgis", types.ModuleType("qgis"))
 sys.modules.setdefault("qgis.core", types.ModuleType("qgis.core"))
@@ -193,29 +194,180 @@ def assert_finite_tuple(values, expected_len: int) -> None:
     assert all(np.isfinite(float(value)) for value in values)
 
 
+def _dense(neighbors, weights, n):
+    W = np.zeros((n, n))
+    for i, js in neighbors.items():
+        for j, w in zip(js, weights[i]):
+            W[i, j] = w
+    return W
+
+
+def _exact_moments(stat, values):
+    import itertools
+    sims = np.array([stat(np.array(p)) for p in itertools.permutations(values)])
+    return sims.mean(), sims.var()
+
+
 def test_global_moran_finite_output() -> None:
-    neighbors = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2]}
-    weights = {0: [1.0], 1: [0.5, 0.5], 2: [0.5, 0.5], 3: [1.0]}
-    result = stats.calculate_global_moran(
-        np.array([1.0, 2.0, 4.0, 8.0]),
-        neighbors,
-        weights,
-        [0, 1, 2, 3],
-    )
+    """I, E[I], VI, z, p against the dense formula and all 6! orderings."""
+    neighbors = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2, 4], 4: [3, 5], 5: [4]}
+    weights = {0: [1.0], 1: [0.5, 0.5], 2: [0.5, 0.5], 3: [0.5, 0.5], 4: [0.5, 0.5], 5: [1.0]}
+    y = np.array([1.0, 2.0, 4.0, 8.0, 3.0, 5.0])
+    result = stats.calculate_global_moran(y, neighbors, weights, list(range(6)))
     assert_finite_tuple(result, 5)
-    assert 0.0 <= result[4] <= 1.0
+    W = _dense(neighbors, weights, 6)
+    z = y - y.mean()
+    moran = 6 / W.sum() * (z @ W @ z) / (z @ z)
+    mean, var = _exact_moments(lambda v: 6 / W.sum() * ((v - v.mean()) @ W @ (v - v.mean())) / (z @ z), y)
+    assert abs(result[0] - moran) < 1e-12
+    assert abs(result[1] - mean) < 1e-12 and abs(result[1] + 0.2) < 1e-15
+    assert abs(result[2] - var) < 1e-12, (result[2], var)
+    zs = (moran - mean) / math.sqrt(var)
+    assert abs(result[3] - zs) < 1e-9
+    assert abs(result[4] - math.erfc(abs(zs) / math.sqrt(2.0))) < 1e-12
+
+
+def _assert_input_error(fn, *args, **kwargs) -> str:
+    try:
+        fn(*args, **kwargs)
+    except ValueError as exc:
+        assert type(exc).__name__ == "InputError", repr(exc)
+        text = str(exc)
+        assert text[:1].isupper() and text.endswith(".") and len(text.split()) >= 8, text
+        return text
+    raise AssertionError(f"{getattr(fn, '__name__', fn)} did not raise InputError")
 
 
 def test_global_moran_zero_variance_is_graceful() -> None:
+    """C1: a constant field or weights without neighbours raise InputError."""
     neighbors = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2]}
     weights = {0: [1.0], 1: [0.5, 0.5], 2: [0.5, 0.5], 3: [1.0]}
-    result = stats.calculate_global_moran(
-        np.array([5.0, 5.0, 5.0, 5.0]),
-        neighbors,
-        weights,
-        [0, 1, 2, 3],
-    )
-    assert result == (0.0, -1.0 / 3.0, 0.0, 0.0, 1.0)
+    assert issubclass(stats.InputError, ValueError)
+    text = _assert_input_error(stats.calculate_global_moran, np.array([5.0] * 4), neighbors, weights, [0, 1, 2, 3])
+    assert "same" in text
+    text = _assert_input_error(stats.calculate_global_moran, np.array([1.0, 2.0, 4.0, 8.0]),
+                               {i: [] for i in range(4)}, {i: [] for i in range(4)}, [0, 1, 2, 3])
+    assert "neighbour" in text
+
+
+def test_classic_engines_refuse_islands_constant_and_nan() -> None:
+    nb = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2, 4], 4: [3]}
+    wt = {i: [1.0 / len(v)] * len(v) for i, v in nb.items()}
+    ids = list(range(5))
+    y = np.array([1.0, 2.0, 4.0, 8.0, 3.0])
+    none_nb = {i: [] for i in ids}
+    for fn in (stats.calculate_global_moran, stats.calculate_local_moran, stats.calculate_getis_ord,
+               stats.calculate_general_g, advanced.calculate_geary_c):
+        _assert_input_error(fn, y, none_nb, none_nb, ids)
+        _assert_input_error(fn, np.full(5, 2.0), nb, wt, ids)
+        _assert_input_error(fn, np.array([1.0, np.nan, 4.0, 8.0, 3.0]), nb, wt, ids)
+
+
+def test_gi_star_values_island_and_non_star() -> None:
+    nb = {0: [1, 2], 1: [0, 2], 2: [0, 1, 3], 3: [2, 4], 4: [3], 5: []}
+    wt = {i: [1.0 / len(v)] * len(v) if v else [] for i, v in nb.items()}
+    y = np.array([9.0, 8.0, 7.0, 2.0, 1.0, 30.0])
+    n = 6
+    z, p, bins = stats.calculate_getis_ord(y, nb, wt, list(range(n)), star=True)
+    Wb = (_dense(nb, wt, n) > 0).astype(float)
+    Ws = Wb + np.eye(n)
+    s = math.sqrt((y ** 2).mean() - y.mean() ** 2)
+    ref = (Ws @ y - y.mean() * Ws.sum(1)) / (s * np.sqrt((n * Ws.sum(1) - Ws.sum(1) ** 2) / (n - 1)))
+    assert np.allclose(z[:5], ref[:5], atol=1e-12, rtol=0)
+    assert np.allclose(p[:5], [math.erfc(abs(v) / math.sqrt(2.0)) for v in ref[:5]], atol=1e-14, rtol=0)
+    # Feature 5 has no neighbour but itself: NaN, never a hot spot.
+    assert math.isnan(z[5]) and math.isnan(p[5]) and bins[5] == 0
+    z0, p0, _ = stats.calculate_getis_ord(y, nb, wt, list(range(n)), star=False)
+    for i in range(5):  # Ord & Getis (1995): x_i out of the sums, mean and SD
+        xo, wo = np.delete(y, i), np.delete(Wb[i], i)
+        so = math.sqrt((xo ** 2).mean() - xo.mean() ** 2)
+        ref0 = (wo @ xo - xo.mean() * wo.sum()) / (so * math.sqrt(((n - 1) * wo.sum() - wo.sum() ** 2) / (n - 2)))
+        assert abs(z0[i] - ref0) < 1e-12, (i, z0[i], ref0)
+    assert math.isnan(z0[5])
+
+
+def test_local_moran_values_and_outlier_quadrants() -> None:
+    side = 7
+    nb = {}
+    for r in range(side):
+        for c in range(side):
+            nb[r * side + c] = [rr * side + cc for rr, cc in ((r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1))
+                                if 0 <= rr < side and 0 <= cc < side]
+    wt = {i: [1.0 / len(v)] * len(v) for i, v in nb.items()}
+    n = side * side
+    y = np.where(np.arange(n) < n // 2, 1.0, 10.0)
+    y[8] = 30.0   # high value among lows: HL
+    y[40] = -20.0  # low value among highs: LH
+    I, z, p, quads = stats.calculate_local_moran(y, nb, wt, list(range(n)))
+    W = _dense(nb, wt, n)
+    d = y - y.mean()
+    m2 = d @ d / n
+    lag = W @ d
+    assert np.allclose(I, d / m2 * lag, atol=1e-12, rtol=0)
+    b2 = n * (d ** 4).sum() / (d @ d) ** 2
+    wi, wi2 = W.sum(1), (W ** 2).sum(1)
+    ei = -wi / (n - 1)
+    vi = wi2 * (n - b2) / (n - 1) + (wi ** 2 - wi2) * (2 * b2 - n) / ((n - 1) * (n - 2)) - ei ** 2
+    assert np.allclose(z, (I - ei) / np.sqrt(vi), atol=1e-10, rtol=0)
+    assert quads[8] == "HL", quads[8]
+    assert quads[40] == "LH", quads[40]
+    for i in range(n):
+        if p[i] < 0.05:
+            assert quads[i] == ("H" if d[i] > 0 else "L") + ("H" if lag[i] > 0 else "L")
+        else:
+            assert quads[i] == "Not Significant"
+
+
+def test_geary_c_value_and_permutation_p() -> None:
+    nb = {0: [1], 1: [0, 2], 2: [1, 3], 3: [2, 4], 4: [3, 5], 5: [4, 6], 6: [5, 7], 7: [6]}
+    wt = {i: [1.0] * len(v) for i, v in nb.items()}
+    y = np.arange(8, dtype=float) ** 2  # smooth trend: strong positive autocorrelation
+    res = advanced.calculate_geary_c(y, nb, wt, list(range(8)), permutations=99, seed=3)
+    W = _dense(nb, wt, 8)
+    num = sum(W[i, j] * (y[i] - y[j]) ** 2 for i in range(8) for j in range(8))
+    c_ref = 7 * num / (2 * W.sum() * ((y - y.mean()) ** 2).sum())
+    assert abs(res["observed_c"] - c_ref) < 1e-12
+    perm = np.array(res["permuted_values"])
+    extreme = int(np.sum(np.abs(perm - perm.mean()) >= abs(c_ref - perm.mean())))
+    assert res["p_value"] == (extreme + 1) / 100.0
+    assert res["p_value"] >= 0.01
+
+
+def test_ols_p_values_use_student_t() -> None:
+    for t_value, df, p_ref in ((2.0, 5, 0.10193947882985835), (2.228138851986, 10, 0.05000000000002326),
+                               (-2.6, 9, 0.028738227044155587), (3.5, 1, 0.17717106556580953)):
+        assert abs(stats.student_t_two_sided_p(t_value, df) - p_ref) < 1e-12
+    rng = np.random.default_rng(5)
+    X = rng.normal(size=(12, 2))
+    y = 1 + 0.6 * X[:, 0] + rng.normal(size=12)
+    nb = {i: [j for j in (i - 1, i + 1) if 0 <= j < 12] for i in range(12)}
+    wt = {i: [2.0] * len(v) for i, v in nb.items()}
+    res = stats.calculate_ols(y, X, nb, wt, list(range(12)), ["a", "b"])
+    for t_value, p_value in zip(res["t_statistics"], res["p_values"]):
+        assert abs(p_value - stats.student_t_two_sided_p(float(t_value), 9.0)) < 1e-15
+        assert p_value > math.erfc(abs(t_value) / math.sqrt(2.0))  # t tails are heavier
+    e = res["residuals"]
+    W = _dense(nb, wt, 12)
+    assert abs(res["residuals_moran"] - 12 / W.sum() * (e @ W @ e) / (e @ e)) < 1e-12
+
+
+def test_crs_unit_warning_flags_geographic_crs() -> None:
+    class _Crs:
+        def __init__(self, geographic):
+            self.geographic = geographic
+
+        def isGeographic(self):
+            return self.geographic
+
+    class _Source:
+        def __init__(self, geographic):
+            self.crs = _Crs(geographic)
+
+        def sourceCrs(self):
+            return self.crs
+
+    assert diagnostics.crs_unit_warning(_Source(True))
+    assert not diagnostics.crs_unit_warning(_Source(False))
 
 
 def test_spatial_gini_decomposition_matches_pairwise_definition() -> None:
@@ -252,12 +404,33 @@ def test_spatial_gini_zero_inequality_is_graceful() -> None:
 
 
 def test_general_g_non_contiguous_ids() -> None:
-    neighbors = {10: [20], 20: [10, 50], 50: [20, 90], 90: [50]}
-    weights = {10: [1.0], 20: [1.0, 1.0], 50: [1.0, 1.0], 90: [1.0]}
-    values = {10: 1.0, 20: 2.0, 50: 4.0, 90: 8.0}
-    result = stats.calculate_general_g(values, neighbors, weights, [10, 20, 50, 90])
+    """G, E[G], VG against all 5! orderings (Getis & Ord 1992 variance)."""
+    ids = [10, 20, 50, 90, 70]
+    neighbors = {10: [20], 20: [10, 50], 50: [20, 90, 70], 90: [50], 70: [50, 10]}
+    weights = {k: [1.0] * len(v) for k, v in neighbors.items()}
+    values = {10: 1.0, 20: 2.0, 50: 4.0, 90: 8.0, 70: 3.0}
+    result = stats.calculate_general_g(values, neighbors, weights, ids)
     assert_finite_tuple(result, 5)
-    assert 0.0 <= result[4] <= 1.0
+    pos = {fid: k for k, fid in enumerate(ids)}
+    W = np.zeros((5, 5))
+    for fid, js in neighbors.items():
+        for j in js:
+            W[pos[fid], pos[j]] = 1.0
+    x = np.array([values[f] for f in ids])
+    den = x.sum() ** 2 - (x ** 2).sum()
+    mean, var = _exact_moments(lambda v: v @ W @ v / den, x)
+    assert abs(result[0] - x @ W @ x / den) < 1e-12
+    assert abs(result[1] - mean) < 1e-12
+    assert abs(result[2] - var) < 1e-12, (result[2], var)
+    # Sparse distance-band helper agrees with the dictionary path.
+    pts = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0], [2.0, 1.0]])
+    rows, cols = stats.distance_band_pairs(pts, 1.0)
+    pairs = sorted(zip(rows.tolist(), cols.tolist()))
+    assert pairs == [(0, 1), (1, 0), (1, 2), (2, 1), (2, 3), (2, 4), (3, 2), (4, 2)], pairs
+    band = stats.calculate_general_g_distance_band(x, pts, 1.0)
+    nb_band = {i: [int(c) for r, c in zip(rows, cols) if r == i] for i in range(5)}
+    ref = stats.calculate_general_g(x, nb_band, {i: [1.0] * len(v) for i, v in nb_band.items()}, list(range(5)))
+    assert np.allclose(band, ref, atol=1e-14, rtol=0)
 
 
 def test_sparse_neighbor_summary() -> None:
@@ -893,6 +1066,12 @@ def run_all() -> None:
     test_global_moran_zero_variance_is_graceful()
     test_spatial_gini_decomposition_matches_pairwise_definition()
     test_spatial_gini_zero_inequality_is_graceful()
+    test_classic_engines_refuse_islands_constant_and_nan()
+    test_gi_star_values_island_and_non_star()
+    test_local_moran_values_and_outlier_quadrants()
+    test_geary_c_value_and_permutation_p()
+    test_ols_p_values_use_student_t()
+    test_crs_unit_warning_flags_geographic_crs()
     test_general_g_non_contiguous_ids()
     test_sparse_neighbor_summary()
     test_filter_weights_to_valid_ids_restandardizes_rows()

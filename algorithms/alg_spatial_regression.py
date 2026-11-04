@@ -36,6 +36,7 @@ from ..core.symbology import apply_renderer, diverging_std_dev_renderer
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import engine_errors, restrict_weights, set_fields_keeping_values, stop_if_cancelled, strict_float
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -202,7 +203,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     has_null = True
                     break
                 try:
-                    f_indeps.append(float(x_val))
+                    f_indeps.append(strict_float(x_val))
                 except (ValueError, TypeError):
                     has_null = True
                     break
@@ -212,7 +213,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 continue
 
             try:
-                dep_vals.append(float(y_val))
+                dep_vals.append(strict_float(y_val))
                 indep_vals.append(f_indeps)
                 valid_fids.append(f.id())
             except (ValueError, TypeError):
@@ -253,12 +254,14 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             k_neighbors=8,
             feedback=feedback
         )
+        neighbors, weights, _ = restrict_weights(neighbors, weights, valid_fids)
 
         if feedback.isCanceled():
             return {}
 
         feedback.pushInfo("Running OLS regression analysis...")
-        results = calculate_ols(y, X_data, neighbors, weights, valid_fids, indep_fields)
+        with engine_errors():
+            results = calculate_ols(y, X_data, neighbors, weights, valid_fids, indep_fields)
 
         # Prepare output fields
         out_fields = source.fields()
@@ -283,12 +286,10 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         feedback.pushInfo("Writing residual attributes...")
         for current, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
 
             out_feat = QgsFeature(f)
-            out_feat.setFields(out_fields)
-
+            set_fields_keeping_values(out_feat, out_fields)
             fid = f.id()
             if fid in results_map:
                 res, std_res = results_map[fid]
@@ -323,10 +324,15 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         moran_status = "No Significant Autocorrelation"
         moran_class = "badge-success"
-        if abs(moran_i) > 0.15:  # Proxy threshold
+        if moran_i is None or not np.isfinite(float(moran_i)):
+            # abs(nan) > 0.15 is False, so 3.12 called an uncomputed I "no autocorrelation".
+            moran_status = "Not computed (no neighbours)"
+            moran_class = "badge-warning"
+        elif abs(moran_i) > 0.15:  # Proxy threshold
             moran_status = "Autocorrelated Residuals"
             moran_class = "badge-danger"
         moran_badge = f'<span class="badge {moran_class}">{moran_status}</span>'
+        moran_text = f"{moran_i:.4f}" if moran_i is not None and np.isfinite(float(moran_i)) else "n/a"
 
         residual_chart = scatter_plot_svg(
             res["fitted"].tolist(),
@@ -573,7 +579,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             </tr>
             <tr>
                 <td><strong>Moran's I on Residuals</strong> (Spatial Autocorrelation)</td>
-                <td>{moran_i:.4f}</td>
+                <td>{moran_text}</td>
                 <td>N/A (Spatial Autocorrelation index)</td>
                 <td>{moran_badge}</td>
             </tr>

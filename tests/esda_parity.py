@@ -13,8 +13,11 @@ and the engines do not use it.
 """
 from __future__ import annotations
 
+import importlib
 import importlib.util
+import math
 import sys
+import types
 import warnings
 from pathlib import Path
 
@@ -29,6 +32,53 @@ def _load_engine():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _load_core_package():
+    """stats_engines, advanced_stats_engines and weights as one synthetic package.
+
+    The relative imports between the engines then work without importing the
+    plugin itself (and its GUI).
+    """
+    package = types.ModuleType("gs_parity")
+    package.__path__ = [str(ROOT / "core")]
+    sys.modules["gs_parity"] = package
+    return {name: importlib.import_module(f"gs_parity.{name}")
+            for name in ("stats_engines", "advanced_stats_engines")}
+
+
+def _grid_weights(side, kind):
+    """Queen/rook weights built by core/weights.py on a QGIS grid of squares.
+
+    Returns (neighbours, weights, ids in lattice order) or None without QGIS.
+    """
+    try:
+        from qgis.core import QgsApplication, QgsFeature, QgsGeometry, QgsPointXY, QgsVectorLayer
+    except ImportError:
+        return None
+    if QgsApplication.instance() is None:
+        app = QgsApplication([], False)
+        app.initQgis()
+        _QGIS_APP.append(app)
+    weights = importlib.import_module("gs_parity.weights")
+    lyr = QgsVectorLayer("Polygon?crs=EPSG:3857", "g", "memory")
+    feats = []
+    for r in range(side):
+        for c in range(side):
+            x0, y0 = c * 10.0, r * 10.0
+            f = QgsFeature()
+            f.setGeometry(QgsGeometry.fromPolygonXY([[
+                QgsPointXY(x0, y0), QgsPointXY(x0 + 10, y0), QgsPointXY(x0 + 10, y0 + 10),
+                QgsPointXY(x0, y0 + 10), QgsPointXY(x0, y0)]]))
+            feats.append(f)
+    lyr.dataProvider().addFeatures(feats)
+    nb, wt, ids, _ = weights.build_weights_matrix(lyr, kind)
+    pos = {fid: k for k, fid in enumerate(ids)}
+    return ({pos[f]: [pos[j] for j in nb[f]] for f in ids},
+            {pos[f]: list(wt[f]) for f in ids}, list(range(len(ids))))
+
+
+_QGIS_APP = []
 
 
 def _rank_corr(a, b):
@@ -178,6 +228,87 @@ def main() -> int:
     same("Boundary silhouette", rq.boundary_silhouette(xq, labels, adj), esda.boundary_silhouette(zq, labels, wq))
     same("Path silhouette", rq.path_silhouette(xq, labels, adj), esda.path_silhouette(zq, labels, wq))
 
+    # v3.13.0 classic engines (core/stats_engines.py, advanced_stats_engines.py)
+    # against esda on the same weights: global Moran, General G, Geary C, Gi*,
+    # Gi, Local Moran, OLS p-values, and the QGIS-built contiguity weights.
+    core = _load_core_package()
+    se, adv = core["stats_engines"], core["advanced_stats_engines"]
+    yc = 5.0 + y - y.min()  # General G needs non-negative values
+    for rook in (False, True):
+        tag = "rook" if rook else "queen"
+        wl = libpysal.weights.lat2W(side, side, rook=rook)
+        nbd = {i: list(wl.neighbors[i]) for i in ids}
+        row_w = {i: [1.0 / len(v)] * len(v) for i, v in nbd.items()}
+        bin_w = {i: [1.0] * len(v) for i, v in nbd.items()}
+        built = _grid_weights(side, tag)
+        if built is not None:
+            same(f"{tag} neighbour sets (QGIS = libpysal)",
+                 [len(set(built[0][i]) ^ set(nbd[i])) for i in ids], [0] * n, tol=0)
+            same(f"{tag} neighbour counts (QGIS = libpysal)",
+                 [len(built[0][i]) for i in ids], [wl.cardinalities[i] for i in ids], tol=0)
+            same(f"{tag} row-standardised weights", [sum(built[1][i]) for i in ids], [1.0] * n, tol=1e-12)
+            same(f"{tag} each weight 1/k", np.concatenate([built[1][i] for i in ids]),
+                 np.concatenate([[1.0 / len(nbd[i])] * len(nbd[i]) for i in ids]), tol=1e-12)
+        wl.transform = "r"
+        m = esda.Moran(y, wl, permutations=0)
+        mi, ei, vi, zi, pi = se.calculate_global_moran(y, nbd, row_w, ids)
+        same(f"Global Moran I, E[I], VI, z ({tag}, r)", [mi, ei, vi, zi, pi],
+             [m.I, m.EI, m.VI_rand, m.z_rand, m.p_rand])
+        wl.transform = "b"
+        g = esda.G(yc, wl, permutations=0)
+        og, eg, vg, zg, pg = se.calculate_general_g(yc, nbd, bin_w, ids)
+        same(f"General G, E[G] ({tag}, b)", [og, eg], [g.G, g.EG])
+        same(f"General G VG relative ({tag}, b)", [vg / g.VG], [1.0], tol=1e-9)
+        # esda's p_norm is one-sided; the plugin reports the two-sided p.
+        same(f"General G z, two-sided p ({tag}, b)", [zg, pg], [g.z_norm, 2 * g.p_norm], tol=1e-8)
+        wl.transform = "r"
+        gc = esda.Geary(y, wl, permutations=0)
+        same(f"Geary C ({tag}, r)", adv.calculate_geary_c(y, nbd, row_w, ids, permutations=9)["observed_c"], gc.C)
+        wl.transform = "b"
+        gs = esda.G_Local(y, wl, star=True, transform="B", permutations=0)
+        gz, gp, _ = se.calculate_getis_ord(y, nbd, row_w, ids, star=True)
+        same(f"Gi* z ({tag})", gz, gs.Zs)
+        same(f"Gi* p two-sided ({tag})", gp, 2 * gs.p_norm, tol=1e-9)
+        same(f"Gi* z (local_stats_engines, {tag})", lse.getis_ord_star(y, lse.SpatialGraph.from_dicts(
+            nbd, row_w, ids))["z"], gs.Zs)
+        g0 = esda.G_Local(y, wl, star=False, transform="B", permutations=0)
+        same(f"Gi (no star) z ({tag})", se.calculate_getis_ord(y, nbd, row_w, ids, star=False)[0], g0.Zs)
+        wl.transform = "r"
+        ml = esda.Moran_Local(y, wl, permutations=0)
+        li, lz, lp, lq = se.calculate_local_moran(y, nbd, row_w, ids)
+        same(f"Local Moran I_i (x (n-1)/n = esda Is, {tag})", li * (n - 1) / n, ml.Is)
+        # z_i is not compared: esda's analytical VI is not the exact
+        # randomisation variance (tests/test_numeric_truth.py checks the
+        # plugin's z_i against all 7! permutations instead).
+        quad = {1: "HH", 2: "LH", 3: "LL", 4: "HL"}
+        exp_q = [quad[int(c)] if p_ < 0.05 else "Not Significant"
+                 for c, p_ in zip(ml.q, [math.erfc(abs(v) / math.sqrt(2)) for v in lz])]
+        same(f"Local Moran quadrants vs esda q ({tag})", [int(a == b) for a, b in zip(lq, exp_q)], [1] * n, tol=0)
+    # Asymmetric KNN weights: S1 must count pairs where only w_ji is non-zero.
+    pts = np.column_stack([col, row]) + rng.uniform(-0.3, 0.3, size=(n, 2))
+    wk = libpysal.weights.KNN(pts, k=3)
+    wk.transform = "r"
+    knb = {i: list(wk.neighbors[i]) for i in ids}
+    kw = {i: list(wk.weights[i]) for i in ids}
+    m = esda.Moran(y, wk, permutations=0)
+    same("Global Moran VI (asymmetric KNN, r)", se.calculate_global_moran(y, knb, kw, ids)[2], m.VI_rand)
+    wk.transform = "b"
+    g = esda.G(yc, wk, permutations=0)
+    vg = se.calculate_general_g(yc, knb, {i: [1.0] * 3 for i in ids}, ids)[2]
+    same("General G VG relative (asymmetric KNN, b)", [vg / g.VG], [1.0], tol=1e-9)
+    # OLS p-values: Student t with n - k - 1 degrees of freedom.
+    try:
+        from scipy import stats as sstats
+    except ImportError:
+        sstats = None
+    if sstats is not None:
+        for n_ols in (8, 12, 30):
+            Xo = rng.normal(size=(n_ols, 2))
+            yo = 1 + 0.6 * Xo[:, 0] + rng.normal(size=n_ols)
+            res = se.calculate_ols(yo, Xo, {}, {}, list(range(n_ols)), ["a", "b"])
+            same(f"OLS p-values = exact t (n={n_ols})", res["p_values"],
+                 2 * sstats.t.sf(np.abs(res["t_statistics"]), res["df_err"]), tol=1e-10)
+
     if failures:
         print(f"ESDA PARITY: FAIL ({len(failures)} failed): {', '.join(failures)}")
         return 1
@@ -186,4 +317,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    _rc = main()
+    for _app in _QGIS_APP:
+        _app.exitQgis()
+    sys.exit(_rc)

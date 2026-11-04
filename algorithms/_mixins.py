@@ -118,6 +118,63 @@ HELP_SLUGS = {
 }
 
 
+# Search words for the Processing toolbox (and any search that reads tags()).
+# 3.12 defined no tags, so "hotspot" found nothing although it is the word most
+# users type.  Every tool gets the family words; the ones below add their own.
+COMMON_TAGS = ["geostats", "spatial statistics", "planx"]
+_HOTSPOT = ["hotspot", "hot spot", "hot spots", "hotspots", "cold spot", "cluster", "clustering"]
+_LOCAL = ["local spatial autocorrelation", "spatial autocorrelation", "spatial weights",
+          "pysal", "esda", "geoda", "local indicators of spatial association"]
+_GLOBAL = ["spatial autocorrelation", "global spatial autocorrelation", "spatial weights",
+           "pysal", "esda", "geoda", "clustering", "dispersion"]
+_REGION = ["regionalization", "regionalisation", "spatially constrained clustering", "zoning",
+           "spatial weights", "pysal", "spopt", "cluster"]
+_REGRESSION = ["regression", "spatial regression", "spatial econometrics", "pysal", "spreg"]
+ALGORITHM_TAGS = {
+    "getis_ord_gi": _HOTSPOT + _LOCAL + ["gi*", "gi star", "getis-ord", "getis ord", "hot spot analysis",
+                                         "fdr", "false discovery rate"],
+    "local_moran_lisa": _HOTSPOT + _LOCAL + ["lisa", "local moran", "local moran's i", "moran", "anselin",
+                                             "outlier", "spatial outlier", "cluster and outlier", "fdr"],
+    "bivariate_lisa": _HOTSPOT + _LOCAL + ["lisa", "bivariate lisa", "bivariate moran", "local moran", "outlier"],
+    "local_geary_c": _HOTSPOT + _LOCAL + ["lisa", "local geary", "geary", "outlier"],
+    "eb_rate_lisa": _HOTSPOT + _LOCAL + ["lisa", "local moran", "empirical bayes", "rate", "disease mapping"],
+    "local_partial_moran": _HOTSPOT + _LOCAL + ["lisa", "local moran", "partial moran", "conditional"],
+    "multivariate_local_geary": _HOTSPOT + _LOCAL + ["lisa", "local geary", "multivariate"],
+    "local_join_counts": _HOTSPOT + _LOCAL + ["lisa", "join count", "binary", "categorical"],
+    "losh_heteroskedasticity": _LOCAL + ["losh", "local spatial heteroskedasticity", "hot spot", "volatility"],
+    "bivariate_spatial_association_lees_l": _LOCAL + ["lee's l", "lees l", "bivariate", "lisa", "cluster"],
+    "global_moran_autocorrelation": _GLOBAL + ["moran", "moran's i", "global moran"],
+    "geary_c_autocorrelation": _GLOBAL + ["geary", "geary's c"],
+    "general_g_autocorrelation": _GLOBAL + ["general g", "getis-ord", "high/low clustering", "hot spot"],
+    "join_count_statistics": _GLOBAL + ["join count", "binary", "categorical"],
+    "global_bivariate_lee_l": _GLOBAL + ["lee's l", "bivariate"],
+    "incremental_spatial_autocorrelation": _GLOBAL + ["moran", "distance band", "scale", "incremental"],
+    "spatial_gini_inequality": ["gini", "inequality", "spatial gini", "spatial autocorrelation", "pysal"],
+    "gamma_index": _GLOBAL + ["gamma"],
+    "calculate_distance_band": ["spatial weights", "distance band", "knn", "queen", "rook", "contiguity",
+                                "neighbours", "neighbors", "pysal", "libpysal"],
+    "skater_regionalization": _REGION + ["skater"],
+    "max_p_regions": _REGION + ["max-p", "max p", "maxp"],
+    "azp_regionalization": _REGION + ["azp", "automatic zoning"],
+    "redcap_regionalization": _REGION + ["redcap"],
+    "regionalization_quality": _REGION + ["silhouette", "compactness"],
+    "ols_regression": _REGRESSION + ["ols", "ordinary least squares"],
+    "spatial_autoregression": _REGRESSION + ["spatial lag", "sar"],
+    "spatial_error_regression": _REGRESSION + ["spatial error", "sem"],
+    "spatial_durbin_model": _REGRESSION + ["spatial durbin", "sdm"],
+    "lm_diagnostics": _REGRESSION + ["lagrange multiplier", "lm test", "spatial dependence"],
+    "esf_regression": _REGRESSION + ["eigenvector spatial filtering", "esf", "moran eigenvectors"],
+    "gwr_regression": _REGRESSION + ["gwr", "geographically weighted regression", "mgwr"],
+    "multiscale_geographically_weighted_regression": _REGRESSION + ["mgwr", "gwr", "multiscale"],
+}
+
+
 class HelpUrlMixin:
     def helpUrl(self) -> str:
         return DOC_BASE_URL + "#" + HELP_SLUGS[self.name()]
+
+    def tags(self):
+        """Search words: the family words plus this tool's own (see ALGORITHM_TAGS)."""
+        words = list(ALGORITHM_TAGS.get(self.name(), [])) + COMMON_TAGS
+        seen = set()
+        return [w for w in words if not (w in seen or seen.add(w))]

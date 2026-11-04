@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 
 from ..core.charts import donut_chart_svg, kpi_card_row_html
-from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values
+from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values, correction_words
 from ..core.local_stats_engines import local_join_counts
 from ..core.reporting import analyst_guidance_html
 from ._local_common import permutation_resolution_warning, with_notes, DOUBLE, INT, STRING, SpatialStatBase, ToolResult, callout, html_table, report_page
@@ -139,7 +139,7 @@ class LocalJoinCountsAlgorithm(SpatialStatBase):
         docs = {
             "ljc": "Local join count: neighbours meeting the join condition",
             "ljc_p": "One-sided conditional-permutation p-value (NULL where not tested)",
-            "ljc_padj": f"p-value after {correction} correction across tested units",
+            "ljc_padj": f"p-value after the {correction_words(correction)} correction across tested units",
             "ljc_class": "Significant cluster / Not Significant / Not eligible",
             "ljc_nbrs": "Neighbours (binary weights)",
         }
@@ -196,7 +196,7 @@ class LocalJoinCountsAlgorithm(SpatialStatBase):
         )
         subtitle = (f"Join type: <strong>{html.escape(mode_label)}</strong> | Coding: <strong>{html.escape(rule_text)}</strong> | "
                     f"Weights: <strong>{html.escape(weight_label)}</strong> (binary) | Permutations: <strong>{permutations}</strong> | "
-                    f"Multiple testing: <strong>{html.escape(correction)}</strong>")
+                    f"Multiple testing: <strong>{html.escape(correction_words(correction))}</strong>")
         drop = callout(f"{dropped} feature(s) with missing values were left out.") if dropped else ""
         body = kpis + drop + rare + f"<section><h2>Classes</h2>{donut}{prev}</section>" + guidance
         return report_page(self.DISPLAY, subtitle, body)

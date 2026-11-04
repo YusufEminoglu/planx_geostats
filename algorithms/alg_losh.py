@@ -10,7 +10,7 @@ import numpy as np
 from qgis.core import QgsProcessingParameterBoolean
 
 from ..core.charts import donut_chart_svg, kpi_card_row_html, scatter_plot_svg
-from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values
+from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values, correction_words
 from ..core.local_stats_engines import getis_ord_star, losh
 from ..core.reporting import analyst_guidance_html
 from ._local_common import DOUBLE, STRING, SpatialStatBase, ToolResult, callout, fmt, report_page
@@ -106,7 +106,7 @@ class LOSHAlgorithm(SpatialStatBase):
         docs = {
             "losh_h": "LOSH H_i (1 = study-area average local variability)",
             "losh_p": "Chi-square p-value for H_i (NULL unless a = 2)",
-            "losh_padj": f"p-value after {correction} correction",
+            "losh_padj": f"p-value after the {correction_words(correction)} correction",
             "local_mean": "Local (window) mean of the field",
             "gi_z": "Getis-Ord Gi* z-score (binary weights, self included)",
             "losh_type": "Ord & Getis mean/variance typology",
@@ -159,6 +159,6 @@ class LOSHAlgorithm(SpatialStatBase):
         )
         subtitle = (f"Field: <strong>{html.escape(field)}</strong> | a = <strong>{a:g}</strong> | "
                     f"Window includes unit: <strong>{'yes' if include_self else 'no'}</strong> | "
-                    f"Weights: <strong>{html.escape(weight_label)}</strong> (binary) | Multiple testing: <strong>{html.escape(correction)}</strong>")
+                    f"Weights: <strong>{html.escape(weight_label)}</strong> (binary) | Multiple testing: <strong>{html.escape(correction_words(correction))}</strong>")
         body = kpis + a_note + f"<section><h2>Typology</h2>{donut}{scatter}</section>" + guidance
         return report_page(self.DISPLAY, subtitle, body)

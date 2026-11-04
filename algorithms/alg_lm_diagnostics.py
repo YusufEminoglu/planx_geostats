@@ -27,6 +27,7 @@ from ..core.analysis_diagnostics import regression_quality_html, regression_qual
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 
 from ._icons import algorithm_icon
+from ._guards import check_weight_choice, engine_errors, require_neighbours, restrict_weights, strict_float
 
 
 class LMDiagnosticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
@@ -194,7 +195,7 @@ class LMDiagnosticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     has_null = True
                     break
                 try:
-                    f_indeps.append(float(x_val))
+                    f_indeps.append(strict_float(x_val))
                 except (ValueError, TypeError):
                     has_null = True
                     break
@@ -202,7 +203,7 @@ class LMDiagnosticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 skipped += 1
                 continue
             try:
-                dep_vals.append(float(y_val))
+                dep_vals.append(strict_float(y_val))
                 indep_vals.append(f_indeps)
                 valid_fids.append(f.id())
             except (ValueError, TypeError):
@@ -230,14 +231,19 @@ class LMDiagnosticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             feedback.pushWarning(risk)
 
         feedback.pushInfo("Generating spatial weights matrix...")
+        check_weight_choice(source, weight_type, distance_band)
         neighbors, weights, id_order, _ = build_weights_matrix(
             source, weight_type, k_neighbors=k_neighbors, distance_band=distance_band, feedback=feedback
         )
+        # Rebuild the graph on the complete records only (re-standardised rows).
+        neighbors, weights, _ = restrict_weights(neighbors, weights, valid_fids)
+        require_neighbours(neighbors, valid_fids)
         if feedback.isCanceled():
             return {}
 
         feedback.pushInfo("Fitting OLS baseline and computing LM diagnostics...")
-        result = calculate_lm_diagnostics(y, X_data, neighbors, weights, valid_fids)
+        with engine_errors():
+            result = calculate_lm_diagnostics(y, X_data, neighbors, weights, valid_fids)
 
         if feedback.isCanceled():
             return {}

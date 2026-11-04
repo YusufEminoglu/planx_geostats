@@ -32,16 +32,31 @@ from ..core.advanced_stats_engines import calculate_local_geary_c
 from ..core.layer_metadata import apply_output_metadata
 from ..core.local_pattern_audit import (
     MULTIPLE_TESTING_OPTIONS,
+    NO_DATA,
+    NO_NEIGHBOURS,
+    correction_words,
     adjust_p_values,
     corrected_lisa_classes,
     local_moran_class_summary,
 )
 from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, donut_chart_svg, kpi_card_row_html
-from ..core.symbology import LISA_QUADRANT_STYLE, apply_renderer, lisa_quadrant_renderer
+from ..core.symbology import LISA_QUADRANT_STYLE, MISSING_CLASS_STYLE, apply_renderer, lisa_quadrant_renderer
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import (
+    check_weight_choice,
+    engine_errors,
+    neighbour_counts,
+    push_skips,
+    read_finite_values,
+    require_neighbours,
+    restrict_weights,
+    skip_message,
+    set_fields_keeping_values,
+    stop_if_cancelled,
+)
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -94,7 +109,9 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             "each other and jointly high (HH) or low (LL) - a local cluster\n"
             "- HL/LH: the feature and its neighbors are unusually DISSIMILAR - "
             "a high value among low neighbors (HL) or the reverse (LH)\n"
-            "- Not Significant: p >= 0.05, or the feature had no valid neighbors\n\n"
+            "- Not Significant: lgc_padj >= 0.05\n"
+            "- No data: NULL, non-numeric, NaN or infinite value (left out)\n"
+            "- No neighbours: no neighbor with data, so no test was run\n\n"
             "Uses the same HH/LL/HL/LH vocabulary as Local Moran's I so results "
             "are directly comparable, but the underlying test is different: "
             "Local Moran compares each value's deviation from the mean against "
@@ -229,44 +246,50 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if field_idx < 0:
             raise QgsProcessingException(f"Target field '{field_name}' not found.")
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo("Generating spatial weights matrix...")
         neighbors, weights, id_order, _ = build_weights_matrix(
             source, weight_type, k_neighbors=k_neighbors, distance_band=distance_band, feedback=feedback
         )
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         feedback.pushInfo("Extracting target field values...")
-        y_dict = {}
-        for f in source.getFeatures():
-            if feedback.isCanceled():
-                break
-            val = f.attribute(field_name)
-            if val is None or val == NULL or str(val) == "NULL":
-                continue
-            try:
-                y_dict[f.id()] = float(val)
-            except (ValueError, TypeError):
-                continue
+        y_dict, skip_counts = read_finite_values(source, field_name, feedback)
+        stop_if_cancelled(feedback)
+        push_skips(feedback, skip_counts)
 
         valid_id_order = [fid for fid in id_order if fid in y_dict]
-        y = np.array([y_dict[fid] for fid in valid_id_order])
+        no_data_count = len(id_order) - len(valid_id_order)
+        y = np.array([y_dict[fid] for fid in valid_id_order], dtype=float)
 
         if len(y) <= 2:
-            raise QgsProcessingException("At least 3 valid features with numeric values are required for Local Geary's C analysis.")
+            raise QgsProcessingException(
+                "At least 3 features with a finite numeric value are required for Local Geary's C analysis "
+                f"({len(y)} found). " + skip_message(skip_counts)
+            )
+        neighbors, weights, _ = restrict_weights(neighbors, weights, valid_id_order)
+        require_neighbours(neighbors, valid_id_order)
+        counts_by_fid = neighbour_counts(neighbors, valid_id_order)
 
         feedback.pushInfo(f"Calculating Local Geary's C using {permutations} conditional permutations per feature...")
-        local_c, z_scores, p_values, quadrants = calculate_local_geary_c(
-            y, neighbors, weights, valid_id_order, permutations=permutations, seed=seed
-        )
+        with engine_errors():
+            local_c, z_scores, p_values, quadrants = calculate_local_geary_c(
+                y, neighbors, weights, valid_id_order, permutations=permutations, seed=seed
+            )
+        local_c = np.array(local_c, dtype=float)
+        z_scores = np.array(z_scores, dtype=float)
+        p_values = np.array(p_values, dtype=float)
+        quadrants = list(quadrants)
+        for idx, fid in enumerate(valid_id_order):
+            if counts_by_fid[fid] == 0:
+                local_c[idx] = z_scores[idx] = p_values[idx] = np.nan
+                quadrants[idx] = NO_NEIGHBOURS
         adjusted_p = adjust_p_values(p_values, correction)
         quadrants = corrected_lisa_classes(quadrants, adjusted_p)
 
-        class_summary = local_moran_class_summary(quadrants)
+        class_summary = local_moran_class_summary(quadrants + [NO_DATA] * no_data_count)
         feedback.pushInfo(class_summary["message"])
-
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         out_fields = source.fields()
         out_fields.append(QgsField("lgc_c", QVariant.Double, len=10, prec=6))
@@ -280,17 +303,20 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         (sink, dest_id) = self.parameterAsSink(
             parameters, self.OUTPUT, context, out_fields, source.wkbType(), source.sourceCrs()
         )
-        self.out_layer_id = dest_id
+        if sink is None:
+            raise QgsProcessingException("Could not create the output layer.")
+
+        def _num(value):
+            return float(value) if np.isfinite(value) else None
 
         results_map = {}
-        valid_ids = set(valid_id_order)
         isolated_count = 0
         for idx, fid in enumerate(valid_id_order):
-            neighbor_count = len([nid for nid in neighbors.get(fid, []) if nid in valid_ids])
+            neighbor_count = counts_by_fid[fid]
             if neighbor_count == 0:
                 isolated_count += 1
             results_map[fid] = (
-                local_c[idx], z_scores[idx], p_values[idx], adjusted_p[idx],
+                _num(local_c[idx]), _num(z_scores[idx]), _num(p_values[idx]), _num(adjusted_p[idx]),
                 quadrants[idx], neighbor_count,
             )
         if isolated_count:
@@ -301,19 +327,17 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         feedback.pushInfo("Writing results to output layer...")
         total = source.featureCount() or 1
         for current, f in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
 
             out_feat = QgsFeature(f)
-            out_feat.setFields(out_fields)
-
+            set_fields_keeping_values(out_feat, out_fields)
             fid = f.id()
             if fid in results_map:
                 c_val, z, p, p_adjusted, quad, neighbor_count = results_map[fid]
-                out_feat.setAttribute("lgc_c", float(c_val))
-                out_feat.setAttribute("lgc_z", float(z))
-                out_feat.setAttribute("lgc_p", float(p))
-                out_feat.setAttribute("lgc_padj", float(p_adjusted))
+                out_feat.setAttribute("lgc_c", c_val)
+                out_feat.setAttribute("lgc_z", z)
+                out_feat.setAttribute("lgc_p", p)
+                out_feat.setAttribute("lgc_padj", p_adjusted)
                 out_feat.setAttribute("lgc_mt", correction)
                 out_feat.setAttribute("quadrant", str(quad))
                 out_feat.setAttribute("lgc_nbrs", int(neighbor_count))
@@ -323,11 +347,12 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("lgc_p", None)
                 out_feat.setAttribute("lgc_padj", None)
                 out_feat.setAttribute("lgc_mt", correction)
-                out_feat.setAttribute("quadrant", "Not Significant")
+                out_feat.setAttribute("quadrant", NO_DATA)
                 out_feat.setAttribute("lgc_nbrs", None)
 
             sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
+        self.out_layer_id = dest_id
 
         feedback.pushInfo("Generating HTML report...")
         self._write_html(html_path, field_name, len(y), weight_type, class_summary, isolated_count, correction)
@@ -336,14 +361,16 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def _write_html(self, path, field_name, n, weight_type, class_summary, isolated_count, correction):
         counts = class_summary["counts"]
-        donut_labels = [label for _, _, label in LISA_QUADRANT_STYLE]
-        donut_values = [counts.get(code, 0) for code, _, _ in LISA_QUADRANT_STYLE]
-        donut_colors = {label: color for code, color, label in LISA_QUADRANT_STYLE}
+        style = LISA_QUADRANT_STYLE + MISSING_CLASS_STYLE
+        donut_labels = [label for _, _, label in style]
+        donut_values = [int(counts.get(code, 0)) for code, _, _ in style]
+        donut_colors = {label: color for code, color, label in style}
+        method = correction_words(correction)
 
         kpi_row = kpi_card_row_html([
             {"label": "Cluster features", "value": str(class_summary["cluster_count"]), "sublabel": "HH + LL (similar to neighbors)", "tone": "good" if class_summary["cluster_count"] else "neutral"},
             {"label": "Outlier features", "value": str(class_summary["outlier_count"]), "sublabel": "HL + LH (dissimilar from neighbors)", "tone": "warn" if class_summary["outlier_count"] else "neutral"},
-            {"label": "Significant total", "value": f"{class_summary['significant_count']} / {n}", "sublabel": f"Dominant: {class_summary['dominant_label']}"},
+            {"label": "Significant total", "value": f"{class_summary['significant_count']} / {class_summary['tested_count']}", "sublabel": f"Dominant: {class_summary['dominant_label']}"},
         ])
 
         guidance_html = analyst_guidance_html(
@@ -355,9 +382,9 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "The conditional-permutation count is high enough (199+ recommended) for a stable p-value.",
             ],
             [
-                f"{isolated_count} feature(s) had zero valid neighbors" if isolated_count else "No isolated (zero-neighbor) features were found.",
+                f"{isolated_count} feature(s) had no neighbour with data and are mapped as 'No neighbours'" if isolated_count else "No isolated (zero-neighbor) features were found.",
                 "Magnitude significance (Geary's C itself) and sign (HH/LL/HL/LH) are two separate tests that usually but not always agree.",
-                f"Multiplicity method: {correction}; mapped classes use lgc_padj < 0.05 while lgc_p preserves the raw p-value.",
+                f"Multiple-testing correction: {method}; mapped classes use lgc_padj < 0.05 while lgc_p preserves the raw p-value.",
             ],
             [
                 "Local Moran's I as the standard cross-product-based comparison for the same clusters/outliers",
@@ -391,7 +418,7 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 <div class="container">
     <header>
         <h1>Local Geary's C (Cluster and Outlier Analysis)</h1>
-        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Feature Count: <strong>{n}</strong> | Weights: <strong>{html.escape(weight_type)}</strong> | Multiple testing: <strong>{html.escape(correction)}</strong></p>
+        <p class="subtitle">Field Analyzed: <strong>{html.escape(field_name)}</strong> | Features analysed: <strong>{int(n)}</strong> | Weights: <strong>{html.escape(weight_type)}</strong> | Multiple testing: <strong>{html.escape(method)}</strong></p>
     </header>
 
     {kpi_row}
@@ -433,11 +460,11 @@ class LocalGearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 "lgc_p": "Local Geary's C permutation p-value",
                 "lgc_padj": "Adjusted Local Geary p-value used for classification",
                 "lgc_mt": "Multiple-testing correction method",
-                "quadrant": "Classification: HH, LL, HL, LH, or Not Significant",
+                "quadrant": "Classification: HH, LL, HL, LH, Not Significant, No data or No neighbours",
                 "lgc_nbrs": "Valid neighbors used for the local statistic",
             },
             self.displayName(),
         )
-        apply_renderer(layer, lisa_quadrant_renderer(layer.geometryType(), "quadrant"))
+        apply_renderer(layer, lisa_quadrant_renderer(layer.geometryType(), "quadrant", include_missing=True))
 
         return {}

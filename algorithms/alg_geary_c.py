@@ -36,6 +36,16 @@ from ..core.reporting import analyst_guidance_css, analyst_guidance_html
 from ..core.charts import chart_css, histogram_svg
 
 from ._icons import algorithm_icon
+from ._guards import (
+    check_weight_choice,
+    engine_errors,
+    push_skips,
+    read_finite_values,
+    require_neighbours,
+    restrict_weights,
+    skip_message,
+    stop_if_cancelled,
+)
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -194,43 +204,39 @@ class GearyCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         if field_idx < 0:
             raise QgsProcessingException(f"Target field '{field_name}' not found.")
 
+        check_weight_choice(source, weight_type, distance_band)
         feedback.pushInfo("Generating spatial weights matrix...")
         neighbors, weights, id_order, _ = build_weights_matrix(
             source, weight_type, k_neighbors=k_neighbors, distance_band=distance_band, feedback=feedback
         )
-        if feedback.isCanceled():
-            return {}
+        stop_if_cancelled(feedback)
 
         feedback.pushInfo("Extracting target field values...")
-        y_dict = {}
-        for f in source.getFeatures():
-            if feedback.isCanceled():
-                break
-            val = f.attribute(field_name)
-            if val is None or val == NULL or str(val) == "NULL":
-                continue
-            try:
-                y_dict[f.id()] = float(val)
-            except (ValueError, TypeError):
-                continue
+        y_dict, skip_counts = read_finite_values(source, field_name, feedback)
+        stop_if_cancelled(feedback)
 
         valid_id_order = [fid for fid in id_order if fid in y_dict]
-        y = np.array([y_dict[fid] for fid in valid_id_order])
-        numeric_summary = numeric_quality_summary(source.featureCount(), y_dict, y)
+        y = np.array([y_dict[fid] for fid in valid_id_order], dtype=float)
+        neighbors, weights, _ = restrict_weights(neighbors, weights, valid_id_order)
+        numeric_summary = numeric_quality_summary(source.featureCount(), y_dict, y, skip_counts)
         neighborhood_summary = neighbor_summary(neighbors, valid_id_order)
         crs_warning = crs_unit_warning(source)
         push_diagnostics(feedback, numeric_summary, neighborhood_summary, crs_warning)
+        push_skips(feedback, skip_counts)
 
         if len(y) <= 3:
-            raise QgsProcessingException("At least 4 valid features with numeric values are required for Geary's C analysis.")
+            raise QgsProcessingException(
+                "At least 4 features with a finite numeric value are required for Geary's C analysis "
+                f"({len(y)} found). " + skip_message(skip_counts)
+            )
         if numeric_summary["is_constant"]:
             raise QgsProcessingException("Geary's C requires variation in the target field; all valid values are identical.")
+        require_neighbours(neighbors, valid_id_order)
 
         feedback.pushInfo(f"Calculating Geary's C using {permutations} permutations...")
-        result = calculate_geary_c(y, neighbors, weights, valid_id_order, permutations=permutations, seed=seed)
-
-        if feedback.isCanceled():
-            return {}
+        with engine_errors():
+            result = calculate_geary_c(y, neighbors, weights, valid_id_order, permutations=permutations, seed=seed)
+        stop_if_cancelled(feedback)
 
         feedback.pushInfo(
             f"Geary's C = {result['observed_c']:.4f} (expected 1.0), z = {result['z_score']:.3f}, p = {result['p_value']:.4f}"

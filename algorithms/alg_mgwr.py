@@ -51,6 +51,7 @@ from ..core.charts import chart_css, scatter_plot_svg
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, stop_if_cancelled
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -447,10 +448,9 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         result_map = {fid: row_idx for row_idx, fid in enumerate(valid_fids)}
         feedback.pushInfo("Writing MGWR local coefficients and diagnostics...")
         for current, feature in enumerate(source.getFeatures()):
-            if feedback.isCanceled():
-                break
+            stop_if_cancelled(feedback)
             out_feature = QgsFeature(feature)
-            out_feature.setFields(out_fields)
+            set_fields_keeping_values(out_feature, out_fields)
             fid = int(feature.id())
             row_idx = result_map.get(fid)
             if row_idx is None:

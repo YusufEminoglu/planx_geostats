@@ -8,7 +8,7 @@ from collections import Counter
 import numpy as np
 
 from ..core.charts import donut_chart_svg, kpi_card_row_html
-from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values
+from ..core.local_pattern_audit import MULTIPLE_TESTING_OPTIONS, adjust_p_values, correction_words
 from ..core.local_stats_engines import moran_local_conditional, moran_local_partial, moran_local_perm
 from ..core.reporting import analyst_guidance_html
 from ..core.symbology import LISA_QUADRANT_STYLE
@@ -97,7 +97,7 @@ class LocalPartialMoranAlgorithm(SpatialStatBase):
         docs = {
             "pm_assoc": f"{mode.capitalize()} local Moran statistic",
             "pm_p": "Two-sided conditional-permutation p-value",
-            "pm_padj": f"p-value after {correction} correction",
+            "pm_padj": f"p-value after the {correction_words(correction)} correction",
             "quadrant": f"Class after accounting for {', '.join(controls)}",
             "plain_quad": "Class from the plain Local Moran's I of the same field",
             "pm_nbrs": "Neighbours used",

@@ -26,6 +26,7 @@ from ..core.weights import geometry_centroid_point
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values, strict_float
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -143,7 +144,7 @@ class CentralFeatureAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 val = f.attribute(weight_field)
                 if val is not None and val != NULL and str(val) != 'NULL':
                     try:
-                        w_val = float(val)
+                        w_val = strict_float(val)
                     except (ValueError, TypeError):
                         pass
             weights.append(w_val)
@@ -185,7 +186,7 @@ class CentralFeatureAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             total_dist = float(np.sum(dists))
 
         out_feat = QgsFeature(central_feat)
-        out_feat.setFields(out_fields)
+        set_fields_keeping_values(out_feat, out_fields)
         out_feat.setAttribute("is_central", 1)
         out_feat.setAttribute("total_distance", total_dist)
 

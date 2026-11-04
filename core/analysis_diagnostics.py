@@ -9,7 +9,13 @@ from typing import Iterable, Optional
 import numpy as np
 
 
-def numeric_quality_summary(total_features: int, valid_values: dict, values: Iterable[float]) -> dict:
+def numeric_quality_summary(total_features: int, valid_values: dict, values: Iterable[float],
+                            skip_counts: Optional[dict] = None) -> dict:
+    """Counts and moments of the analysed values.
+
+    ``skip_counts`` (from ``algorithms._guards.read_finite_values``) says why
+    features were left out: NULL, non-numeric, or NaN/infinite.
+    """
     arr = np.array(list(values), dtype=float)
     finite = arr[np.isfinite(arr)]
     skipped = max(0, int(total_features) - int(len(valid_values)))
@@ -22,7 +28,8 @@ def numeric_quality_summary(total_features: int, valid_values: dict, values: Ite
         "mean": None,
         "std": None,
         "is_constant": False,
-        "has_non_finite": int(len(arr)) != int(len(finite)),
+        "has_non_finite": int(len(arr)) != int(len(finite)) or bool((skip_counts or {}).get("non_finite")),
+        "skip_counts": dict(skip_counts or {}),
     }
     if len(finite) > 0:
         summary.update({
@@ -78,18 +85,29 @@ def neighbor_summary(neighbors: dict, valid_ids: Iterable[int]) -> dict:
     }
 
 
-def filter_weights_to_valid_ids(neighbors: dict, valid_ids: Iterable[int]) -> tuple[dict[int, list[int]], dict[int, list[float]], list[int]]:
-    """Filter a neighbor graph to complete records and rebuild row-standardized weights."""
+def filter_weights_to_valid_ids(neighbors: dict, valid_ids: Iterable[int], weights: Optional[dict] = None) -> tuple[dict[int, list[int]], dict[int, list[float]], list[int]]:
+    """Filter a neighbor graph to complete records and rebuild row-standardized weights.
+
+    Without ``weights`` every kept neighbour gets 1/k.  With ``weights`` the
+    original weight of each kept neighbour is retained and the row rescaled
+    to sum to one, so inverse-distance weights keep their decay.
+    """
     id_order = [int(fid) for fid in valid_ids]
     valid_set = set(id_order)
     filtered_neighbors: dict[int, list[int]] = {}
     filtered_weights: dict[int, list[float]] = {}
 
     for fid in id_order:
-        row_neighbors = [int(nid) for nid in neighbors.get(fid, []) if int(nid) in valid_set]
-        filtered_neighbors[fid] = row_neighbors
-        if row_neighbors:
-            filtered_weights[fid] = [1.0 / len(row_neighbors)] * len(row_neighbors)
+        row = neighbors.get(fid, [])
+        row_w = (weights or {}).get(fid) if weights is not None else None
+        kept = [(int(nid), (float(row_w[j]) if row_w is not None and j < len(row_w) else 1.0))
+                for j, nid in enumerate(row) if int(nid) in valid_set and int(nid) != fid]
+        filtered_neighbors[fid] = [nid for nid, _ in kept]
+        total = sum(w for _, w in kept)
+        if kept and total > 0:
+            filtered_weights[fid] = [w / total for _, w in kept]
+        elif kept:
+            filtered_weights[fid] = [1.0 / len(kept)] * len(kept)
         else:
             filtered_weights[fid] = []
 
@@ -304,7 +322,11 @@ def push_diagnostics(feedback, numeric_summary: dict, neighborhood_summary: Opti
     if numeric_summary.get("is_constant"):
         feedback.pushWarning("The analysis field is constant. Significance statistics may be uninformative.")
     if numeric_summary.get("has_non_finite"):
-        feedback.pushWarning("Non-finite numeric values were detected and excluded from diagnostics.")
+        non_finite = int((numeric_summary.get("skip_counts") or {}).get("non_finite", 0))
+        feedback.pushWarning(
+            f"{non_finite} NaN or infinite value(s) were skipped; those features are left out of the analysis."
+            if non_finite else "Non-finite numeric values were detected and excluded from the analysis."
+        )
     if crs_warning:
         feedback.pushWarning(crs_warning)
     if neighborhood_summary:
@@ -337,6 +359,15 @@ def diagnostics_html(numeric_summary: dict, neighborhood_summary: Optional[dict]
         ("Total features", str(numeric_summary["total_features"])),
         ("Valid numeric features", str(numeric_summary["valid_numeric"])),
         ("Skipped/null/non-numeric features", str(numeric_summary["skipped"])),
+    ]
+    skip_counts = numeric_summary.get("skip_counts") or {}
+    if skip_counts:
+        rows.extend([
+            ("Skipped: no value (NULL)", str(int(skip_counts.get("missing", 0)))),
+            ("Skipped: non-numeric value", str(int(skip_counts.get("non_numeric", 0)))),
+            ("Skipped: NaN or infinite value", str(int(skip_counts.get("non_finite", 0)))),
+        ])
+    rows += [
         ("Minimum value", format_number(numeric_summary["minimum"])),
         ("Maximum value", format_number(numeric_summary["maximum"])),
         ("Mean value", format_number(numeric_summary["mean"])),

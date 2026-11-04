@@ -27,6 +27,7 @@ from ..core.layer_metadata import apply_output_metadata
 
 from ._icons import algorithm_icon
 from ._deliver import style_loaded_output
+from ._guards import set_fields_keeping_values
 
 
 logger = logging.getLogger("PlanX GeoStats Lab")
@@ -184,7 +185,7 @@ class LinearDirectionalMeanAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         out_feat = QgsFeature()
         out_feat.setGeometry(QgsGeometry.fromPolylineXY([pt_start, pt_end]))
-        out_feat.setFields(out_fields)
+        set_fields_keeping_values(out_feat, out_fields)
         out_feat.setAttribute("mean_angle", mean_angle)
         out_feat.setAttribute("mean_length", mean_length)
         out_feat.setAttribute("center_x", center_x)
