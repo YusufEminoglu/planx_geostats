@@ -126,25 +126,25 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.TASK_TYPE, "Task type", options=self.TASK_TYPES, defaultValue=0))
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.N_FOLDS, "Number of spatial folds (k)", type=QgsProcessingParameterNumber.Integer,
+                self.N_FOLDS, "Number of spatial folds (k)", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5, minValue=2, maxValue=20,
             )
         )
@@ -227,7 +227,7 @@ class SpatialCVEvaluatorAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             set_fields_keeping_values(out_feature, out_fields)
             fid = feature.id()
             out_feature.setAttribute("cv_fold", fold_map.get(fid))
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, task_type, model_key, n_folds, method_label, fold_metrics, skipped)

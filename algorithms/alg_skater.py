@@ -109,7 +109,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -117,7 +117,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELDS,
                 "Analysis fields (numeric only)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
             )
         )
@@ -133,7 +133,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.KNN,
                 "Number of neighbors (K value, KNN only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5,
                 minValue=1,
             )
@@ -142,7 +142,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_BAND,
                 "Distance band threshold (map units, Distance Band only)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1000.0,
                 minValue=0.0001,
             )
@@ -151,7 +151,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.K_CLUSTERS,
                 "Number of regions (K)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=3,
                 minValue=2,
             )
@@ -297,7 +297,7 @@ class SkaterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("region_size", None)
                 out_feat.setAttribute("region_ssd", None)
 
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         feedback.pushInfo("Assessing partition quality...")

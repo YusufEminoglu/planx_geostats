@@ -125,7 +125,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -133,7 +133,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEP_VAR,
                 "Dependent variable field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric
+                type=QgsProcessingParameterField.DataType.Numeric
             )
         )
         self.addParameter(
@@ -141,7 +141,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.INDEPENDENTS,
                 "Independent variable fields",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True
             )
         )
@@ -165,7 +165,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.BANDWIDTH,
                 "Bandwidth value (distance in map units for Fixed; number of neighbors for Adaptive)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=30.0,
                 minValue=1.0
             )
@@ -426,7 +426,7 @@ class GWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     out_feat.setAttribute(f"se_{short_name}", None)
                     out_feat.setAttribute(f"t_{short_name}", None)
 
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 60 * (current / total)))
 
         # Generate GWR diagnostics report

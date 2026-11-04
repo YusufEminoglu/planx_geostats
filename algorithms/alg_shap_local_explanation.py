@@ -89,18 +89,18 @@ class SHAPLocalExplanationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.TASK_TYPE, "Task type", options=self.TASK_TYPES, defaultValue=0))
@@ -113,7 +113,7 @@ class SHAPLocalExplanationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.FEATURE_ID, "Feature ID to explain", type=QgsProcessingParameterNumber.Integer,
+                self.FEATURE_ID, "Feature ID to explain", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=0, minValue=0,
             )
         )

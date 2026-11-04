@@ -99,17 +99,17 @@ class GMMClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FIELDS, "Analysis fields (numeric only)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.N_COMPONENTS, "Number of components (K)", type=QgsProcessingParameterNumber.Integer,
+                self.N_COMPONENTS, "Number of components (K)", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=3, minValue=2, maxValue=30,
             )
         )
@@ -200,7 +200,7 @@ class GMMClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("cluster_id", None)
                 for field_name in proba_field_names:
                     out_feature.setAttribute(field_name, None)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         return {self.OUTPUT: dest_id}

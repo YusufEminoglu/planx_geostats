@@ -112,7 +112,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -120,7 +120,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEP_VAR,
                 "Dependent variable field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -128,7 +128,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.INDEPENDENTS,
                 "Independent variable fields (select one or more)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
             )
         )
@@ -144,7 +144,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.KNN,
                 "Number of neighbors (K value, KNN only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=8,
                 minValue=1,
             )
@@ -153,7 +153,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_BAND,
                 "Distance band threshold (map units, Distance Band only)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1000.0,
                 minValue=0.0001,
             )
@@ -301,7 +301,7 @@ class SpatialDurbinAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             else:
                 out_feat.setAttribute("residual", None)
                 out_feat.setAttribute("fitted", None)
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 30 * (current / total)))
 
         feedback.pushInfo("Generating SDM HTML diagnostics report...")

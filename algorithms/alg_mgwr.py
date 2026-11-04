@@ -149,7 +149,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -157,7 +157,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEP_VAR,
                 "Dependent variable field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -165,7 +165,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.INDEPENDENTS,
                 "Explanatory variable fields",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
             )
         )
@@ -189,7 +189,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MIN_BW,
                 "Minimum bandwidth or neighbor count (0 = automatic lower bound)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -198,7 +198,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_BW,
                 "Maximum bandwidth or neighbor count (0 = automatic upper bound)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -207,7 +207,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_ITER,
                 "Maximum multiscale bandwidth-search iterations",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=50,
                 minValue=1,
             )
@@ -216,7 +216,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_CHUNKS,
                 "Fit chunks for memory control",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=1,
                 minValue=1,
             )
@@ -470,7 +470,7 @@ class MGWRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     out_feature.setAttribute(f"mg_{short_name}", self._safe_output(extracted["params"][row_idx, col]))
                     out_feature.setAttribute(f"mgs_{short_name}", self._safe_output(extracted["standard_errors"][row_idx, col]))
                     out_feature.setAttribute(f"mgt_{short_name}", self._safe_output(extracted["t_values"][row_idx, col]))
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(55 + 45 * (current / total)))
 
         self._write_html(

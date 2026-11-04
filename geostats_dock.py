@@ -471,7 +471,7 @@ class GeoStatsDock(QDockWidget):
         item = self.tree.itemAt(pos)
         menu = self._build_context_menu(item) if item else None
         if menu is not None:
-            menu.exec_(self.tree.viewport().mapToGlobal(pos))
+            menu.exec(self.tree.viewport().mapToGlobal(pos))
 
     def _build_context_menu(self, item):
         alg_id = item.data(0, Qt.ItemDataRole.UserRole)

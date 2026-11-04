@@ -172,7 +172,7 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -180,14 +180,14 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to interpolate",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.POWER,
                 "Distance weighting power",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=2.0,
                 minValue=0.1,
                 maxValue=10.0,
@@ -205,7 +205,7 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.NEIGHBOURS,
                 "Neighbour count (nearest-neighbour mode only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=12,
                 minValue=1,
                 maxValue=100_000,
@@ -216,7 +216,7 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.RADIUS,
                 "Search radius in map units (radius mode only; 0 = three times "
                 "the mean nearest-neighbour distance)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -226,7 +226,7 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -235,7 +235,7 @@ class IdwAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_POINTS,
                 "Maximum observations to interpolate from",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=IDW_SOFT_LIMIT,
                 minValue=2,
                 maxValue=2_000_000,

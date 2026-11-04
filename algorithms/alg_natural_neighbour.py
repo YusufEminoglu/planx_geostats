@@ -152,7 +152,7 @@ class NaturalNeighbourAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -160,7 +160,7 @@ class NaturalNeighbourAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to interpolate",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -168,7 +168,7 @@ class NaturalNeighbourAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -178,7 +178,7 @@ class NaturalNeighbourAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.MAX_POINTS,
                 "Maximum observations (the mesh build is close to quadratic in "
                 "this number)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=NATURAL_SOFT_LIMIT,
                 minValue=3,
                 maxValue=200_000,

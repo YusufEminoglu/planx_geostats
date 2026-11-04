@@ -102,30 +102,30 @@ class SVRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.KERNEL, "Kernel", options=self.KERNELS, defaultValue=1))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.C, "Regularization (C)", type=QgsProcessingParameterNumber.Double,
+                self.C, "Regularization (C)", type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.0, minValue=0.001, maxValue=1000.0,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.EPSILON, "Tolerance tube width (epsilon)", type=QgsProcessingParameterNumber.Double,
+                self.EPSILON, "Tolerance tube width (epsilon)", type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.1, minValue=0.0, maxValue=10.0,
             )
         )
@@ -200,7 +200,7 @@ class SVRAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("svr_pred", None)
                 out_feature.setAttribute("svr_resid", None)
                 out_feature.setAttribute("svr_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, kernel, c_value, epsilon, results, skipped)

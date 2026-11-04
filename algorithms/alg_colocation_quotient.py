@@ -92,7 +92,7 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -100,7 +100,7 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Category field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
@@ -119,7 +119,7 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.KNN,
                 "Number of nearest neighbors (K)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5,
                 minValue=1,
             )
@@ -128,7 +128,7 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.PERMUTATIONS,
                 "Number of permutations (Monte Carlo)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=999,
                 minValue=99,
                 maxValue=9999,
@@ -138,7 +138,7 @@ class ColocationQuotientAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.RANDOM_SEED,
                 "Random seed (reproducibility)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=42,
                 minValue=0,
             )

@@ -90,17 +90,17 @@ class HDBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FIELDS, "Analysis fields (numeric only)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MIN_CLUSTER_SIZE, "Min cluster size", type=QgsProcessingParameterNumber.Integer,
+                self.MIN_CLUSTER_SIZE, "Min cluster size", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5, minValue=2, maxValue=1000,
             )
         )
@@ -183,7 +183,7 @@ class HDBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             else:
                 out_feature.setAttribute("cluster_id", None)
                 out_feature.setAttribute("cluster_prob", None)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         return {self.OUTPUT: dest_id}

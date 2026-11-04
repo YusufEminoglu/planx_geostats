@@ -93,7 +93,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -101,14 +101,14 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Input field (numeric only)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric
+                type=QgsProcessingParameterField.DataType.Numeric
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.START_DISTANCE,
                 "Starting distance (map units)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=500.0,
                 minValue=0.0001
             )
@@ -117,7 +117,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_INCREMENT,
                 "Distance increment (map units)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=500.0,
                 minValue=0.0001
             )
@@ -126,7 +126,7 @@ class IncrementalAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_INCREMENTS,
                 "Number of distance increments",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=10,
                 minValue=3,
                 maxValue=50

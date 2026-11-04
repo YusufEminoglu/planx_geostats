@@ -206,7 +206,7 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -214,7 +214,7 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to interpolate",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -230,7 +230,7 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.SHAPE,
                 "Kernel shape parameter in map units (0 = derive from the mean "
                 "nearest-neighbour distance; ignored by thin plate)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -239,7 +239,7 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.SMOOTHING,
                 "Smoothing (0 = interpolate exactly through every observation)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -249,7 +249,7 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -259,7 +259,7 @@ class RbfAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.MAX_POINTS,
                 "Maximum observations (the solve is dense; its cost grows with "
                 "the square of this number)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=RBF_SOFT_LIMIT,
                 minValue=3,
                 maxValue=200_000,

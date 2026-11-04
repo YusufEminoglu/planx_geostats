@@ -118,18 +118,18 @@ class TabPFNRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Output TabPFN predictions layer"))
@@ -211,7 +211,7 @@ class TabPFNRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("tabpfn_pred", None)
                 out_feature.setAttribute("tabpfn_resid", None)
                 out_feature.setAttribute("tabpfn_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, results, skipped)

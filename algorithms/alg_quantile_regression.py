@@ -103,23 +103,23 @@ class QuantileRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.DEP_VAR, "Dependent variable field", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.INDEPENDENTS, "Explanatory variable fields", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.TAU, "Quantile (Tau)", type=QgsProcessingParameterNumber.Double,
+                self.TAU, "Quantile (Tau)", type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.5, minValue=0.01, maxValue=0.99,
             )
         )
@@ -210,7 +210,7 @@ class QuantileRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("qr_fit", None)
                 out_feature.setAttribute("qr_resid", None)
                 out_feature.setAttribute("qr_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, dep_var, indep_fields, tau, results, skipped)

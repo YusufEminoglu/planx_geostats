@@ -365,7 +365,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -373,7 +373,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -390,7 +390,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.THRESHOLD_COUNT,
                 "Thresholds to place when none are given (quantiles of the "
                 "observed values, which carry no external meaning)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=DEFAULT_THRESHOLD_COUNT,
                 minValue=1,
                 maxValue=50,
@@ -409,7 +409,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.ALPHA,
                 "Stable model shape exponent (Stable only; ignored otherwise)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.5,
                 minValue=0.1,
                 maxValue=2.0,
@@ -419,7 +419,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_BINS,
                 "Number of distance bins for each threshold's variogram",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=15,
                 minValue=4,
                 maxValue=200,
@@ -429,7 +429,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_LAG,
                 "Maximum lag for the variogram in map units (0 = automatic)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -439,7 +439,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -449,7 +449,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.MAX_POINTS,
                 "Maximum observations this run will accept (cost is their "
                 "count multiplied by the cell count and the threshold count)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=IK_SOFT_LIMIT,
                 minValue=IK_MIN_POINTS,
                 maxValue=200_000,
@@ -468,7 +468,7 @@ class IndicatorKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CV_FOLDS,
                 "Cross-validation folds (used only when leave-one-out is not "
                 "affordable at this observation count)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=IK_DEFAULT_FOLDS,
                 minValue=2,
                 maxValue=20,

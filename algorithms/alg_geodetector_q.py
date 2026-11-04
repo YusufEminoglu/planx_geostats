@@ -93,7 +93,7 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -101,7 +101,7 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD_Y,
                 "Outcome field (continuous, to explain)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -117,14 +117,14 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD_STRATA,
                 "Stratification field (categorical field, or continuous field to bin)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.N_BINS,
                 "Number of quantile bins (Quantile-bin mode only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5,
                 minValue=2,
                 maxValue=20,
@@ -134,7 +134,7 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.PERMUTATIONS,
                 "Number of permutations (Monte Carlo)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=999,
                 minValue=99,
                 maxValue=9999,
@@ -144,7 +144,7 @@ class GeodetectorQAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.RANDOM_SEED,
                 "Random seed (reproducibility)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=42,
                 minValue=0,
             )

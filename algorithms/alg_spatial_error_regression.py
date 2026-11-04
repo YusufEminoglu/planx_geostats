@@ -129,7 +129,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -137,7 +137,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEP_VAR,
                 "Dependent variable field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -145,7 +145,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.INDEPENDENTS,
                 "Explanatory variable fields",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
             )
         )
@@ -161,7 +161,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.KNN,
                 "Number of neighbors (K value, KNN only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=8,
                 minValue=1,
             )
@@ -170,7 +170,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_BAND,
                 "Distance band threshold (map units, Distance Band only)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1000.0,
                 minValue=0.0001,
             )
@@ -375,7 +375,7 @@ class SpatialErrorRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("sem_stdres", float(row["stdres"]))
                 out_feature.setAttribute("sem_nbrs", int(row["neighbors"]))
                 out_feature.setAttribute("sem_used", 1)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(55 + 45 * (current / total)))
 
         self._write_html(

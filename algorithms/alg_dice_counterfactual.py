@@ -97,24 +97,24 @@ class DiCECounterfactualAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (class labels)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.FEATURE_ID, "Feature ID to explain", type=QgsProcessingParameterNumber.Integer,
+                self.FEATURE_ID, "Feature ID to explain", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=0, minValue=0,
             )
         )
@@ -125,14 +125,14 @@ class DiCECounterfactualAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.N_COUNTERFACTUALS, "Number of diverse counterfactuals", type=QgsProcessingParameterNumber.Integer,
+                self.N_COUNTERFACTUALS, "Number of diverse counterfactuals", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=4, minValue=1, maxValue=20,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.IMMUTABLE_FEATURES, "Immutable fields (kept fixed; optional)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True, optional=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True, optional=True,
             )
         )
         self.addParameter(

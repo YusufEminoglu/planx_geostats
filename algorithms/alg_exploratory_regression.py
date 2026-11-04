@@ -92,7 +92,7 @@ class ExploratoryRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -100,7 +100,7 @@ class ExploratoryRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEPENDENT_FIELD,
                 "Dependent field (numeric)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -108,7 +108,7 @@ class ExploratoryRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.EXPLANATORY_FIELDS,
                 "Candidate explanatory fields (numeric)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
             )
         )
@@ -116,7 +116,7 @@ class ExploratoryRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_VARIABLES,
                 "Maximum variables per model",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=3,
                 minValue=1,
                 maxValue=8,

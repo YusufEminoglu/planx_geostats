@@ -125,8 +125,12 @@ class _FakeQgsGraduatedSymbolRenderer:
 
 
 class _FakeQgsAggregateCalculator:
-    Mean = "mean"
-    StDev = "stdev"
+    class Aggregate:
+        Mean = "mean"
+        StDev = "stdev"
+
+    Mean = Aggregate.Mean
+    StDev = Aggregate.StDev
 
 
 class FakeSymbologyLayer:

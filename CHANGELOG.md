@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.13.1] - 2026-11-04
+
+- Qt6 / QGIS 4 compatibility: enum members are written in their scoped form (for example `QgsProcessingParameterNumber.Type.Double`) and `QMenu.exec_` is now `exec`, which clears the QGIS Hub Qt6 check and works unchanged on QGIS 3.28+; no behaviour change.
+
 ## [3.13.0] - 2026-11-04
 
 Correct numbers first, then results that never read as complete when nothing

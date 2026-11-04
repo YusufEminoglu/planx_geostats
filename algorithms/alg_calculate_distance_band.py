@@ -111,14 +111,14 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.NEIGHBOR_COUNT,
                 "Neighbor count (N)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=1,
                 minValue=1
             )
@@ -130,10 +130,10 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         ))
         self.addParameter(QgsProcessingParameterNumber(
             self.DISTANCE_BAND, "Distance threshold (0 = use recommended maximum)",
-            type=QgsProcessingParameterNumber.Double, defaultValue=0.0, minValue=0.0,
+            type=QgsProcessingParameterNumber.Type.Double, defaultValue=0.0, minValue=0.0,
         ))
         self.addParameter(QgsProcessingParameterNumber(
-            self.NEIGHBOR_ORDER, "Neighbor order", type=QgsProcessingParameterNumber.Integer,
+            self.NEIGHBOR_ORDER, "Neighbor order", type=QgsProcessingParameterNumber.Type.Integer,
             defaultValue=1, minValue=1, maxValue=5,
         ))
         self.addParameter(QgsProcessingParameterBoolean(
@@ -141,11 +141,11 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         ))
         self.addParameter(QgsProcessingParameterNumber(
             self.DISTANCE_DECAY, "Inverse-distance decay power (0 = binary)",
-            type=QgsProcessingParameterNumber.Double, defaultValue=0.0, minValue=0.0, maxValue=4.0,
+            type=QgsProcessingParameterNumber.Type.Double, defaultValue=0.0, minValue=0.0, maxValue=4.0,
         ))
         self.addParameter(QgsProcessingParameterFile(
             self.IMPORT_CSV, "Import weights CSV instead of building",
-            behavior=QgsProcessingParameterFile.File, extension="csv", optional=True,
+            behavior=QgsProcessingParameterFile.Behavior.File, extension="csv", optional=True,
         ))
         self.addParameter(QgsProcessingParameterFileDestination(
             self.EXPORT_CSV, "Export weights adjacency CSV", fileFilter="CSV files (*.csv)", optional=True,
@@ -269,7 +269,7 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 output.setAttribute("w_nbrs", count)
                 output.setAttribute("w_island", int(count == 0))
                 output.setAttribute("w_order", neighbor_order)
-                node_sink.addFeature(output, QgsFeatureSink.FastInsert)
+                node_sink.addFeature(output, QgsFeatureSink.Flag.FastInsert)
 
         edge_fields = QgsFields()
         edge_fields.append(QgsField("source_id", QVariant.LongLong))
@@ -277,7 +277,7 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         edge_fields.append(QgsField("weight", QVariant.Double))
         edge_sink, edge_dest = self.parameterAsSink(
             parameters, self.OUTPUT_EDGES, context, edge_fields,
-            QgsWkbTypes.LineString, source.sourceCrs(),
+            QgsWkbTypes.Type.LineString, source.sourceCrs(),
         )
         centroid_map = {
             feature.id(): geometry_centroid_point(feature.geometry())
@@ -295,7 +295,7 @@ class CalculateDistanceBandAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                     edge = QgsFeature(edge_fields)
                     edge.setGeometry(QgsGeometry.fromPolylineXY([QgsPointXY(start), QgsPointXY(end)]))
                     edge.setAttributes([source_id, target_id, float(weight)])
-                    edge_sink.addFeature(edge, QgsFeatureSink.FastInsert)
+                    edge_sink.addFeature(edge, QgsFeatureSink.Flag.FastInsert)
 
         feedback.pushInfo("Generating HTML report...")
         self.write_html_report(

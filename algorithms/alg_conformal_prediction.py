@@ -107,30 +107,30 @@ class ConformalPredictionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.ALPHA, "Miscoverage rate (alpha; interval targets 1-alpha coverage)",
-                type=QgsProcessingParameterNumber.Double, defaultValue=0.1, minValue=0.01, maxValue=0.5,
+                type=QgsProcessingParameterNumber.Type.Double, defaultValue=0.1, minValue=0.01, maxValue=0.5,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.N_FOLDS, "Cross-conformal folds", type=QgsProcessingParameterNumber.Integer,
+                self.N_FOLDS, "Cross-conformal folds", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5, minValue=2, maxValue=20,
             )
         )
@@ -212,7 +212,7 @@ class ConformalPredictionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("conf_low", None)
                 out_feature.setAttribute("conf_high", None)
                 out_feature.setAttribute("conf_width", None)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, model_key, alpha, n_folds, results, skipped)

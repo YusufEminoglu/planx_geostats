@@ -86,14 +86,14 @@ class AverageNearestNeighborAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.STUDY_AREA,
                 "Study area (optional, in map units squared)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0,
                 optional=True
             )

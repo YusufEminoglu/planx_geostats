@@ -287,7 +287,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -295,7 +295,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to interpolate",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -311,7 +311,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.ALPHA,
                 "Stable model shape exponent (Stable only; ignored otherwise)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.5,
                 minValue=0.1,
                 maxValue=2.0,
@@ -330,7 +330,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.N_SIMS,
                 "Simulations per subset (cost is linear in this number; below "
                 "about 20 the average is visibly noisy)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=EBK_DEFAULT_SIMULATIONS,
                 minValue=1,
                 maxValue=EBK_MAX_SIMULATIONS,
@@ -341,7 +341,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.SUBSET_SIZE,
                 "Observations per local subset (0 = one subset holding every "
                 "observation; the main cost knob)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=EBK_DEFAULT_SUBSET,
                 minValue=0,
                 maxValue=200_000,
@@ -351,7 +351,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.OVERLAP,
                 "Rings of neighbouring subsets added to each subset",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=1,
                 minValue=0,
                 maxValue=5,
@@ -362,7 +362,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.SEED,
                 "Random seed (the same seed reproduces the same surface "
                 "exactly)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=0,
                 minValue=0,
                 maxValue=2_147_483_647,
@@ -372,7 +372,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_BINS,
                 "Number of distance bins for each internal fit",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=15,
                 minValue=4,
                 maxValue=200,
@@ -383,7 +383,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -392,7 +392,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_POINTS,
                 "Maximum observations this run will accept",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=EBK_SOFT_LIMIT,
                 minValue=EBK_MIN_POINTS,
                 maxValue=200_000,
@@ -410,7 +410,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.CV_FOLDS,
                 "Cross-validation folds",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=EBK_CV_FOLDS,
                 minValue=2,
                 maxValue=20,
@@ -444,7 +444,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSink(
                 self.SUBSET_LAYER,
                 "Per-subset fitted models (optional; one point per subset)",
-                QgsProcessing.TypeVectorPoint,
+                QgsProcessing.SourceType.TypeVectorPoint,
                 optional=True,
             )
         )
@@ -749,7 +749,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         out_fields = subset_output_fields()
         sink, dest_id = self.parameterAsSink(
             parameters, self.SUBSET_LAYER, context, out_fields,
-            QgsWkbTypes.Point, source.sourceCrs(),
+            QgsWkbTypes.Type.Point, source.sourceCrs(),
         )
         if sink is None:
             return None
@@ -777,7 +777,7 @@ class EmpiricalBayesianKrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 int(summary["target_cells"]),
                 1 if summary["fallback"] else 0,
             ])
-            sink.addFeature(feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(feature, QgsFeatureSink.Flag.FastInsert)
         del sink
         return dest_id
 

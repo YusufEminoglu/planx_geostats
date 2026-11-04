@@ -341,7 +341,7 @@ class BivariateLISAAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("quadrant", NO_DATA)
                 out_feat.setAttribute("bilisa_nb", None)
 
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(50 + 50 * (current / total)))
         self.out_layer_id = dest_id
 

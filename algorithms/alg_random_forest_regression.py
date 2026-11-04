@@ -102,35 +102,35 @@ class RandomForestRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.N_ESTIMATORS, "Number of trees", type=QgsProcessingParameterNumber.Integer,
+                self.N_ESTIMATORS, "Number of trees", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=200, minValue=10, maxValue=2000,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MAX_DEPTH, "Max tree depth (0 = unlimited)", type=QgsProcessingParameterNumber.Integer,
+                self.MAX_DEPTH, "Max tree depth (0 = unlimited)", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=0, minValue=0, maxValue=100,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MIN_SAMPLES_LEAF, "Minimum samples per leaf", type=QgsProcessingParameterNumber.Integer,
+                self.MIN_SAMPLES_LEAF, "Minimum samples per leaf", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=1, minValue=1, maxValue=200,
             )
         )
@@ -226,7 +226,7 @@ class RandomForestRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("rf_pred", None)
                 out_feature.setAttribute("rf_resid", None)
                 out_feature.setAttribute("rf_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, results, skipped)

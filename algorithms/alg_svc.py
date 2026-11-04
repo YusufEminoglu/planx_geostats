@@ -100,24 +100,24 @@ class SVCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (class labels)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.KERNEL, "Kernel", options=self.KERNELS, defaultValue=1))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.C, "Regularization (C)", type=QgsProcessingParameterNumber.Double,
+                self.C, "Regularization (C)", type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.0, minValue=0.001, maxValue=1000.0,
             )
         )
@@ -194,7 +194,7 @@ class SVCAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("svc_class", None)
                 out_feature.setAttribute("svc_conf", None)
                 out_feature.setAttribute("svc_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, kernel, c_value, class_labels, results, skipped)

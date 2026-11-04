@@ -89,7 +89,7 @@ class DataReadinessAuditAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -97,7 +97,7 @@ class DataReadinessAuditAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELDS,
                 "Numeric fields to audit (optional, blank audits all numeric fields)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
                 optional=True,
             )

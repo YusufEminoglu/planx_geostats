@@ -180,7 +180,7 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -188,7 +188,7 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to interpolate",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -211,7 +211,7 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.NEIGHBOURS,
                 "Neighbour count (moving-window nearest mode only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=24,
                 minValue=1,
                 maxValue=100_000,
@@ -222,7 +222,7 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.RADIUS,
                 "Radius in map units (moving-window radius mode only; 0 = five "
                 "times the mean nearest-neighbour distance)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -232,7 +232,7 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -241,7 +241,7 @@ class TrendSurfaceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_POINTS,
                 "Maximum observations to fit from",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=TREND_SOFT_LIMIT,
                 minValue=4,
                 maxValue=2_000_000,

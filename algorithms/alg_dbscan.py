@@ -89,23 +89,23 @@ class DBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FIELDS, "Analysis fields (numeric only)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.EPS, "Epsilon (standardized-space neighborhood radius)", type=QgsProcessingParameterNumber.Double,
+                self.EPS, "Epsilon (standardized-space neighborhood radius)", type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.75, minValue=0.01, maxValue=20.0,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MIN_SAMPLES, "Min samples per neighborhood", type=QgsProcessingParameterNumber.Integer,
+                self.MIN_SAMPLES, "Min samples per neighborhood", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5, minValue=2, maxValue=200,
             )
         )
@@ -177,7 +177,7 @@ class DBSCANAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             out_feature = QgsFeature(feature)
             set_fields_keeping_values(out_feature, out_fields)
             out_feature.setAttribute("cluster_id", label_map.get(feature.id()))
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         return {self.OUTPUT: dest_id}

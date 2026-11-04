@@ -175,7 +175,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -183,7 +183,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to interpolate",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -202,7 +202,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.PARAMS_LAYER,
                 "Fitted semivariogram parameters (used only by the second option "
                 "above)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
                 optional=True,
             )
         )
@@ -218,7 +218,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.ALPHA,
                 "Stable model shape exponent (Stable only; ignored otherwise)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.5,
                 minValue=0.1,
                 maxValue=2.0,
@@ -228,7 +228,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_BINS,
                 "Number of distance bins for the internal fit",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=15,
                 minValue=4,
                 maxValue=200,
@@ -247,7 +247,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CELL_SIZE,
                 "Output cell size in map units (0 = automatic, about 200 cells "
                 "on the longer side)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -257,7 +257,7 @@ class KrigingAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.MAX_POINTS,
                 "Maximum observations to krige with (cost is cubic in this "
                 "number)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=KRIGING_SOFT_LIMIT,
                 minValue=10,
                 maxValue=200_000,

@@ -239,7 +239,7 @@ def write_float32_geotiff(path, array, extent, crs, nodata=DEFAULT_NODATA,
     writer = QgsRasterFileWriter(str(path))
     writer.setOutputFormat(driver)
     provider = writer.createOneBandRaster(
-        Qgis.Float32, cols, rows, extent, crs
+        Qgis.DataType.Float32, cols, rows, extent, crs
     )
     if provider is None or not provider.isValid():
         raise RuntimeError(
@@ -254,7 +254,7 @@ def write_float32_geotiff(path, array, extent, crs, nodata=DEFAULT_NODATA,
 
     for start in range(0, rows, BLOCK_ROWS):
         stop = min(start + BLOCK_ROWS, rows)
-        block = QgsRasterBlock(Qgis.Float32, cols, stop - start)
+        block = QgsRasterBlock(Qgis.DataType.Float32, cols, stop - start)
         block.setData(arr[start:stop, :].tobytes())
         if not provider.writeBlock(block, 1, xOffset=0, yOffset=start):
             raise RuntimeError(
@@ -319,7 +319,7 @@ def write_float32_multiband_geotiff(path, bands, extent, crs,
     writer = QgsRasterFileWriter(str(path))
     writer.setOutputFormat(driver)
     provider = writer.createMultiBandRaster(
-        Qgis.Float32, cols, rows, extent, crs, len(prepared)
+        Qgis.DataType.Float32, cols, rows, extent, crs, len(prepared)
     )
     if provider is None or not provider.isValid():
         raise RuntimeError(
@@ -339,7 +339,7 @@ def write_float32_multiband_geotiff(path, bands, extent, crs,
         provider.setNoDataValue(number, float(nodata))
         for start in range(0, rows, BLOCK_ROWS):
             stop = min(start + BLOCK_ROWS, rows)
-            block = QgsRasterBlock(Qgis.Float32, cols, stop - start)
+            block = QgsRasterBlock(Qgis.DataType.Float32, cols, stop - start)
             block.setData(band[start:stop, :].tobytes())
             if not provider.writeBlock(block, number, xOffset=0, yOffset=start):
                 raise RuntimeError(

@@ -96,12 +96,12 @@ class GWSummaryStatsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FIELD, "Field to summarize (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -112,7 +112,7 @@ class GWSummaryStatsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.BANDWIDTH, "Bandwidth value (distance in map units for Fixed; number of neighbors for Adaptive)",
-                type=QgsProcessingParameterNumber.Double, defaultValue=15.0, minValue=1.0,
+                type=QgsProcessingParameterNumber.Type.Double, defaultValue=15.0, minValue=1.0,
             )
         )
         self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Output layer with local summary statistics"))
@@ -196,7 +196,7 @@ class GWSummaryStatsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("gw_std", None)
                 out_feature.setAttribute("gw_skew", None)
                 out_feature.setAttribute("gw_neff", None)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         return {self.OUTPUT: dest_id}

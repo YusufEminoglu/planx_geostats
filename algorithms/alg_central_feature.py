@@ -89,7 +89,7 @@ class CentralFeatureAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -97,7 +97,7 @@ class CentralFeatureAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.WEIGHT_FIELD,
                 "Weight field (optional)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 optional=True
             )
         )
@@ -190,7 +190,7 @@ class CentralFeatureAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         out_feat.setAttribute("is_central", 1)
         out_feat.setAttribute("total_distance", total_dist)
 
-        sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+        sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
         feedback.setProgress(100)
 
         feedback.pushInfo(

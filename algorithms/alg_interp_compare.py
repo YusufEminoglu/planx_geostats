@@ -523,7 +523,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -531,7 +531,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -547,7 +547,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.IDW_POWER,
                 "IDW power (applies only if IDW is selected)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=2.0,
                 minValue=0.1,
                 maxValue=10.0,
@@ -558,7 +558,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.RBF_SMOOTHING,
                 "RBF smoothing (0 = an exact interpolator, which is what the "
                 "RBF tool uses; applies only if RBF is selected)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -577,7 +577,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.ALPHA,
                 "Stable model shape exponent for the kriging entry (Stable "
                 "only; ignored otherwise)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.5,
                 minValue=0.1,
                 maxValue=2.0,
@@ -587,7 +587,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_BINS,
                 "Distance bins for the kriging entry's per-fold variogram",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=15,
                 minValue=4,
                 maxValue=200,
@@ -598,7 +598,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.MAX_LAG,
                 "Maximum lag in map units for the kriging entry "
                 "(0 = automatic)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -608,7 +608,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.SEED,
                 "Seed for the k-fold split (fixed so every method sees the "
                 "same folds, and so the run is reproducible)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=0,
                 minValue=0,
             )
@@ -617,7 +617,7 @@ class InterpolationComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_POINTS,
                 "Maximum observations this comparison will accept",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=COMPARE_SOFT_LIMIT,
                 minValue=8,
                 maxValue=200_000,

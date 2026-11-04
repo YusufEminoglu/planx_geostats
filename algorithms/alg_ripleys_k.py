@@ -87,14 +87,14 @@ class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.START_DISTANCE,
                 "Starting distance (map units)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=500.0,
                 minValue=0.0001,
             )
@@ -103,7 +103,7 @@ class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_INCREMENT,
                 "Distance increment (map units)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=500.0,
                 minValue=0.0001,
             )
@@ -112,7 +112,7 @@ class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_INCREMENTS,
                 "Number of distance increments",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=10,
                 minValue=3,
                 maxValue=50,
@@ -122,7 +122,7 @@ class RipleysKFunctionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.STUDY_AREA,
                 "Study area (optional, map units squared)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
                 optional=True,

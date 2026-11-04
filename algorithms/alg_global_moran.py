@@ -112,7 +112,7 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -120,7 +120,7 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to analyze",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric
+                type=QgsProcessingParameterField.DataType.Numeric
             )
         )
         self.addParameter(
@@ -135,7 +135,7 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.KNN,
                 "Number of neighbors (K value, KNN only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5,
                 minValue=1
             )
@@ -144,7 +144,7 @@ class GlobalMoranAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_BAND,
                 "Distance band threshold (map units, Distance Band only)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1000.0,
                 minValue=0.0001
             )

@@ -106,7 +106,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -114,7 +114,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Field to convert to binary category",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
@@ -122,7 +122,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.CATEGORY_VALUE,
                 "Reserved (unused) - category value entered below",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
                 optional=True,
                 defaultValue=None,
             )
@@ -139,7 +139,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.KNN,
                 "Number of neighbors (K value, KNN only)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=5,
                 minValue=1,
             )
@@ -148,7 +148,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DISTANCE_BAND,
                 "Distance band threshold (map units, Distance Band only)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1000.0,
                 minValue=0.0001,
             )
@@ -157,7 +157,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.PERMUTATIONS,
                 "Number of permutations (Monte Carlo)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=999,
                 minValue=99,
                 maxValue=9999,
@@ -167,7 +167,7 @@ class JoinCountStatisticsAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.RANDOM_SEED,
                 "Random seed (reproducibility)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=42,
                 minValue=0,
             )

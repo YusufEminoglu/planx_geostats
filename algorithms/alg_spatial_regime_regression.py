@@ -102,24 +102,24 @@ class SpatialRegimeRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.DEP_VAR, "Dependent variable field", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.INDEPENDENTS, "Explanatory variable fields", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.REGIME_FIELD, "Regime field (categorical)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(QgsProcessingParameterFeatureSink(self.OUTPUT, "Output spatial regime regression predictions layer"))
@@ -265,7 +265,7 @@ class SpatialRegimeRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("regi_fit", None)
                 out_feature.setAttribute("regi_resid", None)
                 out_feature.setAttribute("regi_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
         self._write_html(html_path, dep_var, indep_fields, regime_field, regime_labels, regime_counts, betas, coefficient_names, r2, chow_stat, chow_pvalue, skipped, predicted, residuals)

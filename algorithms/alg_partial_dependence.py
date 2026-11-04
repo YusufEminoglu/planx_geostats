@@ -97,31 +97,31 @@ class PartialDependenceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric, model context)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.PD_FIELD, "Field to compute partial dependence for (must be one of the explanatory fields)",
-                parentLayerParameterName=self.INPUT, type=QgsProcessingParameterField.Numeric,
+                parentLayerParameterName=self.INPUT, type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.TASK_TYPE, "Task type", options=self.TASK_TYPES, defaultValue=0))
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.GRID_POINTS, "Grid points", type=QgsProcessingParameterNumber.Integer,
+                self.GRID_POINTS, "Grid points", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=20, minValue=5, maxValue=200,
             )
         )

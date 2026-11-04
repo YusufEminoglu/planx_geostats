@@ -94,7 +94,7 @@ class StandardDistanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -102,7 +102,7 @@ class StandardDistanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.WEIGHT_FIELD,
                 "Weight field (optional)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 optional=True
             )
         )
@@ -226,7 +226,7 @@ class StandardDistanceAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.OUTPUT,
             context,
             out_fields,
-            QgsWkbTypes.Polygon,
+            QgsWkbTypes.Type.Polygon,
             source.sourceCrs()
         )
         self.out_layer_id = dest_id

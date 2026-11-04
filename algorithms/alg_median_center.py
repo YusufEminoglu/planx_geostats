@@ -95,7 +95,7 @@ class MedianCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -103,7 +103,7 @@ class MedianCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.WEIGHT_FIELD,
                 "Weight field (optional)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 optional=True
             )
         )
@@ -181,7 +181,7 @@ class MedianCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.OUTPUT,
             context,
             out_fields,
-            QgsWkbTypes.Point,
+            QgsWkbTypes.Type.Point,
             source.sourceCrs()
         )
         self.out_layer_id = dest_id

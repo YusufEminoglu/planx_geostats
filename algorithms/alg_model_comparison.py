@@ -154,7 +154,7 @@ class ModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterMultipleLayers(
                 self.MODEL_LAYERS,
                 "PlanX model output layers to compare",
-                layerType=QgsProcessing.TypeVectorAnyGeometry,
+                layerType=QgsProcessing.SourceType.TypeVectorAnyGeometry,
             )
         )
         self.addParameter(
@@ -162,7 +162,7 @@ class ModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEP_VAR,
                 "Observed dependent variable field",
                 parentLayerParameterName=self.MODEL_LAYERS,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -274,7 +274,7 @@ class ModelComparisonAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def _residual_spatial(self, layer, valid_fids, residuals, feedback):
         try:
-            weight_type = "queen" if layer.geometryType() == QgsWkbTypes.PolygonGeometry else "knn"
+            weight_type = "queen" if layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry else "knn"
             neighbors, _, _, _ = build_weights_matrix(layer, weight_type, k_neighbors=8, feedback=feedback)
             filtered_neighbors, filtered_weights, filtered_ids = filter_weights_to_valid_ids(neighbors, valid_fids)
             return residual_spatial_autocorrelation_summary(residuals, filtered_neighbors, filtered_weights, filtered_ids)

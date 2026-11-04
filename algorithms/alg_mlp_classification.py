@@ -98,24 +98,24 @@ class MLPClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (class labels)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any,
+                type=QgsProcessingParameterField.DataType.Any,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterString(self.HIDDEN_LAYERS, "Hidden layer sizes (comma-separated)", defaultValue="64,32"))
         self.addParameter(
             QgsProcessingParameterNumber(
-                self.MAX_ITER, "Maximum training iterations", type=QgsProcessingParameterNumber.Integer,
+                self.MAX_ITER, "Maximum training iterations", type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=1000, minValue=50, maxValue=20000,
             )
         )
@@ -203,7 +203,7 @@ class MLPClassificationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feature.setAttribute("mlp_class", None)
                 out_feature.setAttribute("mlp_conf", None)
                 out_feature.setAttribute("mlp_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, feature_fields, hidden_layers, max_iter, class_labels, results, skipped)

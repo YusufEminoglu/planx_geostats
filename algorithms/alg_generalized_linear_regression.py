@@ -116,7 +116,7 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -124,7 +124,7 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
                 self.DEP_VAR,
                 "Dependent variable field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
@@ -132,7 +132,7 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
                 self.INDEPENDENTS,
                 "Explanatory variable fields",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True,
             )
         )
@@ -257,7 +257,7 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
                 out_feature.setAttribute("glr_used", 0)
                 if family == "logistic":
                     out_feature.setAttribute("glr_class", None)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         self._write_html(html_path, dep_var, indep_fields, family, results, quality, skipped, residual_spatial)
@@ -295,7 +295,7 @@ class GeneralizedLinearRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm)
 
     def _residual_spatial_diagnostic(self, source, valid_fids, residuals, feedback):
         try:
-            weight_type = "queen" if QgsWkbTypes.geometryType(source.wkbType()) == QgsWkbTypes.PolygonGeometry else "knn"
+            weight_type = "queen" if QgsWkbTypes.geometryType(source.wkbType()) == QgsWkbTypes.GeometryType.PolygonGeometry else "knn"
             feedback.pushInfo(f"Building {weight_type} weights for GLR residual spatial autocorrelation diagnostics...")
             neighbors, _, _, _ = build_weights_matrix(source, weight_type, k_neighbors=8, feedback=feedback)
             filtered_neighbors, filtered_weights, filtered_ids = filter_weights_to_valid_ids(neighbors, valid_fids)

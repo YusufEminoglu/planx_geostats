@@ -180,8 +180,8 @@ def diverging_residual_renderer(layer, geometry_type, field_name: str):
     field_idx = layer.fields().lookupField(field_name)
     if field_idx < 0:
         return None
-    mean, mean_ok = layer.aggregate(QgsAggregateCalculator.Mean, field_name)
-    std, std_ok = layer.aggregate(QgsAggregateCalculator.StDev, field_name)
+    mean, mean_ok = layer.aggregate(QgsAggregateCalculator.Aggregate.Mean, field_name)
+    std, std_ok = layer.aggregate(QgsAggregateCalculator.Aggregate.StDev, field_name)
     if not mean_ok or not std_ok or not std:
         return None
     ranges = []

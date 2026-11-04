@@ -98,7 +98,7 @@ class SimilaritySearchAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -106,7 +106,7 @@ class SimilaritySearchAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELDS,
                 "Fields for similarity profile (numeric only)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True
             )
         )
@@ -300,7 +300,7 @@ class SimilaritySearchAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("sim_pct", None)
                 out_feat.setAttribute("sim_tier", None)
 
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(30 + 70 * (current / total)))
 
         return {self.OUTPUT: dest_id}

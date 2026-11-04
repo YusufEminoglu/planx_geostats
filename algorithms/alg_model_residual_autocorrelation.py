@@ -108,18 +108,18 @@ class ModelResidualAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm
 
     def initAlgorithm(self, config=None):
         self.addParameter(
-            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.TypeVectorAnyGeometry])
+            QgsProcessingParameterFeatureSource(self.INPUT, "Input vector layer", [QgsProcessing.SourceType.TypeVectorAnyGeometry])
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.TARGET, "Target field (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterField(
                 self.FEATURES, "Explanatory fields (numeric)", parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric, allowMultiple=True,
+                type=QgsProcessingParameterField.DataType.Numeric, allowMultiple=True,
             )
         )
         self.addParameter(QgsProcessingParameterEnum(self.MODEL, "Model", options=self.MODEL_LABELS, defaultValue=0))
@@ -171,7 +171,7 @@ class ModelResidualAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm
         fitted = estimator.predict(x)
         residuals = y - fitted
 
-        weight_type = "queen" if QgsWkbTypes.geometryType(source.wkbType()) == QgsWkbTypes.PolygonGeometry else "knn"
+        weight_type = "queen" if QgsWkbTypes.geometryType(source.wkbType()) == QgsWkbTypes.GeometryType.PolygonGeometry else "knn"
         feedback.pushInfo(f"Building {weight_type} weights for residual spatial autocorrelation diagnostics...")
         try:
             neighbors, _, _, _ = build_weights_matrix(source, weight_type, k_neighbors=8, feedback=feedback)
@@ -203,7 +203,7 @@ class ModelResidualAutocorrelationAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm
             else:
                 out_feature.setAttribute("model_resid", None)
                 out_feature.setAttribute("model_used", 0)
-            sink.addFeature(out_feature, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feature, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 70 * (current / total)))
 
         self._write_html(html_path, target_field, model_key, summary, skipped)

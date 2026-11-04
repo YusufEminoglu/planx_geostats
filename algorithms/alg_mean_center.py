@@ -98,7 +98,7 @@ class MeanCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -106,7 +106,7 @@ class MeanCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.WEIGHT_FIELD,
                 "Weight field (optional)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 optional=True
             )
         )
@@ -202,7 +202,7 @@ class MeanCenterAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
         # Define outputs dynamically based on the mode
         if mode_idx == 0:
             # Mean Center: Output is a Point
-            out_geom_type = QgsWkbTypes.Point
+            out_geom_type = QgsWkbTypes.Type.Point
             out_fields = QgsFields()
             out_fields.append(QgsField("mean_x", QVariant.Double, len=15, prec=6))
             out_fields.append(QgsField("mean_y", QVariant.Double, len=15, prec=6))

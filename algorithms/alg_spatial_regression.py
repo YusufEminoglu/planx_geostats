@@ -105,7 +105,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -113,7 +113,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.DEP_VAR,
                 "Dependent variable field",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric
+                type=QgsProcessingParameterField.DataType.Numeric
             )
         )
         # We allow multiple independent variable fields
@@ -122,7 +122,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.INDEPENDENTS,
                 "Independent variable fields (select one or more)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True
             )
         )
@@ -245,7 +245,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
 
         # Build weights matrix dynamically for spatial autocorrelation diagnostics of residuals
         geom_type = QgsWkbTypes.geometryType(source.wkbType())
-        res_weight_type = "queen" if geom_type == QgsWkbTypes.PolygonGeometry else "knn"
+        res_weight_type = "queen" if geom_type == QgsWkbTypes.GeometryType.PolygonGeometry else "knn"
         feedback.pushInfo(f"Building {res_weight_type} weights matrix for residual spatial autocorrelation test...")
 
         neighbors, weights, id_order, _ = build_weights_matrix(
@@ -299,7 +299,7 @@ class SpatialRegressionAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("residual", None)
                 out_feat.setAttribute("std_res", None)
 
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(20 + 30 * (current / total)))
 
         # Generate HTML report

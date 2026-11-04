@@ -93,7 +93,7 @@ class LinearDirectionalMeanAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input line vector layer",
-                [QgsProcessing.TypeVectorLine]
+                [QgsProcessing.SourceType.TypeVectorLine]
             )
         )
         self.addParameter(
@@ -118,7 +118,7 @@ class LinearDirectionalMeanAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 break
 
             geom = f.geometry()
-            if geom is None or geom.isEmpty() or geom.type() != QgsWkbTypes.LineGeometry:
+            if geom is None or geom.isEmpty() or geom.type() != QgsWkbTypes.GeometryType.LineGeometry:
                 continue
 
             # Get the first polyline part
@@ -178,7 +178,7 @@ class LinearDirectionalMeanAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.OUTPUT,
             context,
             out_fields,
-            QgsWkbTypes.LineString,
+            QgsWkbTypes.Type.LineString,
             source.sourceCrs()
         )
         self.out_layer_id = dest_id

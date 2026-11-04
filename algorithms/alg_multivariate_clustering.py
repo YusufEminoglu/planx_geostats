@@ -100,7 +100,7 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer",
-                [QgsProcessing.TypeVectorAnyGeometry]
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry]
             )
         )
         self.addParameter(
@@ -108,7 +108,7 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELDS,
                 "Analysis fields (numeric only)",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=True
             )
         )
@@ -116,7 +116,7 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.K_CLUSTERS,
                 "Number of clusters (K)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=3,
                 minValue=2
             )
@@ -261,7 +261,7 @@ class MultivariateClusteringAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 out_feat.setAttribute("clust_size", None)
                 out_feat.setAttribute("clust_dist", None)
 
-            sink.addFeature(out_feat, QgsFeatureSink.FastInsert)
+            sink.addFeature(out_feat, QgsFeatureSink.Flag.FastInsert)
             feedback.setProgress(int(40 + 60 * (current / total)))
 
         feedback.pushInfo("Assessing cluster quality...")

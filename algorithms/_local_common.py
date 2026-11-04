@@ -186,7 +186,7 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
     HAS_LAYER_OUTPUT = True
     OUTPUT_LABEL = "Output layer"
     REPORT_LABEL = "HTML report"
-    INPUT_TYPES = (QgsProcessing.TypeVectorAnyGeometry,)
+    INPUT_TYPES = (QgsProcessing.SourceType.TypeVectorAnyGeometry,)
 
     def __init__(self):
         super().__init__()
@@ -221,7 +221,7 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterField(
                 key, label, parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
                 allowMultiple=multiple, optional=optional,
             )
         )
@@ -230,12 +230,12 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterField(
                 key, label, parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Any, optional=optional,
+                type=QgsProcessingParameterField.DataType.Any, optional=optional,
             )
         )
 
     def integer(self, key, label, default, minimum=None, maximum=None, optional=False):
-        kwargs = {"type": QgsProcessingParameterNumber.Integer, "defaultValue": default, "optional": optional}
+        kwargs = {"type": QgsProcessingParameterNumber.Type.Integer, "defaultValue": default, "optional": optional}
         if minimum is not None:
             kwargs["minValue"] = minimum
         if maximum is not None:
@@ -243,7 +243,7 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
         self.addParameter(QgsProcessingParameterNumber(key, label, **kwargs))
 
     def double(self, key, label, default, minimum=None, maximum=None, optional=False):
-        kwargs = {"type": QgsProcessingParameterNumber.Double, "defaultValue": default, "optional": optional}
+        kwargs = {"type": QgsProcessingParameterNumber.Type.Double, "defaultValue": default, "optional": optional}
         if minimum is not None:
             kwargs["minValue"] = minimum
         if maximum is not None:
@@ -433,7 +433,7 @@ class SpatialStatBase(HelpUrlMixin, QgsProcessingAlgorithm):
                     elif isinstance(value, (np.str_,)):
                         value = str(value)
                     out.setAttribute(name, value)
-                sink.addFeature(out, QgsFeatureSink.FastInsert)
+                sink.addFeature(out, QgsFeatureSink.Flag.FastInsert)
                 feedback.setProgress(int(80 + 20 * current / total))
             self.out_layer_id = dest_id
             outputs[self.OUTPUT] = dest_id

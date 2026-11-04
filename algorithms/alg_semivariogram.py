@@ -182,7 +182,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterFeatureSource(
                 self.INPUT,
                 "Input vector layer (any geometry; centroids are used)",
-                [QgsProcessing.TypeVectorAnyGeometry],
+                [QgsProcessing.SourceType.TypeVectorAnyGeometry],
             )
         )
         self.addParameter(
@@ -190,14 +190,14 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
                 self.FIELD,
                 "Target numeric field to model",
                 parentLayerParameterName=self.INPUT,
-                type=QgsProcessingParameterField.Numeric,
+                type=QgsProcessingParameterField.DataType.Numeric,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
                 self.N_BINS,
                 "Number of distance bins",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=15,
                 minValue=4,
                 maxValue=200,
@@ -207,7 +207,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.MAX_LAG,
                 "Maximum lag distance (map units; 0 = automatic)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=0.0,
                 minValue=0.0,
             )
@@ -224,7 +224,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.ALPHA,
                 "Stable model shape exponent (Stable only; ignored otherwise)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=1.5,
                 minValue=0.1,
                 maxValue=2.0,
@@ -234,7 +234,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.N_DIRECTIONS,
                 "Directional variogram directions (0 = skip the rose)",
-                type=QgsProcessingParameterNumber.Integer,
+                type=QgsProcessingParameterNumber.Type.Integer,
                 defaultValue=8,
                 minValue=0,
                 maxValue=24,
@@ -244,7 +244,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 self.DIRECTION_TOLERANCE,
                 "Directional tolerance (degrees, half-angle of each cone)",
-                type=QgsProcessingParameterNumber.Double,
+                type=QgsProcessingParameterNumber.Type.Double,
                 defaultValue=22.5,
                 minValue=5.0,
                 maxValue=90.0,
@@ -426,7 +426,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             self.PARAMS_OUT,
             context,
             out_fields,
-            QgsWkbTypes.Point,
+            QgsWkbTypes.Type.Point,
             source.sourceCrs(),
         )
         if sink is None:
@@ -451,7 +451,7 @@ class EmpiricalSemivariogramAlgorithm(HelpUrlMixin, QgsProcessingAlgorithm):
             int(n),
             float(ratio) if np.isfinite(ratio) else None,
         ])
-        sink.addFeature(feat, QgsFeatureSink.FastInsert)
+        sink.addFeature(feat, QgsFeatureSink.Flag.FastInsert)
         del sink
 
         feedback.pushInfo("Generating HTML report...")
